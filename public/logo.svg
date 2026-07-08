@@ -1,0 +1,20 @@
+<svg width="400" height="400" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(200, 150)">
+    <!-- Outer circle (partial) -->
+    <path d="M-60,0 A60,60 0 1,1 0,-60" fill="none" stroke="#FFC107" stroke-width="6"/>
+    <path d="M0,60 A60,60 0 0,1 -60,0" fill="none" stroke="#9E9E9E" stroke-width="6"/>
+    
+    <!-- K (Yellow) -->
+    <text x="-40" y="30" font-family="serif" font-size="80" fill="#FFC107" font-weight="bold">K</text>
+    
+    <!-- S (Grey) -->
+    <text x="-5" y="45" font-family="serif" font-size="90" fill="#757575">S</text>
+  </g>
+  
+  <g transform="translate(200, 300)" text-anchor="middle">
+    <!-- KASTHURI -->
+    <text x="0" y="0" font-family="sans-serif" font-size="48" fill="#1A237E" font-weight="900" letter-spacing="2">KASTHURI</text>
+    <!-- SCHOOL -->
+    <text x="0" y="40" font-family="serif" font-size="32" fill="#757575" letter-spacing="4">SCHOOL</text>
+  </g>
+</svg>
