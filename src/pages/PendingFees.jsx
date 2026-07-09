@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import api from '../services/api';
 import { Card, CardContent } from '../components/ui/Card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
-import { AlertCircle, Search, Filter, Users } from 'lucide-react';
+import { AlertCircle, Search, Filter, Users, CheckCircle } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
@@ -18,6 +18,7 @@ const PendingFees = () => {
   const [classFilter, setClassFilter] = useState('All');
   const [sectionFilter, setSectionFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All'); // Active, Old
+  const [feeStatusFilter, setFeeStatusFilter] = useState('Pending'); // Pending, Paid, All
 
   useEffect(() => {
     fetchStudents();
@@ -39,9 +40,8 @@ const PendingFees = () => {
   const fetchStudents = async () => {
     try {
       const res = await api.get('/students');
-      // Filter for all students with pending fees > 0
-      const pendingStudents = res.data.filter(s => getStudentTotalPending(s) > 0);
-      setStudents(pendingStudents);
+      // Set all students, we will filter in the UI
+      setStudents(res.data);
     } catch (error) {
       console.error("Error fetching students", error);
     }
@@ -61,6 +61,7 @@ const PendingFees = () => {
     setClassFilter('All');
     setSectionFilter('All');
     setStatusFilter('All');
+    setFeeStatusFilter('All');
   };
 
   const availableSections = useMemo(() => {
@@ -86,36 +87,55 @@ const PendingFees = () => {
       if (!s.studentStatus || s.studentStatus === 'Active') return false;
     }
 
+    const pendingAmount = getStudentTotalPending(s);
+    if (feeStatusFilter === 'Pending') {
+      if (pendingAmount <= 0) return false;
+    } else if (feeStatusFilter === 'Paid') {
+      if (pendingAmount > 0) return false;
+    }
+
     return true;
   });
 
-  const totalPendingAmount = students.reduce((sum, s) => sum + getStudentTotalPending(s), 0);
+  const totalPendingAmount = filteredStudents.reduce((sum, s) => sum + getStudentTotalPending(s), 0);
+  const totalPaidAmount = filteredStudents.reduce((sum, s) => sum + getStudentTotalPaid(s), 0);
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center">
-            <AlertCircle className="mr-3 text-red-600" size={32} />
-            Pending Fees
+            {feeStatusFilter === 'Paid' ? (
+              <CheckCircle className="mr-3 text-green-600" size={32} />
+            ) : (
+              <AlertCircle className="mr-3 text-red-600" size={32} />
+            )}
+            Fee Status List
           </h1>
-          <p className="text-gray-500 mt-2">All students (Active & Old) with outstanding fee balances.</p>
+          <p className="text-gray-500 mt-2">All students (Active & Old) and their fee balances.</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="bg-white border-gray-200">
           <CardContent className="p-4 flex flex-col items-center text-center">
             <Users className="h-6 w-6 text-blue-500 mb-2" />
-            <p className="text-sm text-gray-500 font-medium">Students with Pending Fees</p>
-            <p className="text-3xl font-bold text-gray-900">{students.length}</p>
+            <p className="text-sm text-gray-500 font-medium">Students in View</p>
+            <p className="text-3xl font-bold text-gray-900">{filteredStudents.length}</p>
           </CardContent>
         </Card>
         <Card className="bg-red-50 border-red-200">
           <CardContent className="p-4 flex flex-col items-center text-center">
             <AlertCircle className="h-6 w-6 text-red-600 mb-2" />
-            <p className="text-sm text-red-600 font-medium">Total Pending Amount</p>
+            <p className="text-sm text-red-600 font-medium">Total Pending (Filtered)</p>
             <p className="text-3xl font-bold text-red-700">₹{totalPendingAmount.toLocaleString()}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-green-50 border-green-200">
+          <CardContent className="p-4 flex flex-col items-center text-center">
+            <CheckCircle className="h-6 w-6 text-green-600 mb-2" />
+            <p className="text-sm text-green-600 font-medium">Total Paid (Filtered)</p>
+            <p className="text-3xl font-bold text-green-700">₹{totalPaidAmount.toLocaleString()}</p>
           </CardContent>
         </Card>
       </div>
@@ -129,7 +149,7 @@ const PendingFees = () => {
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               <div>
                 <Label>Search</Label>
                 <Input 
@@ -183,6 +203,19 @@ const PendingFees = () => {
                   <option value="Old">Old Students Only</option>
                 </select>
               </div>
+
+              <div>
+                <Label>Fee Status</Label>
+                <select 
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+                  value={feeStatusFilter}
+                  onChange={(e) => setFeeStatusFilter(e.target.value)}
+                >
+                  <option value="Pending">Pending Fees Only</option>
+                  <option value="Paid">Fully Paid Only</option>
+                  <option value="All">All Students</option>
+                </select>
+              </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
@@ -204,7 +237,7 @@ const PendingFees = () => {
                   <TableHead>Class & Section</TableHead>
                   <TableHead className="text-right">Total Fee</TableHead>
                   <TableHead className="text-right">Paid Amount</TableHead>
-                  <TableHead className="text-right font-bold text-red-600">Pending</TableHead>
+                  <TableHead className="text-right font-bold">Pending</TableHead>
                   <TableHead>Action</TableHead>
                 </TableRow>
               </TableHeader>
@@ -212,7 +245,7 @@ const PendingFees = () => {
                 {filteredStudents.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center h-32 text-gray-500">
-                      No students with pending fees match your filters.
+                      No students match your filters.
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -243,17 +276,23 @@ const PendingFees = () => {
                         <TableCell>{student.currentClass} {student.section ? `- ${student.section}` : ''}</TableCell>
                         <TableCell className="text-right font-medium">₹{totalFee.toFixed(2)}</TableCell>
                         <TableCell className="text-right text-emerald-600">₹{totalPaid.toFixed(2)}</TableCell>
-                        <TableCell className="text-right font-bold text-red-600">
+                        <TableCell className={`text-right font-bold ${totalPending > 0 ? 'text-red-600' : 'text-green-600'}`}>
                           ₹{totalPending.toFixed(2)}
                         </TableCell>
                         <TableCell>
-                          <Button 
-                            size="sm" 
-                            onClick={() => navigate('/dashboard/payments')}
-                            className="bg-orange-600 hover:bg-orange-700 text-white"
-                          >
-                            Pay Pending Fee
-                          </Button>
+                          {totalPending > 0 ? (
+                            <Button 
+                              size="sm" 
+                              onClick={() => navigate('/dashboard/payments')}
+                              className="bg-orange-600 hover:bg-orange-700 text-white"
+                            >
+                              Pay Pending
+                            </Button>
+                          ) : (
+                            <span className="text-sm font-medium text-green-600 px-3 flex items-center gap-1">
+                              <CheckCircle size={16} /> Paid
+                            </span>
+                          )}
                         </TableCell>
                       </TableRow>
                     );
