@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { Card, CardContent } from '../components/ui/Card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
-import { UserPlus, Eye, Upload, Plus, Users } from 'lucide-react';
+import { UserPlus, Eye, Upload, Plus, Users, Pencil, Save, X } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
@@ -18,6 +18,13 @@ const Admissions = () => {
   
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    studentName: '', currentClass: '', section: '',
+    fatherName: '', motherName: '', fatherPhone: '', motherPhone: ''
+  });
+  const [editLoading, setEditLoading] = useState(false);
+  const [fullStudentData, setFullStudentData] = useState(null);
   
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -109,7 +116,89 @@ const Admissions = () => {
 
   const openViewModal = (student) => {
     setSelectedStudent(student);
+    setIsEditing(false);
     setIsViewModalOpen(true);
+  };
+
+  const openEditModal = async (student) => {
+    try {
+      const res = await api.get(`/students/${student._id || student.id}`);
+      const data = res.data;
+      setFullStudentData(data);
+      setEditForm({
+        studentName: data.studentName || '',
+        currentClass: data.currentClass || '',
+        section: data.section || '',
+        fatherName: data.fatherName || '',
+        motherName: data.motherName || '',
+        fatherPhone: data.fatherPhone || '',
+        motherPhone: data.motherPhone || ''
+      });
+      setSelectedStudent(student);
+      setIsEditing(true);
+      setIsViewModalOpen(true);
+    } catch (error) {
+      console.error("Error loading student for edit", error);
+      alert("Failed to load student details for editing.");
+    }
+  };
+
+  const handleEditChange = (e) => {
+    setEditForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleEditSave = async (e) => {
+    e.preventDefault();
+    setEditLoading(true);
+    try {
+      const includedChargesIds = (fullStudentData.includedCharges || [])
+        .map(c => c.includedChargeId?._id || c.includedChargeId)
+        .filter(Boolean);
+      const activitiesIds = (fullStudentData.activities || [])
+        .map(a => a.activityId?._id || a.activityId)
+        .filter(Boolean);
+
+      const payload = {
+        ...fullStudentData,
+        studentName: editForm.studentName,
+        currentClass: editForm.currentClass,
+        section: editForm.section || '',
+        fatherName: editForm.fatherName,
+        motherName: editForm.motherName,
+        fatherPhone: editForm.fatherPhone,
+        motherPhone: editForm.motherPhone,
+        includedChargesIds,
+        activitiesIds,
+        dateOfBirth: fullStudentData.dateOfBirth ? fullStudentData.dateOfBirth.split('T')[0] : '',
+        admissionDate: fullStudentData.admissionDate ? fullStudentData.admissionDate.split('T')[0] : ''
+      };
+      delete payload._id;
+      delete payload.id;
+      delete payload.includedCharges;
+      delete payload.activities;
+      delete payload.studentFees;
+      delete payload.currentClassFees;
+      delete payload.previousClassFees;
+      delete payload.payments;
+      delete payload.addedById;
+      delete payload.__v;
+      delete payload.createdAt;
+      delete payload.updatedAt;
+      await api.put(`/students/${selectedStudent._id || selectedStudent.id}`, payload);
+      setIsEditing(false);
+      setIsViewModalOpen(false);
+      fetchStudents();
+      alert("Student updated successfully!");
+    } catch (error) {
+      console.error("Error updating student", error);
+      alert(error.response?.data?.error || "Error updating student.");
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const cancelEdit = () => {
+    setIsEditing(false);
   };
 
   const visibleStudents = students.filter(student => {
@@ -244,9 +333,14 @@ const Admissions = () => {
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" onClick={() => openViewModal(student)}>
-                        <Eye className="h-4 w-4 text-orange-600" />
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => openViewModal(student)}>
+                          <Eye className="h-4 w-4 text-orange-600" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => openEditModal(student)}>
+                          <Pencil className="h-4 w-4 text-blue-600" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -257,8 +351,8 @@ const Admissions = () => {
         </CardContent>
       </Card>
 
-      <Modal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} title="Student Details" className="max-w-4xl">
-        {selectedStudent && (
+      <Modal isOpen={isViewModalOpen} onClose={() => { setIsEditing(false); setIsViewModalOpen(false); }} title={isEditing ? "Edit Student" : "Student Details"} className="max-w-4xl">
+        {selectedStudent && !isEditing && (
           <div className="space-y-6 max-h-[75vh] overflow-y-auto pr-2">
             <div>
               <h3 className="text-lg font-medium text-gray-900 mb-3 border-b pb-2">Personal Information</h3>
@@ -337,7 +431,7 @@ const Admissions = () => {
                   <p className="text-sm text-gray-500">Guardian Name</p>
                   <p className="text-gray-900">{selectedStudent.guardian || '-'}</p>
                 </div>
-                <div className="hidden md:block"></div> {/* spacer */}
+                <div className="hidden md:block"></div>
                 <div>
                   <p className="text-sm text-gray-500">Father Phone</p>
                   <p className="text-gray-900">{selectedStudent.fatherPhone || '-'}</p>
@@ -350,7 +444,7 @@ const Admissions = () => {
                   <p className="text-sm text-gray-500">Whatsapp Number</p>
                   <p className="text-gray-900">{selectedStudent.whatsappNumber || '-'}</p>
                 </div>
-                <div className="hidden md:block"></div> {/* spacer */}
+                <div className="hidden md:block"></div>
                 <div>
                   <p className="text-sm text-gray-500">Father Occupation</p>
                   <p className="text-gray-900">{selectedStudent.fatherOccupation || '-'}</p>
@@ -385,9 +479,71 @@ const Admissions = () => {
             </div>
             
             <div className="pt-4 flex justify-end sticky bottom-0 bg-white border-t py-3 z-10">
+              <Button variant="outline" onClick={() => openEditModal(selectedStudent)} className="mr-2">
+                <Pencil className="h-4 w-4 mr-2" /> Edit
+              </Button>
               <Button onClick={() => setIsViewModalOpen(false)}>Close</Button>
             </div>
           </div>
+        )}
+
+        {selectedStudent && isEditing && (
+          <form onSubmit={handleEditSave} className="space-y-6 max-h-[75vh] overflow-y-auto pr-2">
+            <div className="bg-blue-50 p-3 rounded-md border border-blue-100 flex items-center sticky top-0 z-10 shadow-sm">
+              <Pencil className="text-blue-600 mr-2 h-5 w-5" />
+              <span className="text-sm font-medium text-blue-900">
+                Editing: {selectedStudent.admissionNumber} - {selectedStudent.studentName}
+              </span>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-3 border-b pb-2">Editable Fields</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Student Name *</Label>
+                  <Input name="studentName" value={editForm.studentName} onChange={handleEditChange} required />
+                </div>
+                <div className="space-y-2">
+                  <Label>Class</Label>
+                  <select name="currentClass" value={editForm.currentClass} onChange={handleEditChange} className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600" required>
+                    <option value="">Select Class</option>
+                    {classes.map(c => (
+                      <option key={c._id || c.id} value={c.name}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Section</Label>
+                  <Input name="section" value={editForm.section} onChange={handleEditChange} placeholder="e.g., A" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Father Name</Label>
+                  <Input name="fatherName" value={editForm.fatherName} onChange={handleEditChange} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Mother Name</Label>
+                  <Input name="motherName" value={editForm.motherName} onChange={handleEditChange} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Father Phone</Label>
+                  <Input name="fatherPhone" value={editForm.fatherPhone} onChange={handleEditChange} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Mother Phone</Label>
+                  <Input name="motherPhone" value={editForm.motherPhone} onChange={handleEditChange} />
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 flex justify-end gap-2 sticky bottom-0 bg-white border-t py-3 z-10">
+              <Button type="button" variant="outline" onClick={cancelEdit}>
+                <X className="h-4 w-4 mr-2" /> Cancel
+              </Button>
+              <Button type="submit" disabled={editLoading}>
+                <Save className="h-4 w-4 mr-2" /> {editLoading ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </form>
         )}
       </Modal>
 
