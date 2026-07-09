@@ -107,8 +107,23 @@ const Payments = () => {
     }
   }, [selectedStudentId, students]);
 
+  const selectedStudent = students.find(s => (s._id || s.id) === selectedStudentId);
+  const isPreviousYearFee = (f, student) => {
+    if (!student) return false;
+    return (f.academicYear && student.academicYear && f.academicYear !== student.academicYear) || 
+           (!f.academicYear && f.className && student.currentClass && f.className !== student.currentClass);
+  };
+  const hasPreviousYearPending = studentFees.some(f => isPreviousYearFee(f, selectedStudent) && f.remainingAmount > 0);
+
   const handlePayment = async (e) => {
     e.preventDefault();
+    if (hasPreviousYearPending && paymentData.studentFeeId && paymentData.studentFeeId !== 'FULL') {
+      const selectedFee = studentFees.find(f => (f._id || f.id) === paymentData.studentFeeId);
+      if (selectedFee && !isPreviousYearFee(selectedFee, selectedStudent)) {
+        alert("STRICT RULE: Please collect previous year pending fees before proceeding with current year payments.");
+        return;
+      }
+    }
     setLoading(true);
     try {
       await api.post('/payments', {
@@ -388,14 +403,17 @@ const Payments = () => {
                 </option>
               )}
               {studentFees.map(f => {
+                const isPrev = isPreviousYearFee(f, selectedStudent);
+                const isDisabled = hasPreviousYearPending && !isPrev;
+                
                 const classLabel = f.className && f.academicYear
                   ? `[${f.className} - ${f.academicYear}]`
                   : f.className
                     ? `[${f.className}]`
                     : '';
                 return (
-                  <option key={f._id || f.id} value={f._id || f.id}>
-                    {classLabel} {f.feeCategory?.name || 'Fee'} - Rs. {f.remainingAmount}
+                  <option key={f._id || f.id} value={f._id || f.id} disabled={isDisabled}>
+                    {classLabel} {f.feeCategory?.name || 'Fee'} - Rs. {f.remainingAmount} {isDisabled ? '(Clear previous dues first)' : ''}
                   </option>
                 );
               })}

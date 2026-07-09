@@ -275,8 +275,10 @@ const Students = () => {
                     <TableHead>Admission No</TableHead>
                     <TableHead>Student Name</TableHead>
                     <TableHead>Class & Section</TableHead>
-                    <TableHead>Fees Paid</TableHead>
-                    <TableHead>Pending</TableHead>
+                    <TableHead>Prev Year Paid</TableHead>
+                    <TableHead>Prev Pend</TableHead>
+                    <TableHead>Curr Year Paid</TableHead>
+                    <TableHead>Curr Pend</TableHead>
                     <TableHead>Father Mobile</TableHead>
                     <TableHead className="text-right">Action</TableHead>
                   </TableRow>
@@ -303,9 +305,13 @@ const Students = () => {
                           </span>
                         </TableCell>
                         <TableCell>{student.currentClass} - {student.section}</TableCell>
-                        <TableCell className="text-green-600 font-medium">Rs. {student.studentFees?.reduce((sum, f) => sum + (f.paidAmount || 0), 0) || 0}</TableCell>
-                        <TableCell className={`font-medium ${student.studentFees?.reduce((sum, f) => sum + (f.remainingAmount || 0), 0) > 0 ? 'text-red-500' : 'text-green-600'}`}>
-                          Rs. {student.studentFees?.reduce((sum, f) => sum + (f.remainingAmount || 0), 0) || 0}
+                        <TableCell className="text-green-600 font-medium">Rs. {student.studentFees?.filter(f => (f.academicYear && student.academicYear && f.academicYear !== student.academicYear) || (!f.academicYear && f.className && student.currentClass && f.className !== student.currentClass)).reduce((sum, f) => sum + (f.paidAmount || 0), 0) || 0}</TableCell>
+                        <TableCell className={`font-medium ${student.studentFees?.filter(f => (f.academicYear && student.academicYear && f.academicYear !== student.academicYear) || (!f.academicYear && f.className && student.currentClass && f.className !== student.currentClass)).reduce((sum, f) => sum + (f.remainingAmount || 0), 0) > 0 ? 'text-red-500' : 'text-green-600'}`}>
+                          Rs. {student.studentFees?.filter(f => (f.academicYear && student.academicYear && f.academicYear !== student.academicYear) || (!f.academicYear && f.className && student.currentClass && f.className !== student.currentClass)).reduce((sum, f) => sum + (f.remainingAmount || 0), 0) || 0}
+                        </TableCell>
+                        <TableCell className="text-green-600 font-medium">Rs. {student.studentFees?.filter(f => !((f.academicYear && student.academicYear && f.academicYear !== student.academicYear) || (!f.academicYear && f.className && student.currentClass && f.className !== student.currentClass))).reduce((sum, f) => sum + (f.paidAmount || 0), 0) || 0}</TableCell>
+                        <TableCell className={`font-medium ${student.studentFees?.filter(f => !((f.academicYear && student.academicYear && f.academicYear !== student.academicYear) || (!f.academicYear && f.className && student.currentClass && f.className !== student.currentClass))).reduce((sum, f) => sum + (f.remainingAmount || 0), 0) > 0 ? 'text-red-500' : 'text-green-600'}`}>
+                          Rs. {student.studentFees?.filter(f => !((f.academicYear && student.academicYear && f.academicYear !== student.academicYear) || (!f.academicYear && f.className && student.currentClass && f.className !== student.currentClass))).reduce((sum, f) => sum + (f.remainingAmount || 0), 0) || 0}
                         </TableCell>
                         <TableCell>{student.fatherPhone}</TableCell>
                         <TableCell className="text-right flex justify-end gap-2">

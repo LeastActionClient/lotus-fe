@@ -20,7 +20,7 @@ const PendingFees = () => {
   const [classFilter, setClassFilter] = useState('All');
   const [sectionFilter, setSectionFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All'); // Active, Old
-  const [feeStatusFilter, setFeeStatusFilter] = useState('Pending'); // Pending, Paid, All
+  const [feeStatusFilter, setFeeStatusFilter] = useState('All'); // Pending, Paid, All
   const [rccFilter, setRccFilter] = useState('All'); // All, RCC, Non-RCC
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -43,11 +43,19 @@ const PendingFees = () => {
   };
 
   const getCurrentPending = (s) => {
-    return s.currentClassFees?.reduce((sum, f) => sum + (f.remainingAmount || 0), 0) || 0;
+    return s.studentFees?.filter(f => !((f.academicYear && s.academicYear && f.academicYear !== s.academicYear) || (!f.academicYear && f.className && s.currentClass && f.className !== s.currentClass))).reduce((sum, f) => sum + (f.remainingAmount || 0), 0) || 0;
   };
 
   const getPreviousPending = (s) => {
-    return s.previousClassFees?.reduce((sum, f) => sum + (f.remainingAmount || 0), 0) || 0;
+    return s.studentFees?.filter(f => (f.academicYear && s.academicYear && f.academicYear !== s.academicYear) || (!f.academicYear && f.className && s.currentClass && f.className !== s.currentClass)).reduce((sum, f) => sum + (f.remainingAmount || 0), 0) || 0;
+  };
+
+  const getCurrentPaid = (s) => {
+    return s.studentFees?.filter(f => !((f.academicYear && s.academicYear && f.academicYear !== s.academicYear) || (!f.academicYear && f.className && s.currentClass && f.className !== s.currentClass))).reduce((sum, f) => sum + (f.paidAmount || 0), 0) || 0;
+  };
+
+  const getPreviousPaid = (s) => {
+    return s.studentFees?.filter(f => (f.academicYear && s.academicYear && f.academicYear !== s.academicYear) || (!f.academicYear && f.className && s.currentClass && f.className !== s.currentClass)).reduce((sum, f) => sum + (f.paidAmount || 0), 0) || 0;
   };
 
   const fetchStudents = async () => {
@@ -170,7 +178,13 @@ const PendingFees = () => {
   });
 
   const totalPendingAmount = filteredStudents.reduce((sum, s) => sum + getStudentTotalPending(s), 0);
+  const currentPendingAmount = filteredStudents.reduce((sum, s) => sum + getCurrentPending(s), 0);
+  const previousPendingAmount = filteredStudents.reduce((sum, s) => sum + getPreviousPending(s), 0);
+
   const totalPaidAmount = filteredStudents.reduce((sum, s) => sum + getStudentTotalPaid(s), 0);
+  const rccPaidAmount = filteredStudents.filter(s => isRccStudent(s)).reduce((sum, s) => sum + getStudentTotalPaid(s), 0);
+  const generalPaidAmount = filteredStudents.filter(s => !isRccStudent(s)).reduce((sum, s) => sum + getStudentTotalPaid(s), 0);
+  
   const totalPages = Math.max(1, Math.ceil(filteredStudents.length / itemsPerPage));
   const paginatedStudents = filteredStudents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
@@ -203,6 +217,10 @@ const PendingFees = () => {
             <AlertCircle className="h-6 w-6 text-red-600 mb-2" />
             <p className="text-sm text-red-600 font-medium">Total Pending (Filtered)</p>
             <p className="text-3xl font-bold text-red-700">₹{totalPendingAmount.toLocaleString()}</p>
+            <div className="flex gap-4 mt-2 text-xs font-semibold text-red-600 bg-red-100 px-3 py-1 rounded-full">
+               <span>Prev: ₹{previousPendingAmount.toLocaleString()}</span>
+               <span>Curr: ₹{currentPendingAmount.toLocaleString()}</span>
+            </div>
           </CardContent>
         </Card>
         <Card className="bg-green-50 border-green-200">
@@ -210,6 +228,10 @@ const PendingFees = () => {
             <CheckCircle className="h-6 w-6 text-green-600 mb-2" />
             <p className="text-sm text-green-600 font-medium">Total Paid (Filtered)</p>
             <p className="text-3xl font-bold text-green-700">₹{totalPaidAmount.toLocaleString()}</p>
+            <div className="flex gap-4 mt-2 text-xs font-semibold text-green-700 bg-green-100 px-3 py-1 rounded-full">
+               <span>RCC: ₹{rccPaidAmount.toLocaleString()}</span>
+               <span>General: ₹{generalPaidAmount.toLocaleString()}</span>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -332,9 +354,10 @@ const PendingFees = () => {
                   <TableHead>Course Type</TableHead>
                   <TableHead>Class & Section</TableHead>
                   <TableHead className="text-right">Total Fee</TableHead>
-                  <TableHead className="text-right">Paid Amount</TableHead>
-                  <TableHead className="text-right">Current Pending</TableHead>
-                  <TableHead className="text-right">Previous Pending</TableHead>
+                  <TableHead className="text-right">Prev Paid</TableHead>
+                  <TableHead className="text-right">Curr Paid</TableHead>
+                  <TableHead className="text-right">Prev Pending</TableHead>
+                  <TableHead className="text-right">Curr Pending</TableHead>
                   <TableHead className="text-right font-bold">Total Due</TableHead>
                   <TableHead>Action</TableHead>
                 </TableRow>
@@ -395,12 +418,8 @@ const PendingFees = () => {
                         </TableCell>
 
                         <TableCell className="text-right font-medium">₹{totalFee.toFixed(2)}</TableCell>
-                        <TableCell className="text-right text-emerald-600">₹{totalPaid.toFixed(2)}</TableCell>
-                        <TableCell className="text-right">
-                          <span className={currentPending > 0 ? 'text-orange-600 font-medium' : 'text-gray-400'}>
-                            ₹{currentPending.toFixed(2)}
-                          </span>
-                        </TableCell>
+                        <TableCell className="text-right text-emerald-600">₹{getPreviousPaid(student).toFixed(2)}</TableCell>
+                        <TableCell className="text-right text-emerald-600">₹{getCurrentPaid(student).toFixed(2)}</TableCell>
                         <TableCell className="text-right">
                           {hasPreviousFees ? (
                             <span className="text-red-600 font-medium">
@@ -409,6 +428,11 @@ const PendingFees = () => {
                           ) : (
                             <span className="text-gray-300">—</span>
                           )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span className={currentPending > 0 ? 'text-orange-600 font-medium' : 'text-gray-400'}>
+                            ₹{currentPending.toFixed(2)}
+                          </span>
                         </TableCell>
                         <TableCell className={`text-right font-bold ${totalPending > 0 ? 'text-red-600' : 'text-green-600'}`}>
                           ₹{totalPending.toFixed(2)}
