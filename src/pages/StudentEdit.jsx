@@ -105,11 +105,21 @@ const StudentEdit = () => {
         city: student.city || '',
         state: student.state || '',
         pincode: student.pincode || '',
-        baseFee: student.baseFee || 0,
+        baseFee: (() => {
+          if (student.baseFee && student.baseFee > 0) return student.baseFee;
+          if (student.studentFees && student.studentFees.length > 0) {
+            const baseFees = student.studentFees.filter(f => 
+              !f.feeCategory?.name?.toLowerCase().includes('included') && 
+              !f.feeCategory?.name?.toLowerCase().includes('activities')
+            );
+            return baseFees.reduce((sum, f) => sum + (f.totalAmount || 0), 0);
+          }
+          return 0;
+        })(),
       });
 
-      setSelectedCharges(student.includedCharges?.map(c => c.includedChargeId) || []);
-      setSelectedActivities(student.activities?.map(a => a.activityId) || []);
+      setSelectedCharges(student.includedCharges?.map(c => c.includedChargeId?._id || c.includedChargeId) || []);
+      setSelectedActivities(student.activities?.map(a => a.activityId?._id || a.activityId) || []);
 
     } catch (error) {
       console.error("Error fetching student details", error);
@@ -126,12 +136,12 @@ const StudentEdit = () => {
 
   // Calculations
   const includedChargesTotal = selectedCharges.reduce((sum, chargeId) => {
-    const charge = availableCharges.find(c => c.id === chargeId);
+    const charge = availableCharges.find(c => (c._id || c.id) === chargeId);
     return sum + (charge ? charge.amount : 0);
   }, 0);
 
   const activitiesTotal = selectedActivities.reduce((sum, activityId) => {
-    const activity = availableActivities.find(a => a.id === activityId);
+    const activity = availableActivities.find(a => (a._id || a.id) === activityId);
     return sum + (activity ? activity.amount : 0);
   }, 0);
 
@@ -161,8 +171,8 @@ const StudentEdit = () => {
 
   if (loading) return <div className="p-8 text-center text-gray-500">Loading student details...</div>;
 
-  const chargeOptions = availableCharges.filter(c => c.status).map(c => ({ value: c.id, label: `${c.name} (₹${c.amount})` }));
-  const activityOptions = availableActivities.filter(a => a.status).map(a => ({ value: a.id, label: `${a.name} (₹${a.amount})` }));
+  const chargeOptions = availableCharges.filter(c => c.status !== false).map(c => ({ value: c._id || c.id, label: `${c.name} (₹${c.amount})` }));
+  const activityOptions = availableActivities.filter(a => a.status !== false).map(a => ({ value: a._id || a.id, label: `${a.name} (₹${a.amount})` }));
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
@@ -275,8 +285,12 @@ const StudentEdit = () => {
                 <select name="studentStatus" value={formData.studentStatus} onChange={handleInputChange} className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600">
                   <option value="Active">Active</option>
                   <option value="Inactive">Inactive</option>
-                  <option value="Transferred">Transferred</option>
                   <option value="Graduated">Graduated</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Transferred">Transferred</option>
+                  <option value="Discontinued">Discontinued</option>
+                  <option value="Left School">Left School</option>
+                  <option value="Other">Other</option>
                 </select>
               </div>
             </CardContent>

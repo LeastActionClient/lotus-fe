@@ -52,6 +52,8 @@ const DashboardLayout = () => {
     { name: 'Applications', path: '/dashboard/applications', icon: <FileText size={20} /> },
     { name: 'Admissions', path: '/dashboard/admissions', icon: <UserPlus size={20} /> },
     { name: 'Students', path: '/dashboard/students', icon: <Users size={20} /> },
+    { name: 'Old Students', path: '/dashboard/old-students', icon: <Users size={20} /> },
+    { name: 'Pending Fees', path: '/dashboard/pending-fees', icon: <DollarSign size={20} /> },
     { name: 'Fee Categories', path: '/dashboard/fee-categories', icon: <FileCheck size={20} /> },
     { name: 'Payments', path: '/dashboard/payments', icon: <DollarSign size={20} /> },
     { name: 'Reports', path: '/dashboard/reports', icon: <PieChart size={20} /> },

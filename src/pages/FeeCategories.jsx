@@ -142,11 +142,11 @@ const FeeCategories = () => {
     .filter(s => !selectedClassForStudent || s.currentClass === selectedClassForStudent)
     .filter(s => !selectedSectionForStudent || s.section === selectedSectionForStudent)
     .map(s => ({
-      value: s.id,
+      value: s._id,
       label: `${s.admissionNumber} - ${s.studentName} (Class: ${s.currentClass}, Sec: ${s.section || 'N/A'})`
     }));
 
-  const selectedStudent = students.find(s => s.id === selectedStudentId);
+  const selectedStudent = students.find(s => s._id === selectedStudentId);
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -171,7 +171,7 @@ const FeeCategories = () => {
         </div>
       </div>
 
-      <div className="flex border-b border-gray-200">
+      <div className="flex overflow-x-auto border-b border-gray-200">
         <Link 
           to="/dashboard/fee-categories" 
           className="border-orange-500 text-orange-600 whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm"
@@ -191,7 +191,6 @@ const FeeCategories = () => {
           Activities
         </Link>
       </div>
-
       <Card>
         <CardContent className="p-0">
           <Table>
@@ -204,15 +203,15 @@ const FeeCategories = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {categories.length === 0 ? (
+              {categories.filter(c => !['Base Fee', 'Included Charges', 'Activities', 'Full Fees'].includes(c.name)).length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center h-32 text-gray-500">
                     No fee categories found.
                   </TableCell>
                 </TableRow>
               ) : (
-                categories.map((cat) => (
-                  <TableRow key={cat.id}>
+                categories.filter(c => !['Base Fee', 'Included Charges', 'Activities', 'Full Fees'].includes(c.name)).map((cat) => (
+                  <TableRow key={cat._id}>
                     <TableCell className="font-medium text-gray-900 ">{cat.name}</TableCell>
                     <TableCell>
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -227,7 +226,7 @@ const FeeCategories = () => {
                         <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={async () => {
                           if(window.confirm('Are you sure you want to delete this category?')) {
                             try {
-                              await api.delete(`/fees/categories/${cat.id}`);
+                              await api.delete(`/fees/categories/${cat._id}`);
                               fetchData();
                             } catch(e) { 
                               alert(e.response?.data?.error || 'Error deleting category'); 
@@ -289,7 +288,7 @@ const FeeCategories = () => {
               >
                 <option value="">-- Choose Class --</option>
                 {classes.map(c => (
-                  <option key={c.id} value={c.name}>{c.name}</option>
+                  <option key={c._id} value={c.name}>{c.name}</option>
                 ))}
               </select>
             </div>
@@ -317,7 +316,7 @@ const FeeCategories = () => {
               >
                 <option value="">-- All Sections --</option>
                 {selectedClassObjBulk?.sections?.map((s) => (
-                  <option key={s.id} value={s.name}>{s.name}</option>
+                  <option key={s._id} value={s.name}>{s.name}</option>
                 ))}
               </select>
             </div>
@@ -334,21 +333,21 @@ const FeeCategories = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {categories.filter(c => c.isEnabled).length === 0 ? (
+                  {categories.filter(c => c.isEnabled && !['Base Fee', 'Included Charges', 'Activities', 'Full Fees'].includes(c.name)).length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={2} className="text-center text-gray-500">No active fee categories available.</TableCell>
                     </TableRow>
                   ) : (
-                    categories.filter(c => c.isEnabled).map(cat => (
-                      <TableRow key={cat.id}>
+                    categories.filter(c => c.isEnabled && !['Base Fee', 'Included Charges', 'Activities', 'Full Fees'].includes(c.name)).map(cat => (
+                      <TableRow key={cat._id}>
                         <TableCell className="font-medium">{cat.name}</TableCell>
                         <TableCell>
                           <Input 
                             type="number" 
                             min="0" step="0.01"
                             placeholder="e.g., 5000"
-                            value={bulkFees[cat.id] || ''}
-                            onChange={(e) => setBulkFees({...bulkFees, [cat.id]: e.target.value})}
+                            value={bulkFees[cat._id] || ''}
+                            onChange={(e) => setBulkFees({...bulkFees, [cat._id]: e.target.value})}
                             readOnly={!isEditingBulkFees}
                             className={!isEditingBulkFees ? "bg-gray-100" : ""}
                           />
@@ -458,15 +457,15 @@ const FeeCategories = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {categories.filter(c => c.isEnabled).length === 0 ? (
+                    {categories.filter(c => c.isEnabled && !['Base Fee', 'Included Charges', 'Activities', 'Full Fees'].includes(c.name)).length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={3} className="text-center text-gray-500">No active fee categories available.</TableCell>
                       </TableRow>
                     ) : (
-                      categories.filter(c => c.isEnabled).map(cat => {
-                        const existingFee = selectedStudent.studentFees?.find(f => f.feeCategoryId === cat.id);
+                      categories.filter(c => c.isEnabled && !['Base Fee', 'Included Charges', 'Activities', 'Full Fees'].includes(c.name)).map(cat => {
+                        const existingFee = selectedStudent.studentFees?.find(f => f.feeCategoryId === cat._id);
                         return (
-                          <TableRow key={cat.id}>
+                          <TableRow key={cat._id}>
                             <TableCell className="font-medium">{cat.name}</TableCell>
                             <TableCell className="text-gray-600">
                               {existingFee ? `Rs. ${existingFee.totalAmount}` : 'Not Assigned'}
@@ -476,8 +475,8 @@ const FeeCategories = () => {
                                 type="number" 
                                 min="0" step="0.01"
                                 placeholder={existingFee ? 'Enter new total' : 'Assign fee'}
-                                value={specialFees[cat.id] || ''}
-                                onChange={(e) => setSpecialFees({...specialFees, [cat.id]: e.target.value})}
+                                value={specialFees[cat._id] || ''}
+                                onChange={(e) => setSpecialFees({...specialFees, [cat._id]: e.target.value})}
                               />
                             </TableCell>
                           </TableRow>

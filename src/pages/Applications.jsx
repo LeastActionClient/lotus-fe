@@ -163,7 +163,7 @@ const Applications = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900  flex items-center">
             <FileText className="mr-3 text-orange-600" size={32} />
@@ -171,7 +171,7 @@ const Applications = () => {
           </h1>
           <p className="text-gray-500  mt-2">Manage student enrollment applications</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setIsCustomizeModalOpen(true)}>
             <Settings className="mr-2 h-4 w-4" /> Customize ID Formats
           </Button>
@@ -210,7 +210,7 @@ const Applications = () => {
                     <TableCell className="font-medium">{app.studentName}</TableCell>
                     <TableCell>{app.applyingClass}</TableCell>
                     <TableCell>{app.fatherPhone}</TableCell>
-                    <TableCell>{app.processedBy?.username || 'System'}</TableCell>
+                    <TableCell>{app.processedById?.username}</TableCell>
                     <TableCell>
                       <select 
                         value={app.feePaid ? "true" : "false"}

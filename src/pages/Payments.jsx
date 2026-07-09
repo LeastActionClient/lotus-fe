@@ -51,14 +51,14 @@ const Payments = () => {
 
   useEffect(() => {
     if (selectedStudentId) {
-      const student = students.find(s => s.id === selectedStudentId);
+      const student = students.find(s => (s._id || s.id) === selectedStudentId);
       if (student && student.studentFees) {
         const pendingFees = student.studentFees.filter((f) => f.remainingAmount > 0);
         setStudentFees(pendingFees);
         if (pendingFees.length === 1) {
           setPaymentData(prev => ({
             ...prev,
-            studentFeeId: pendingFees[0].id,
+            studentFeeId: pendingFees[0]._id || pendingFees[0].id,
             amount: pendingFees[0].remainingAmount.toString()
           }));
         } else {
@@ -135,7 +135,7 @@ const Payments = () => {
     .filter(s => !selectedClass || s.currentClass === selectedClass)
     .filter(s => !selectedSection || s.section === selectedSection)
     .map(s => ({
-      value: s.id,
+      value: s._id || s.id,
       label: `${s.admissionNumber} - ${s.studentName} (Class: ${s.currentClass}, Sec: ${s.section || 'N/A'})`
     }));
 
@@ -200,20 +200,26 @@ const Payments = () => {
                 </TableRow>
               ) : (
                 filteredPayments.map((payment) => (
-                  <TableRow key={payment.id}>
+                  <TableRow key={payment._id || payment.id}>
                     <TableCell className="font-mono text-sm">{payment.invoice?.invoiceNumber || 'N/A'}</TableCell>
                     <TableCell>{new Date(payment.paymentDate).toLocaleDateString()}</TableCell>
                     <TableCell className="font-medium text-gray-900 ">
-                      {payment.student.studentName}
-                      <span className="block text-xs text-gray-500">{payment.student.admissionNumber}</span>
+                      {payment.student?.studentName}
+                      <span className="block text-xs text-gray-500">{payment.student?.admissionNumber}</span>
                     </TableCell>
-                    <TableCell>{payment.studentFee.feeCategory.name}</TableCell>
+                    <TableCell>
+                      {payment.isFullPayment ? (
+                        <span className="font-semibold text-emerald-600">Full Fees</span>
+                      ) : (
+                        payment.studentFee?.feeCategory?.name || 'N/A'
+                      )}
+                    </TableCell>
                     <TableCell className="font-semibold text-emerald-600">Rs. {payment.amount.toFixed(2)}</TableCell>
                     <TableCell>{payment.paymentMethod}</TableCell>
-                    <TableCell>{payment.recordedBy?.username || 'System'}</TableCell>
+                    <TableCell>{payment.recordedBy?.username}</TableCell>
                     <TableCell className="text-right flex justify-end gap-2">
                       {payment.invoice && (
-                        <Button variant="outline" size="sm" onClick={() => downloadInvoice(payment.id, payment.invoice.invoiceNumber)}>
+                        <Button variant="outline" size="sm" onClick={() => downloadInvoice(payment._id || payment.id, payment.invoice.invoiceNumber)}>
                           <Download className="h-4 w-4 mr-2" /> PDF
                         </Button>
                       )}
@@ -221,8 +227,8 @@ const Payments = () => {
                         <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={async () => {
                           if(window.confirm('Are you sure you want to delete this payment?')) {
                             try {
-                              await api.delete(`/payments/${payment.id}`);
-                              fetchPayments();
+                              await api.delete(`/payments/${payment._id || payment.id}`);
+                              fetchData();
                             } catch(e) { alert('Error deleting payment'); }
                           }
                         }}>
@@ -309,19 +315,33 @@ const Payments = () => {
               value={paymentData.studentFeeId}
               onChange={(e) => {
                 const feeId = e.target.value;
-                const selectedFee = studentFees.find(f => f.id === feeId);
-                setPaymentData({
-                  ...paymentData, 
-                  studentFeeId: feeId,
-                  amount: selectedFee ? selectedFee.remainingAmount.toString() : ''
-                });
+                if (feeId === 'FULL') {
+                  const total = studentFees.reduce((sum, f) => sum + f.remainingAmount, 0);
+                  setPaymentData({
+                    ...paymentData, 
+                    studentFeeId: feeId,
+                    amount: total.toString()
+                  });
+                } else {
+                  const selectedFee = studentFees.find(f => (f._id || f.id) === feeId);
+                  setPaymentData({
+                    ...paymentData, 
+                    studentFeeId: feeId,
+                    amount: selectedFee ? selectedFee.remainingAmount.toString() : ''
+                  });
+                }
               }}
               required
               disabled={!selectedStudentId || studentFees.length === 0}
             >
               <option value="">-- Choose Fee (Unpaid) --</option>
+              {studentFees.length > 1 && (
+                <option value="FULL" className="font-bold text-emerald-600">
+                  Full Fees - Rs. {studentFees.reduce((sum, f) => sum + f.remainingAmount, 0)}
+                </option>
+              )}
               {studentFees.map(f => (
-                <option key={f.id} value={f.id}>
+                <option key={f._id || f.id} value={f._id || f.id}>
                   {f.feeCategory.name} - Rs. {f.remainingAmount}
                 </option>
               ))}

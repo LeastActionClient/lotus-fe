@@ -12,13 +12,23 @@ const Reports = () => {
   const [loading, setLoading] = useState(true);
 
   const [timeframe, setTimeframe] = useState('daily');
+  
+  // Custom date range states
+  const [startDate, setStartDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
 
   useEffect(() => {
     const fetchReports = async () => {
       setLoading(true);
       try {
+        let collectionEndpoint = `/reports/${timeframe}-collection`;
+        
+        if (timeframe === 'custom') {
+          collectionEndpoint = `/reports/custom-collection?startDate=${startDate}&endDate=${endDate}`;
+        }
+
         const [collectionRes, pendingRes] = await Promise.all([
-          api.get(`/reports/${timeframe}-collection`),
+          api.get(collectionEndpoint),
           api.get('/reports/pending-fees'),
         ]);
         setDaily(collectionRes.data.payments || []);
@@ -29,29 +39,34 @@ const Reports = () => {
         setLoading(false);
       }
     };
-    fetchReports();
-  }, [timeframe]);
+    
+    // For custom timeframe, only fetch if both dates are set
+    if (timeframe !== 'custom' || (startDate && endDate)) {
+      fetchReports();
+    }
+  }, [timeframe, startDate, endDate]);
 
   const downloadCSV = () => {
     const headers = ['Date', 'Student Name', 'Admission No', 'Fee Category', 'Amount', 'Collected By'];
     const rows = daily.map(item => [
       new Date(item.paymentDate).toLocaleDateString(),
-      item.student?.studentName || '',
-      item.student?.admissionNumber || '',
-      item.studentFee?.feeCategory?.name || '',
+      item.student?.studentName || item.studentId?.studentName || '',
+      item.student?.admissionNumber || item.studentId?.admissionNumber || '',
+      item.studentFee?.feeCategory?.name || item.studentFeeId?.feeCategoryId?.name || '',
       item.amount?.toFixed(2) || '0.00',
-      item.recordedBy?.username || 'System'
+      item.recordedBy?.username || item.recordedById?.username || ''
     ]);
     
     const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `${timeframe}_collection_report.csv`;
+    const filenameTimeframe = timeframe === 'custom' ? `${startDate}_to_${endDate}` : timeframe;
+    link.download = `${filenameTimeframe}_collection_report.csv`;
     link.click();
   };
 
-  if (loading) return <div className="flex justify-center p-12">Loading reports...</div>;
+  if (loading && daily.length === 0) return <div className="flex justify-center p-12">Loading reports...</div>;
 
   const totalPending = pending.reduce((sum, item) => sum + (item.remainingAmount || 0), 0);
 
@@ -67,13 +82,13 @@ const Reports = () => {
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardHeader className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 pb-2">
             <CardTitle className="flex items-center text-gray-700 ">
               <Calendar className="h-5 w-5 mr-2 text-orange-600" /> Collections
             </CardTitle>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 items-center">
               <select 
-                className="border-gray-300 rounded-md text-sm p-1"
+                className="border border-gray-300 rounded-md text-sm p-1.5 focus:outline-none focus:ring-1 focus:ring-orange-500"
                 value={timeframe}
                 onChange={(e) => setTimeframe(e.target.value)}
               >
@@ -81,20 +96,52 @@ const Reports = () => {
                 <option value="weekly">Weekly</option>
                 <option value="monthly">Monthly</option>
                 <option value="yearly">Yearly</option>
+                <option value="custom">Custom Range</option>
               </select>
+              
               <Button size="sm" variant="outline" onClick={downloadCSV}>
                 <Download className="h-4 w-4 mr-1" /> CSV
               </Button>
             </div>
           </CardHeader>
-          <CardContent>
-            {!daily || daily.length === 0 ? <p className="text-gray-500">No recent collections.</p> : (
-              <div className="space-y-4">
+          
+          {timeframe === 'custom' && (
+            <div className="px-6 pb-4 flex flex-wrap gap-4 items-center bg-gray-50/50 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500 font-medium">From</span>
+                <input 
+                  type="date" 
+                  className="border border-gray-300 rounded-md text-sm p-1.5"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  max={endDate}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500 font-medium">To</span>
+                <input 
+                  type="date" 
+                  className="border border-gray-300 rounded-md text-sm p-1.5"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  min={startDate}
+                />
+              </div>
+            </div>
+          )}
+
+          <CardContent className={timeframe === 'custom' ? "pt-4" : "pt-6"}>
+            {!daily || daily.length === 0 ? <p className="text-gray-500">No recent collections in this period.</p> : (
+              <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
                 {daily.map((item, i) => (
                   <div key={i} className="flex justify-between items-center border-b border-gray-100 pb-2">
                     <div className="flex flex-col">
-                      <span className="font-medium">{new Date(item.paymentDate).toLocaleDateString()} - {item.student?.studentName}</span>
-                      <span className="text-xs text-gray-500">Collected by: {item.recordedBy?.username || 'System'}</span>
+                      <span className="font-medium">
+                        {new Date(item.paymentDate).toLocaleDateString()} - {item.student?.studentName || item.studentId?.studentName}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        Admission No: {item.student?.admissionNumber || item.studentId?.admissionNumber} | Collected by: {item.recordedBy?.username || item.recordedById?.username || ''}
+                      </span>
                     </div>
                     <span className="font-bold text-emerald-600">Rs. {item.amount?.toFixed(2) || '0.00'}</span>
                   </div>

@@ -8,17 +8,31 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setError('');
+    setLoading(true);
     try {
-      const response = await api.post('/auth/login', { username, password });
+      const response = await api.post('/auth/login', {
+        username: username.trim(),
+        password,
+      });
+
+      if (!response.data?.token || !response.data?.user) {
+        setError('Login failed. Please try again.');
+        return;
+      }
+
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
       navigate('/dashboard', { replace: true });
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -86,9 +100,10 @@ const Login = () => {
           </div>
           <button
             type="submit"
-            className="w-full bg-orange-600 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
+            disabled={loading}
+            className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-70 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
           >
-            Login
+            {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
       </div>

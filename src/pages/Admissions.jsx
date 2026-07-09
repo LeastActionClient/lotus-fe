@@ -21,7 +21,9 @@ const Admissions = () => {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   
   const [manualForm, setManualForm] = useState({
-    studentName: '', fatherName: '', motherName: '', fatherPhone: '', motherPhone: '', address: '', admissionNumber: ''
+    studentName: '', fatherName: '', motherName: '', fatherPhone: '', motherPhone: '', address: '', admissionNumber: '',
+    dateOfBirth: '', gender: '', bloodGroup: '', aadhaarNumber: '', religion: '', community: '', caste: '', rcc: '', nationality: '', 
+    fatherOccupation: '', motherOccupation: '', guardian: '', city: '', state: '', pincode: '', whatsappNumber: '', emisNumber: ''
   });
   const [file, setFile] = useState(null);
 
@@ -57,7 +59,11 @@ const Admissions = () => {
     try {
       await api.post('/students/manual', { ...manualForm, currentClass: selectedClass, section: selectedSection });
       setIsManualModalOpen(false);
-      setManualForm({ studentName: '', fatherName: '', motherName: '', fatherPhone: '', motherPhone: '', address: '', admissionNumber: '' });
+      setManualForm({ 
+        studentName: '', fatherName: '', motherName: '', fatherPhone: '', motherPhone: '', address: '', admissionNumber: '',
+        dateOfBirth: '', gender: '', bloodGroup: '', aadhaarNumber: '', religion: '', community: '', caste: '', rcc: '', nationality: '', 
+        fatherOccupation: '', motherOccupation: '', guardian: '', city: '', state: '', pincode: '', whatsappNumber: '', emisNumber: ''
+      });
       fetchStudents();
       alert("Student added successfully!");
     } catch (error) {
@@ -115,37 +121,39 @@ const Admissions = () => {
       <Card className="bg-orange-50 border-orange-100">
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-4 items-end">
-            <div className="flex-1 space-y-1">
-              <Label>Class</Label>
-              <select
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600 focus:border-transparent"
-                value={selectedClass}
-                onChange={(e) => {
-                  setSelectedClass(e.target.value);
-                  setSelectedSection('');
-                }}
-              >
-                <option value="">Select Class</option>
-                {classes.map(c => (
-                  <option key={c.id} value={c.name}>{c.name}</option>
-                ))}
-              </select>
+            <div className="flex w-full md:flex-1 gap-4">
+              <div className="flex-1 space-y-1">
+                <Label>Class</Label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600 focus:border-transparent"
+                  value={selectedClass}
+                  onChange={(e) => {
+                    setSelectedClass(e.target.value);
+                    setSelectedSection('');
+                  }}
+                >
+                  <option value="">Select Class</option>
+                  {classes.map(c => (
+                    <option key={c._id || c.id} value={c.name}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex-1 space-y-1">
+                <Label className="whitespace-nowrap">Section (Optional)</Label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600 focus:border-transparent"
+                  value={selectedSection}
+                  onChange={(e) => setSelectedSection(e.target.value)}
+                  disabled={!selectedClass || sections.length === 0}
+                >
+                  <option value="">No Section</option>
+                  {sections.map((s) => (
+                    <option key={s._id || s.id} value={s.name}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <div className="flex-1 space-y-1">
-              <Label>Section (Optional)</Label>
-              <select
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600 focus:border-transparent"
-                value={selectedSection}
-                onChange={(e) => setSelectedSection(e.target.value)}
-                disabled={!selectedClass || sections.length === 0}
-              >
-                <option value="">No Section</option>
-                {sections.map((s) => (
-                  <option key={s.id} value={s.name}>{s.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full md:w-auto">
               <Button onClick={() => {
                 if (!selectedClass) { alert("Please select a class first"); return; }
                 setIsImportModalOpen(true);
@@ -186,7 +194,7 @@ const Admissions = () => {
                 </TableRow>
               ) : (
                 students.map((student) => (
-                  <TableRow key={student.id}>
+                  <TableRow key={student._id || student.id}>
                     <TableCell className="font-mono text-sm">{student.admissionNumber}</TableCell>
                     <TableCell className="font-medium">{student.studentName}</TableCell>
                     <TableCell>{student.currentClass} {student.section && `- ${student.section}`}</TableCell>
@@ -201,7 +209,7 @@ const Admissions = () => {
                     <TableCell>{new Date(student.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                        {student.addedBy?.username || 'System/Unknown'}
+                        {student.addedById?.username || 'System/Unknown'}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
@@ -217,102 +225,271 @@ const Admissions = () => {
         </CardContent>
       </Card>
 
-      <Modal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} title="Student Details">
+      <Modal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} title="Student Details" className="max-w-4xl">
         {selectedStudent && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-500">Student Name</p>
-                <p className="font-medium text-gray-900">{selectedStudent.studentName}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Admission No</p>
-                <p className="font-mono text-gray-900">{selectedStudent.admissionNumber}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Class & Section</p>
-                <p className="font-medium text-gray-900">{selectedStudent.currentClass} {selectedStudent.section && `- ${selectedStudent.section}`}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Enrollment Date</p>
-                <p className="text-gray-900">{new Date(selectedStudent.createdAt).toLocaleDateString()}</p>
+          <div className="space-y-6 max-h-[75vh] overflow-y-auto pr-2">
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-3 border-b pb-2">Personal Information</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Student Name</p>
+                  <p className="font-medium text-gray-900">{selectedStudent.studentName}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Admission No</p>
+                  <p className="font-mono text-gray-900">{selectedStudent.admissionNumber}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">EMIS No</p>
+                  <p className="font-mono text-gray-900">{selectedStudent.emisNumber || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Class & Section</p>
+                  <p className="font-medium text-gray-900">{selectedStudent.currentClass} {selectedStudent.section && `- ${selectedStudent.section}`}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Enrollment Date</p>
+                  <p className="text-gray-900">{new Date(selectedStudent.createdAt).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Date of Birth</p>
+                  <p className="text-gray-900">{selectedStudent.dateOfBirth ? new Date(selectedStudent.dateOfBirth).toLocaleDateString() : '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Gender</p>
+                  <p className="text-gray-900">{selectedStudent.gender || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Blood Group</p>
+                  <p className="text-gray-900">{selectedStudent.bloodGroup || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Aadhaar No</p>
+                  <p className="text-gray-900">{selectedStudent.aadhaarNumber || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Religion</p>
+                  <p className="text-gray-900">{selectedStudent.religion || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Community</p>
+                  <p className="text-gray-900">{selectedStudent.community || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Caste</p>
+                  <p className="text-gray-900">{selectedStudent.caste || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">RCC</p>
+                  <p className="text-gray-900">{selectedStudent.rcc || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Nationality</p>
+                  <p className="text-gray-900">{selectedStudent.nationality || '-'}</p>
+                </div>
               </div>
             </div>
             
-            <div className="border-t border-gray-200 pt-4 grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-500">Father Name</p>
-                <p className="text-gray-900">{selectedStudent.fatherName}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Mother Name</p>
-                <p className="text-gray-900">{selectedStudent.motherName}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Father Phone</p>
-                <p className="text-gray-900">{selectedStudent.fatherPhone}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Mother Phone</p>
-                <p className="text-gray-900">{selectedStudent.motherPhone}</p>
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-3 border-b pb-2">Parent & Guardian Information</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Father Name</p>
+                  <p className="text-gray-900">{selectedStudent.fatherName || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Mother Name</p>
+                  <p className="text-gray-900">{selectedStudent.motherName || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Guardian Name</p>
+                  <p className="text-gray-900">{selectedStudent.guardian || '-'}</p>
+                </div>
+                <div className="hidden md:block"></div> {/* spacer */}
+                <div>
+                  <p className="text-sm text-gray-500">Father Phone</p>
+                  <p className="text-gray-900">{selectedStudent.fatherPhone || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Mother Phone</p>
+                  <p className="text-gray-900">{selectedStudent.motherPhone || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Whatsapp Number</p>
+                  <p className="text-gray-900">{selectedStudent.whatsappNumber || '-'}</p>
+                </div>
+                <div className="hidden md:block"></div> {/* spacer */}
+                <div>
+                  <p className="text-sm text-gray-500">Father Occupation</p>
+                  <p className="text-gray-900">{selectedStudent.fatherOccupation || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Mother Occupation</p>
+                  <p className="text-gray-900">{selectedStudent.motherOccupation || '-'}</p>
+                </div>
               </div>
             </div>
 
-            <div className="border-t border-gray-200 pt-4">
-              <p className="text-sm text-gray-500">Address</p>
-              <p className="text-gray-900">{selectedStudent.address}</p>
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-3 border-b pb-2">Address Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="md:col-span-4">
+                  <p className="text-sm text-gray-500">Street Address</p>
+                  <p className="text-gray-900">{selectedStudent.address || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">City</p>
+                  <p className="text-gray-900">{selectedStudent.city || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">State</p>
+                  <p className="text-gray-900">{selectedStudent.state || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Pincode</p>
+                  <p className="text-gray-900">{selectedStudent.pincode || '-'}</p>
+                </div>
+              </div>
             </div>
             
-            <div className="pt-4 flex justify-end">
+            <div className="pt-4 flex justify-end sticky bottom-0 bg-white border-t py-3 z-10">
               <Button onClick={() => setIsViewModalOpen(false)}>Close</Button>
             </div>
           </div>
         )}
       </Modal>
 
-      <Modal isOpen={isManualModalOpen} onClose={() => setIsManualModalOpen(false)} title="Add Student Manually">
-        <form onSubmit={handleManualSubmit} className="space-y-4">
-          <div className="bg-orange-50 p-3 rounded-md mb-4 border border-orange-100 flex items-center">
+      <Modal isOpen={isManualModalOpen} onClose={() => setIsManualModalOpen(false)} title="Add Student Manually" className="max-w-4xl">
+        <form onSubmit={handleManualSubmit} className="space-y-6 max-h-[75vh] overflow-y-auto pr-2">
+          <div className="bg-orange-50 p-3 rounded-md border border-orange-100 flex items-center sticky top-0 z-10 shadow-sm">
             <Users className="text-orange-600 mr-2 h-5 w-5" />
             <span className="text-sm font-medium text-orange-900">
               Adding to Class: {selectedClass} {selectedSection && `(Section ${selectedSection})`}
             </span>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Admission Number</Label>
-              <Input value={manualForm.admissionNumber} onChange={(e) => setManualForm({...manualForm, admissionNumber: e.target.value})} placeholder="Auto-generated if empty" />
-            </div>
-            <div className="space-y-2">
-              <Label>Student Name *</Label>
-              <Input required value={manualForm.studentName} onChange={(e) => setManualForm({...manualForm, studentName: e.target.value})} />
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-3 border-b pb-2">Personal Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Admission Number</Label>
+                <Input value={manualForm.admissionNumber} onChange={(e) => setManualForm({...manualForm, admissionNumber: e.target.value})} placeholder="Auto-generated if empty" />
+              </div>
+              <div className="space-y-2">
+                <Label>EMIS No</Label>
+                <Input value={manualForm.emisNumber} onChange={(e) => setManualForm({...manualForm, emisNumber: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label>Student Name *</Label>
+                <Input required value={manualForm.studentName} onChange={(e) => setManualForm({...manualForm, studentName: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label>Date of Birth</Label>
+                <Input type="date" value={manualForm.dateOfBirth} onChange={(e) => setManualForm({...manualForm, dateOfBirth: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label>Gender</Label>
+                <select className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600" value={manualForm.gender} onChange={(e) => setManualForm({...manualForm, gender: e.target.value})}>
+                  <option value="">Select</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>Blood Group</Label>
+                <Input value={manualForm.bloodGroup} onChange={(e) => setManualForm({...manualForm, bloodGroup: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label>Aadhaar No</Label>
+                <Input value={manualForm.aadhaarNumber} onChange={(e) => setManualForm({...manualForm, aadhaarNumber: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label>Religion</Label>
+                <Input value={manualForm.religion} onChange={(e) => setManualForm({...manualForm, religion: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label>Community</Label>
+                <Input value={manualForm.community} onChange={(e) => setManualForm({...manualForm, community: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label>Caste</Label>
+                <Input value={manualForm.caste} onChange={(e) => setManualForm({...manualForm, caste: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label>RCC</Label>
+                <Input value={manualForm.rcc} onChange={(e) => setManualForm({...manualForm, rcc: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label>Nationality</Label>
+                <Input value={manualForm.nationality} onChange={(e) => setManualForm({...manualForm, nationality: e.target.value})} />
+              </div>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Father Name</Label>
-              <Input value={manualForm.fatherName} onChange={(e) => setManualForm({...manualForm, fatherName: e.target.value})} />
-            </div>
-            <div className="space-y-2">
-              <Label>Mother Name</Label>
-              <Input value={manualForm.motherName} onChange={(e) => setManualForm({...manualForm, motherName: e.target.value})} />
-            </div>
-            <div className="space-y-2">
-              <Label>Father Phone</Label>
-              <Input value={manualForm.fatherPhone} onChange={(e) => setManualForm({...manualForm, fatherPhone: e.target.value})} />
-            </div>
-            <div className="space-y-2">
-              <Label>Mother Phone</Label>
-              <Input value={manualForm.motherPhone} onChange={(e) => setManualForm({...manualForm, motherPhone: e.target.value})} />
+
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-3 border-b pb-2">Parent & Guardian Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Father Name</Label>
+                <Input value={manualForm.fatherName} onChange={(e) => setManualForm({...manualForm, fatherName: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label>Mother Name</Label>
+                <Input value={manualForm.motherName} onChange={(e) => setManualForm({...manualForm, motherName: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label>Guardian Name</Label>
+                <Input value={manualForm.guardian} onChange={(e) => setManualForm({...manualForm, guardian: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label>Father Phone</Label>
+                <Input value={manualForm.fatherPhone} onChange={(e) => setManualForm({...manualForm, fatherPhone: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label>Mother Phone</Label>
+                <Input value={manualForm.motherPhone} onChange={(e) => setManualForm({...manualForm, motherPhone: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label>Whatsapp Number</Label>
+                <Input value={manualForm.whatsappNumber} onChange={(e) => setManualForm({...manualForm, whatsappNumber: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label>Father Occupation</Label>
+                <Input value={manualForm.fatherOccupation} onChange={(e) => setManualForm({...manualForm, fatherOccupation: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label>Mother Occupation</Label>
+                <Input value={manualForm.motherOccupation} onChange={(e) => setManualForm({...manualForm, motherOccupation: e.target.value})} />
+              </div>
             </div>
           </div>
-          <div className="space-y-2">
-            <Label>Address</Label>
-            <Input value={manualForm.address} onChange={(e) => setManualForm({...manualForm, address: e.target.value})} />
+
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-3 border-b pb-2">Address Information</h3>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Street Address</Label>
+                <Input value={manualForm.address} onChange={(e) => setManualForm({...manualForm, address: e.target.value})} />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>City</Label>
+                  <Input value={manualForm.city} onChange={(e) => setManualForm({...manualForm, city: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <Label>State</Label>
+                  <Input value={manualForm.state} onChange={(e) => setManualForm({...manualForm, state: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Pincode</Label>
+                  <Input value={manualForm.pincode} onChange={(e) => setManualForm({...manualForm, pincode: e.target.value})} />
+                </div>
+              </div>
+            </div>
           </div>
           
-          <div className="pt-4 flex justify-end gap-2">
+          <div className="pt-4 flex justify-end gap-2 sticky bottom-0 bg-white border-t py-3 z-10">
             <Button type="button" variant="outline" onClick={() => setIsManualModalOpen(false)}>Cancel</Button>
             <Button type="submit">Add Student</Button>
           </div>
@@ -332,13 +509,16 @@ const Admissions = () => {
             <strong>Expected Excel Columns:</strong>
             <ul className="list-disc ml-5 mt-1 grid grid-cols-2 gap-x-4">
               <li>Student Name (Required)</li>
-              <li>Admission No (Optional)</li>
+              <li>Admission No</li>
+              <li>EMIS No</li>
               <li>DOB (YYYY-MM-DD)</li>
               <li>Gender / Sex</li>
               <li>Blood Group</li>
               <li>Aadhar No</li>
               <li>Religion</li>
-              <li>Community / Caste</li>
+              <li>Community</li>
+              <li>Caste</li>
+              <li>RCC</li>
               <li>Nationality</li>
               <li>Father Name</li>
               <li>Father Phone</li>
@@ -347,6 +527,7 @@ const Admissions = () => {
               <li>Mother Phone</li>
               <li>Mother Occupation</li>
               <li>Guardian Name</li>
+              <li>Whatsapp Number</li>
               <li>Address</li>
               <li>City</li>
               <li>State</li>

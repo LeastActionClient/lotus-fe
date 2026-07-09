@@ -74,20 +74,21 @@ const Students = () => {
     e.preventDefault();
     if (!selectedClass) return;
     try {
-      await api.post(`/classes/${selectedClass.id}/sections`, { name: newSectionName });
+      await api.post(`/classes/${selectedClass._id}/sections`, { name: newSectionName });
       setNewSectionName('');
       setIsSectionModalOpen(false);
       fetchClasses(); // Refresh classes which includes sections
       // Update selected class reference
       const res = await api.get('/classes');
       setClasses(res.data);
-      setSelectedClass(res.data.find((c) => c.id === selectedClass.id));
+      setSelectedClass(res.data.find((c) => c._id === selectedClass._id));
     } catch (error) {
       console.error("Error creating section", error);
     }
   };
 
   const filteredStudents = students.filter(s => {
+    if (s.studentStatus && s.studentStatus !== 'Active') return false;
     let match = false;
     if (viewMode === 'SEARCH_RESULTS') {
       const q = searchQuery.toLowerCase();
@@ -162,7 +163,7 @@ const Students = () => {
             ) : (
               classes.map((cls) => (
                 <Card 
-                  key={cls.id} 
+                  key={cls._id} 
                   className="cursor-pointer hover:border-orange-600 hover:shadow-md transition-all group"
                   onClick={() => { setSelectedClass(cls); setViewMode('SECTIONS'); }}
                 >
@@ -201,7 +202,7 @@ const Students = () => {
             ) : (
               selectedClass.sections?.map((sec) => (
                 <Card 
-                  key={sec.id} 
+                  key={sec._id} 
                   className="cursor-pointer hover:border-orange-600 hover:shadow-md transition-all group"
                   onClick={() => { setSelectedSection(sec); setViewMode('STUDENTS'); }}
                 >
@@ -265,7 +266,7 @@ const Students = () => {
                     </TableRow>
                   ) : (
                     filteredStudents.map((student) => (
-                      <TableRow key={student.id}>
+                      <TableRow key={student._id}>
                         <TableCell className="font-mono text-sm">{student.admissionNumber}</TableCell>
                         <TableCell className="font-medium text-orange-600">{student.studentName}</TableCell>
                         <TableCell>{student.currentClass} - {student.section}</TableCell>
@@ -284,7 +285,7 @@ const Students = () => {
                           <Button variant="ghost" size="sm" onClick={() => openViewModal(student)}>
                             <Eye className="h-4 w-4 mr-2" /> View
                           </Button>
-                          <Link to={`/dashboard/students/edit/${student.id}`}>
+                          <Link to={`/dashboard/students/edit/${student._id}`}>
                             <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
                               <Edit className="h-4 w-4 mr-2" /> Edit
                             </Button>
@@ -293,7 +294,7 @@ const Students = () => {
                             <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={async () => {
                               if(window.confirm('Are you sure you want to delete this student?')) {
                                 try {
-                                  await api.delete(`/students/${student.id}`);
+                                  await api.delete(`/students/${student._id}`);
                                   fetchStudents();
                                 } catch(e) { 
                               alert(e.response?.data?.error || 'Error deleting student'); 
