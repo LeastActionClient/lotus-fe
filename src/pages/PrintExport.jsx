@@ -45,12 +45,9 @@ const PrintExport = () => {
   const [selectedClass, setSelectedClass] = useState('FULL_SCHOOL');
   const [selectedSection, setSelectedSection] = useState('ALL_SECTIONS');
   const [phoneSearch, setPhoneSearch] = useState('');
-<<<<<<< HEAD
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-=======
   const [rccOnly, setRccOnly] = useState(false);
->>>>>>> 17312b3df766fb4759b013b92b581d25785c3e95
 
   const [selectedFields, setSelectedFields] = useState(
     AVAILABLE_FIELDS.reduce((acc, field) => ({ ...acc, [field.id]: true }), {})
