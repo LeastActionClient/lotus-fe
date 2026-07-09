@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { Card, CardContent } from '../components/ui/Card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
-import { FileCheck, Plus, Trash2, Edit } from 'lucide-react';
+import { FileCheck, Plus, Trash2, Edit, Package, ArrowDownCircle, ArrowUpCircle, History } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
@@ -21,6 +21,14 @@ const IncludedCharges = () => {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState(true);
+  const [stockQuantity, setStockQuantity] = useState('');
+  const [lowStockThreshold, setLowStockThreshold] = useState('5');
+  const [stockUnit, setStockUnit] = useState('pcs');
+  const [stockAdjustOpen, setStockAdjustOpen] = useState(false);
+  const [stockHistoryOpen, setStockHistoryOpen] = useState(false);
+  const [selectedCharge, setSelectedCharge] = useState(null);
+  const [stockTransactions, setStockTransactions] = useState([]);
+  const [adjustForm, setAdjustForm] = useState({ type: 'IN', quantity: '', reason: '' });
 
   // Search, Pagination, Sort
   const [searchTerm, setSearchTerm] = useState('');
@@ -31,6 +39,8 @@ const IncludedCharges = () => {
     fetchCharges();
   }, []);
 
+  const getChargeId = (charge) => charge?._id || charge?.id;
+
   const fetchCharges = async () => {
     try {
       const res = await api.get('/included-charges');
@@ -40,10 +50,37 @@ const IncludedCharges = () => {
     }
   };
 
+  const openStockAdjust = (charge) => {
+    setSelectedCharge(charge);
+    setAdjustForm({ type: 'IN', quantity: '', reason: '' });
+    setStockAdjustOpen(true);
+  };
+
+  const openStockHistory = async (charge) => {
+    setSelectedCharge(charge);
+    try {
+      const chargeId = getChargeId(charge);
+      const res = await api.get(`/included-charges/${chargeId}/stock-transactions`);
+      setStockTransactions(res.data);
+      setStockHistoryOpen(true);
+    } catch (error) {
+      console.error('Error fetching stock history', error);
+      alert('Failed to load stock history');
+    }
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     try {
-      const payload = { name, amount: parseFloat(amount), description, status };
+      const payload = {
+        name,
+        amount: parseFloat(amount),
+        description,
+        status,
+        stockQuantity: Number(stockQuantity || 0),
+        lowStockThreshold: Number(lowStockThreshold || 5),
+        stockUnit
+      };
       if (editingId) {
         await api.put(`/included-charges/${editingId}`, payload);
       } else {
@@ -70,11 +107,14 @@ const IncludedCharges = () => {
   };
 
   const openEdit = (charge) => {
-    setEditingId(charge.id);
+    setEditingId(getChargeId(charge));
     setName(charge.name);
     setAmount(charge.amount);
     setDescription(charge.description || '');
     setStatus(charge.status);
+    setStockQuantity(charge.stockQuantity ?? 0);
+    setLowStockThreshold(charge.lowStockThreshold ?? 5);
+    setStockUnit(charge.stockUnit || 'pcs');
     setIsModalOpen(true);
   };
 
@@ -84,6 +124,27 @@ const IncludedCharges = () => {
     setAmount('');
     setDescription('');
     setStatus(true);
+    setStockQuantity('');
+    setLowStockThreshold('5');
+    setStockUnit('pcs');
+  };
+
+  const handleStockAdjust = async (e) => {
+    e.preventDefault();
+    if (!selectedCharge) return;
+    try {
+      const chargeId = getChargeId(selectedCharge);
+      await api.post(`/included-charges/${chargeId}/stock`, {
+        type: adjustForm.type,
+        quantity: Number(adjustForm.quantity),
+        reason: adjustForm.reason
+      });
+      setStockAdjustOpen(false);
+      fetchCharges();
+    } catch (error) {
+      console.error('Error adjusting stock', error);
+      alert(error.response?.data?.error || 'Failed to adjust stock');
+    }
   };
 
   const filteredCharges = charges.filter(c => 
@@ -152,6 +213,7 @@ const IncludedCharges = () => {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Amount</TableHead>
+                <TableHead>Stock</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Created Date</TableHead>
@@ -162,15 +224,32 @@ const IncludedCharges = () => {
             <TableBody>
               {filteredCharges.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center h-32 text-gray-500">
+                  <TableCell colSpan={8} className="text-center h-32 text-gray-500">
                     No included charges found.
                   </TableCell>
                 </TableRow>
               ) : (
                 paginatedCharges.map((charge) => (
-                  <TableRow key={charge.id}>
+                  <TableRow key={getChargeId(charge)}>
                     <TableCell className="font-medium text-gray-900">{charge.name}</TableCell>
                     <TableCell>₹ {charge.amount}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium w-fit ${
+                          (charge.stockQuantity || 0) <= 0
+                            ? 'bg-red-100 text-red-800'
+                            : (charge.stockQuantity || 0) <= (charge.lowStockThreshold ?? 5)
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-green-100 text-green-800'
+                        }`}>
+                          <Package className="mr-1 h-3 w-3" />
+                          {charge.stockQuantity || 0} {charge.stockUnit || 'pcs'}
+                        </span>
+                        <span className="text-[11px] text-gray-500 mt-1">
+                          Low stock at {charge.lowStockThreshold ?? 5}
+                        </span>
+                      </div>
+                    </TableCell>
                     <TableCell>{charge.description}</TableCell>
                     <TableCell>
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -185,7 +264,13 @@ const IncludedCharges = () => {
                       <Button variant="ghost" size="sm" onClick={() => openEdit(charge)}>
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(charge.id)}>
+                      <Button variant="ghost" size="sm" onClick={() => openStockAdjust(charge)} title="Adjust stock">
+                        <ArrowDownCircle className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => openStockHistory(charge)} title="Stock history">
+                        <History className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(getChargeId(charge))}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </TableCell>
@@ -221,6 +306,36 @@ const IncludedCharges = () => {
               required 
             />
           </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>Current Stock</Label>
+              <Input
+                type="number"
+                min="0"
+                value={stockQuantity}
+                onChange={(e) => setStockQuantity(e.target.value)}
+                placeholder="0"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Low Stock Threshold</Label>
+              <Input
+                type="number"
+                min="0"
+                value={lowStockThreshold}
+                onChange={(e) => setLowStockThreshold(e.target.value)}
+                placeholder="5"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Stock Unit</Label>
+              <Input
+                value={stockUnit}
+                onChange={(e) => setStockUnit(e.target.value)}
+                placeholder="pcs, kg, packets"
+              />
+            </div>
+          </div>
           <div className="space-y-2">
             <Label>Description</Label>
             <Input 
@@ -245,6 +360,83 @@ const IncludedCharges = () => {
             <Button type="submit">Save</Button>
           </div>
         </form>
+      </Modal>
+
+      <Modal isOpen={stockAdjustOpen} onClose={() => setStockAdjustOpen(false)} title={`Adjust Stock${selectedCharge ? ` - ${selectedCharge.name}` : ''}`}>
+        <form onSubmit={handleStockAdjust} className="space-y-4 pt-2">
+          <div className="space-y-2">
+            <Label>Transaction Type</Label>
+            <select
+              className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+              value={adjustForm.type}
+              onChange={(e) => setAdjustForm(prev => ({ ...prev, type: e.target.value }))}
+            >
+              <option value="IN">Stock In</option>
+              <option value="OUT">Stock Out</option>
+              <option value="RETURN">Return to Stock</option>
+              <option value="ADJUSTMENT">Manual Adjustment</option>
+            </select>
+          </div>
+          <div className="space-y-2">
+            <Label>Quantity</Label>
+            <Input
+              type="number"
+              min="1"
+              value={adjustForm.quantity}
+              onChange={(e) => setAdjustForm(prev => ({ ...prev, quantity: e.target.value }))}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Reason</Label>
+            <Input
+              value={adjustForm.reason}
+              onChange={(e) => setAdjustForm(prev => ({ ...prev, reason: e.target.value }))}
+              placeholder="Optional reason"
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">
+            <Button type="button" variant="ghost" onClick={() => setStockAdjustOpen(false)}>Cancel</Button>
+            <Button type="submit">Save Adjustment</Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal isOpen={stockHistoryOpen} onClose={() => setStockHistoryOpen(false)} title={`Stock History${selectedCharge ? ` - ${selectedCharge.name}` : ''}`} className="max-w-3xl">
+        <div className="max-h-[60vh] overflow-y-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Qty</TableHead>
+                <TableHead>Prev</TableHead>
+                <TableHead>New</TableHead>
+                <TableHead>Reason</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {stockTransactions.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center h-24 text-gray-500">
+                    No stock history found.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                stockTransactions.map((tx) => (
+                  <TableRow key={tx._id}>
+                    <TableCell>{new Date(tx.createdAt).toLocaleString()}</TableCell>
+                    <TableCell>{tx.type}</TableCell>
+                    <TableCell>{tx.quantity}</TableCell>
+                    <TableCell>{tx.previousStock}</TableCell>
+                    <TableCell>{tx.newStock}</TableCell>
+                    <TableCell>{tx.reason || '-'}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </Modal>
     </div>
   );
