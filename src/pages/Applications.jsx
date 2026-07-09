@@ -20,7 +20,7 @@ const Applications = () => {
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-  const [customIds, setCustomIds] = useState({ nextApplicationNo: '', nextAdmissionNo: '' });
+  const [customIds, setCustomIds] = useState({ nextApplicationNo: '' });
   const [formData, setFormData] = useState({
     applicationNo: '', date: '', adminNo: '', emisNo: '',
     studentName: '', studentNameTamil: '',
@@ -45,7 +45,7 @@ const Applications = () => {
       setFormData(prev => ({
         ...prev,
         applicationNo: res.data.applicationNo,
-        adminNo: res.data.adminNo
+        adminNo: ''
       }));
     } catch (error) {
       console.error("Error fetching next numbers", error);
@@ -83,8 +83,7 @@ const Applications = () => {
     try {
       const res = await api.get('/settings');
       setCustomIds({ 
-        nextApplicationNo: res.data.nextApplicationNo || '', 
-        nextAdmissionNo: res.data.nextAdmissionNo || '' 
+        nextApplicationNo: res.data.nextApplicationNo || '' 
       });
     } catch(e) { console.error(e); }
   };
@@ -567,15 +566,12 @@ const Applications = () => {
 
       <Modal isOpen={isCustomizeModalOpen} onClose={() => setIsCustomizeModalOpen(false)} title="Customize ID Formats">
         <form onSubmit={handleSaveCustomIds} className="space-y-4 pt-2">
-          <p className="text-sm text-gray-500 mb-4">Set the starting prefix or full number for the next application and admission. The system will auto-increment from this value.</p>
+            <p className="text-sm text-gray-500 mb-4">Set the starting prefix or full number for the next application. The system will auto-increment from this value.</p>
           <div className="space-y-2">
             <Label htmlFor="nextApplicationNo">Next Application No.</Label>
             <Input id="nextApplicationNo" value={customIds.nextApplicationNo} onChange={(e) => setCustomIds({...customIds, nextApplicationNo: e.target.value})} placeholder="e.g. APP-2027-001" />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="nextAdmissionNo">Next Admission No.</Label>
-            <Input id="nextAdmissionNo" value={customIds.nextAdmissionNo} onChange={(e) => setCustomIds({...customIds, nextAdmissionNo: e.target.value})} placeholder="e.g. ADM-2027-001" />
-          </div>
+
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">
             <Button type="button" variant="ghost" onClick={() => setIsCustomizeModalOpen(false)}>Cancel</Button>
             <Button type="submit">Save Formats</Button>

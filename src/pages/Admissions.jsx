@@ -547,7 +547,7 @@ const Admissions = () => {
         )}
       </Modal>
 
-      <Modal isOpen={isManualModalOpen} onClose={() => setIsManualModalOpen(false)} title="Add Student Manually" className="max-w-4xl">
+      <Modal isOpen={isManualModalOpen} onClose={() => setIsManualModalOpen(false)} title="KASTHURI NURSERY & PRIMARY SCHOOL APPLICATION FORM" className="max-w-4xl">
         <form onSubmit={handleManualSubmit} className="space-y-6 max-h-[75vh] overflow-y-auto pr-2">
           <div className="bg-orange-50 p-3 rounded-md border border-orange-100 flex items-center sticky top-0 z-10 shadow-sm">
             <Users className="text-orange-600 mr-2 h-5 w-5" />
@@ -560,8 +560,8 @@ const Admissions = () => {
             <h3 className="text-lg font-medium text-gray-900 mb-3 border-b pb-2">Personal Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label>Admission Number</Label>
-                <Input value={manualForm.admissionNumber} onChange={(e) => setManualForm({...manualForm, admissionNumber: e.target.value})} placeholder="Auto-generated if empty" />
+                <Label>Admission Number *</Label>
+                <Input required value={manualForm.admissionNumber} onChange={(e) => setManualForm({...manualForm, admissionNumber: e.target.value})} placeholder="Enter admission number" />
               </div>
               <div className="space-y-2">
                 <Label>EMIS No</Label>
