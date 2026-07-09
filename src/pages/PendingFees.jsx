@@ -37,6 +37,14 @@ const PendingFees = () => {
     return s.studentFees?.reduce((sum, f) => sum + (f.totalAmount || 0), 0) || 0;
   };
 
+  const getCurrentPending = (s) => {
+    return s.currentClassFees?.reduce((sum, f) => sum + (f.remainingAmount || 0), 0) || 0;
+  };
+
+  const getPreviousPending = (s) => {
+    return s.previousClassFees?.reduce((sum, f) => sum + (f.remainingAmount || 0), 0) || 0;
+  };
+
   const fetchStudents = async () => {
     try {
       const res = await api.get('/students');
@@ -237,14 +245,16 @@ const PendingFees = () => {
                   <TableHead>Class & Section</TableHead>
                   <TableHead className="text-right">Total Fee</TableHead>
                   <TableHead className="text-right">Paid Amount</TableHead>
-                  <TableHead className="text-right font-bold">Pending</TableHead>
+                  <TableHead className="text-right">Current Pending</TableHead>
+                  <TableHead className="text-right">Previous Pending</TableHead>
+                  <TableHead className="text-right font-bold">Total Due</TableHead>
                   <TableHead>Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredStudents.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center h-32 text-gray-500">
+                    <TableCell colSpan={10} className="text-center h-32 text-gray-500">
                       No students match your filters.
                     </TableCell>
                   </TableRow>
@@ -253,6 +263,9 @@ const PendingFees = () => {
                     const totalPending = getStudentTotalPending(student);
                     const totalPaid = getStudentTotalPaid(student);
                     const totalFee = getStudentTotalFee(student);
+                    const currentPending = getCurrentPending(student);
+                    const previousPending = getPreviousPending(student);
+                    const hasPreviousFees = previousPending > 0;
                     
                     return (
                       <TableRow key={student._id}>
@@ -269,13 +282,34 @@ const PendingFees = () => {
                             </span>
                           ) : (
                             <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
-                              {student.studentStatus} (Old)
+                              {student.studentStatus}
                             </span>
                           )}
                         </TableCell>
-                        <TableCell>{student.currentClass} {student.section ? `- ${student.section}` : ''}</TableCell>
+                        <TableCell>
+                          {student.currentClass} {student.section ? `- ${student.section}` : ''}
+                          {hasPreviousFees && (
+                            <span className="ml-2 inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
+                              Carried Forward
+                            </span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-right font-medium">₹{totalFee.toFixed(2)}</TableCell>
                         <TableCell className="text-right text-emerald-600">₹{totalPaid.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">
+                          <span className={currentPending > 0 ? 'text-orange-600 font-medium' : 'text-gray-400'}>
+                            ₹{currentPending.toFixed(2)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {hasPreviousFees ? (
+                            <span className="text-red-600 font-medium">
+                              ₹{previousPending.toFixed(2)}
+                            </span>
+                          ) : (
+                            <span className="text-gray-300">—</span>
+                          )}
+                        </TableCell>
                         <TableCell className={`text-right font-bold ${totalPending > 0 ? 'text-red-600' : 'text-green-600'}`}>
                           ₹{totalPending.toFixed(2)}
                         </TableCell>
@@ -283,7 +317,7 @@ const PendingFees = () => {
                           {totalPending > 0 ? (
                             <Button 
                               size="sm" 
-                              onClick={() => navigate('/dashboard/payments')}
+                              onClick={() => navigate('/dashboard/payments', { state: { studentId: student._id } })}
                               className="bg-orange-600 hover:bg-orange-700 text-white"
                             >
                               Pay Pending

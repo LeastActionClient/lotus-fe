@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
 import { Card, CardContent } from '../components/ui/Card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
@@ -8,9 +8,12 @@ import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import Select from 'react-select';
+import { useLocation } from 'react-router-dom';
 
 const Payments = () => {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const location = useLocation();
+  const incomingStudentId = useRef(location.state?.studentId);
   const [payments, setPayments] = useState([]);
   const [students, setStudents] = useState([]);
   const [feeCategories, setFeeCategories] = useState([]);
@@ -47,6 +50,32 @@ const Payments = () => {
 
   useEffect(() => {
     fetchData();
+  }, []);
+
+  useEffect(() => {
+    const sid = incomingStudentId.current;
+    if (!sid) return;
+    const loadIncomingStudent = async () => {
+      try {
+        const res = await api.get(`/students/${sid}`);
+        const student = res.data;
+        setStudents(prev => {
+          const idx = prev.findIndex(s => (s._id || s.id) === sid);
+          if (idx >= 0) {
+            const updated = [...prev];
+            updated[idx] = student;
+            return updated;
+          }
+          return [student, ...prev];
+        });
+        setSelectedStudentId(sid);
+        setIsModalOpen(true);
+        window.history.replaceState({}, document.title);
+      } catch (err) {
+        console.error('Failed to load student for payment', err);
+      }
+    };
+    loadIncomingStudent();
   }, []);
 
   useEffect(() => {
@@ -340,15 +369,36 @@ const Payments = () => {
                   Full Fees - Rs. {studentFees.reduce((sum, f) => sum + f.remainingAmount, 0)}
                 </option>
               )}
-              {studentFees.map(f => (
-                <option key={f._id || f.id} value={f._id || f.id}>
-                  {f.feeCategory.name} - Rs. {f.remainingAmount}
-                </option>
-              ))}
+              {studentFees.map(f => {
+                const classLabel = f.className && f.academicYear
+                  ? `[${f.className} - ${f.academicYear}]`
+                  : f.className
+                    ? `[${f.className}]`
+                    : '';
+                return (
+                  <option key={f._id || f.id} value={f._id || f.id}>
+                    {classLabel} {f.feeCategory?.name || 'Fee'} - Rs. {f.remainingAmount}
+                  </option>
+                );
+              })}
             </select>
             {selectedStudentId && studentFees.length === 0 && (
               <p className="text-xs text-red-500">This student has no pending fee dues.</p>
             )}
+            {selectedStudentId && (() => {
+              const student = students.find(s => (s._id || s.id) === selectedStudentId);
+              const prevPending = student?.previousClassFees?.reduce((sum, f) => sum + (f.remainingAmount || 0), 0) || 0;
+              if (prevPending > 0) {
+                return (
+                  <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-md">
+                    <p className="text-xs font-semibold text-purple-700">Previous Class Pending Fees</p>
+                    <p className="text-sm font-bold text-purple-800">₹{prevPending.toFixed(2)}</p>
+                    <p className="text-xs text-purple-600 mt-1">These fees are carried over from a previous academic year and are included in the list above.</p>
+                  </div>
+                );
+              }
+              return null;
+            })()}
           </div>
 
           <div className="grid grid-cols-2 gap-4">

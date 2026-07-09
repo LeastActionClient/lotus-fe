@@ -69,6 +69,14 @@ const OldStudents = () => {
     return s.studentFees?.reduce((sum, f) => sum + (f.totalAmount || 0), 0) || 0;
   };
 
+  const getCurrentPending = (s) => {
+    return s.currentClassFees?.reduce((sum, f) => sum + (f.remainingAmount || 0), 0) || 0;
+  };
+
+  const getPreviousPending = (s) => {
+    return s.previousClassFees?.reduce((sum, f) => sum + (f.remainingAmount || 0), 0) || 0;
+  };
+
   // Derived arrays
   const uniqueAcademicYears = useMemo(() => {
     const years = new Set(students.map(s => s.academicYear).filter(Boolean));
@@ -329,6 +337,7 @@ const OldStudents = () => {
                     const totalPending = getStudentTotalPending(student);
                     const totalPaid = getStudentTotalPaid(student);
                     const totalFee = getStudentTotalFee(student);
+                    const previousPending = getPreviousPending(student);
                     
                     return (
                       <TableRow key={student._id}>
@@ -350,6 +359,9 @@ const OldStudents = () => {
                         <TableCell className="text-right text-emerald-600">₹{totalPaid.toFixed(2)}</TableCell>
                         <TableCell className={`text-right font-bold ${totalPending > 0 ? 'text-red-600' : 'text-gray-500'}`}>
                           ₹{totalPending.toFixed(2)}
+                          {previousPending > 0 && (
+                            <span className="block text-xs text-purple-600 font-normal">(includes ₹{previousPending.toFixed(2)} carry-over)</span>
+                          )}
                         </TableCell>
                         <TableCell>
                           {totalPending > 0 ? (
@@ -366,7 +378,7 @@ const OldStudents = () => {
                           {totalPending > 0 ? (
                             <Button 
                               size="sm" 
-                              onClick={() => navigate('/dashboard/payments')}
+                              onClick={() => navigate('/dashboard/payments', { state: { studentId: student._id } })}
                               className="bg-orange-600 hover:bg-orange-700 text-white"
                             >
                               Pay Pending Fee
