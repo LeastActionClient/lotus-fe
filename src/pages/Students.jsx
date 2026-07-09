@@ -270,16 +270,10 @@ const Students = () => {
                         <TableCell className="font-mono text-sm">{student.admissionNumber}</TableCell>
                         <TableCell className="font-medium text-orange-600">{student.studentName}</TableCell>
                         <TableCell>{student.currentClass} - {student.section}</TableCell>
-                        <TableCell className="text-green-600 font-medium">Rs. {student.studentFees?.reduce((sum, f) => sum + f.paidAmount, 0) || 0}</TableCell>
-                        <TableCell className="text-red-500 font-medium">Rs. {(() => {
-                          if (!student.studentFees || student.studentFees.length === 0) return 0;
-                          const fullFee = student.studentFees.find(f => f.feeCategory?.name?.toLowerCase().includes('full'));
-                          if (fullFee) {
-                            const totalPaid = student.studentFees.reduce((sum, f) => sum + f.paidAmount, 0);
-                            return Math.max(0, fullFee.totalAmount - totalPaid);
-                          }
-                          return student.studentFees.reduce((sum, f) => sum + f.remainingAmount, 0);
-                        })()}</TableCell>
+                        <TableCell className="text-green-600 font-medium">Rs. {student.studentFees?.reduce((sum, f) => sum + (f.paidAmount || 0), 0) || 0}</TableCell>
+                        <TableCell className={`font-medium ${student.studentFees?.reduce((sum, f) => sum + (f.remainingAmount || 0), 0) > 0 ? 'text-red-500' : 'text-green-600'}`}>
+                          Rs. {student.studentFees?.reduce((sum, f) => sum + (f.remainingAmount || 0), 0) || 0}
+                        </TableCell>
                         <TableCell>{student.fatherPhone}</TableCell>
                         <TableCell className="text-right flex justify-end gap-2">
                           <Button variant="ghost" size="sm" onClick={() => openViewModal(student)}>

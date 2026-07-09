@@ -75,17 +75,24 @@ const FeeCategories = () => {
         return;
       }
 
-      const promises = Object.entries(specialFees)
-        .filter(([_, amount]) => amount !== '' && Number(amount) >= 0)
-        .map(([feeCategoryId, amount]) => 
-          api.post(`/fees/assign/${selectedStudentId}`, {
-            feeCategoryId,
-            totalAmount: Number(amount)
-          })
-        );
+      const activeCats = categories.filter(c => c.isEnabled && !['Base Fee', 'Included Charges', 'Activities', 'Full Fees'].includes(c.name));
+      
+      const promises = activeCats.map(cat => {
+        let amount = specialFees[cat._id];
+        let totalAmountToSend = 0;
+        
+        if (amount !== undefined && amount !== '') {
+          totalAmountToSend = Number(amount);
+        }
+
+        return api.post(`/fees/assign/${selectedStudentId}`, {
+          feeCategoryId: cat._id,
+          totalAmount: totalAmountToSend
+        });
+      });
 
       if (promises.length === 0) {
-        alert("Please enter a discounted amount for at least one fee category.");
+        alert("No fee categories available to assign.");
         return;
       }
 
@@ -426,8 +433,26 @@ const FeeCategories = () => {
               options={studentOptions}
               value={studentOptions.find(o => o.value === selectedStudentId) || null}
               onChange={(option) => {
-                setSelectedStudentId(option ? option.value : '');
-                setSpecialFees({});
+                const studentId = option ? option.value : '';
+                setSelectedStudentId(studentId);
+                
+                if (studentId) {
+                  const student = students.find(s => s._id === studentId);
+                  if (student && student.studentFees) {
+                    const initialFees = {};
+                    student.studentFees.forEach(f => {
+                      const catId = f.feeCategory?._id || f.feeCategoryId?._id || f.feeCategoryId;
+                      if (catId) {
+                        initialFees[catId] = f.totalAmount.toString();
+                      }
+                    });
+                    setSpecialFees(initialFees);
+                  } else {
+                    setSpecialFees({});
+                  }
+                } else {
+                  setSpecialFees({});
+                }
               }}
               placeholder="Type to search student name or admission number..."
               isClearable
@@ -463,7 +488,10 @@ const FeeCategories = () => {
                       </TableRow>
                     ) : (
                       categories.filter(c => c.isEnabled && !['Base Fee', 'Included Charges', 'Activities', 'Full Fees'].includes(c.name)).map(cat => {
-                        const existingFee = selectedStudent.studentFees?.find(f => f.feeCategoryId === cat._id);
+                        const existingFee = selectedStudent.studentFees?.find(f => {
+                          const catId = f.feeCategory?._id || f.feeCategoryId?._id || f.feeCategoryId;
+                          return catId === cat._id;
+                        });
                         return (
                           <TableRow key={cat._id}>
                             <TableCell className="font-medium">{cat.name}</TableCell>
