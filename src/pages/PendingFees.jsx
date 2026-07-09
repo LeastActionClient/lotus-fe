@@ -8,7 +8,7 @@ import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import Pagination from '../components/ui/Pagination';
 import { Link, useNavigate } from 'react-router-dom';
-import { getStudentCategoryLabel, isRccStudent } from '../utils/studentCategory';
+import { getStudentCategoryLabel, isRTEStudent } from '../utils/studentCategory';
 
 const PendingFees = () => {
   const [students, setStudents] = useState([]);
@@ -21,7 +21,7 @@ const PendingFees = () => {
   const [sectionFilter, setSectionFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All'); // Active, Old
   const [feeStatusFilter, setFeeStatusFilter] = useState('All'); // Pending, Paid, All
-  const [rccFilter, setRccFilter] = useState('All'); // All, RCC, Non-RCC
+  const [RTEFilter, setRTEFilter] = useState('All'); // All, RTE, Non-RTE
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -82,12 +82,12 @@ const PendingFees = () => {
     setSectionFilter('All');
     setStatusFilter('All');
     setFeeStatusFilter('All');
-    setRccFilter('All');
+    setRTEFilter('All');
   };
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, classFilter, sectionFilter, statusFilter, feeStatusFilter, rccFilter]);
+  }, [searchQuery, classFilter, sectionFilter, statusFilter, feeStatusFilter, RTEFilter]);
 
   const escapeCSVValue = (value) => {
     const text = value === null || value === undefined ? '' : String(value);
@@ -102,7 +102,7 @@ const PendingFees = () => {
       'Admission No',
       'Student Name',
       'Status',
-      'RCC Status',
+      'RTE Status',
       'Class',
       'Section',
       'Total Fee',
@@ -163,9 +163,9 @@ const PendingFees = () => {
       if (!s.studentStatus || s.studentStatus === 'Active') return false;
     }
 
-    // New RCC Filter Evaluator
-    if (rccFilter === 'RCC' && !isRccStudent(s)) return false;
-    if (rccFilter === 'Non-RCC' && isRccStudent(s)) return false;
+    // New RTE Filter Evaluator
+    if (RTEFilter === 'RTE' && !isRTEStudent(s)) return false;
+    if (RTEFilter === 'Non-RTE' && isRTEStudent(s)) return false;
 
     const pendingAmount = getStudentTotalPending(s);
     if (feeStatusFilter === 'Pending') {
@@ -182,8 +182,8 @@ const PendingFees = () => {
   const previousPendingAmount = filteredStudents.reduce((sum, s) => sum + getPreviousPending(s), 0);
 
   const totalPaidAmount = filteredStudents.reduce((sum, s) => sum + getStudentTotalPaid(s), 0);
-  const rccPaidAmount = filteredStudents.filter(s => isRccStudent(s)).reduce((sum, s) => sum + getStudentTotalPaid(s), 0);
-  const generalPaidAmount = filteredStudents.filter(s => !isRccStudent(s)).reduce((sum, s) => sum + getStudentTotalPaid(s), 0);
+  const RTEPaidAmount = filteredStudents.filter(s => isRTEStudent(s)).reduce((sum, s) => sum + getStudentTotalPaid(s), 0);
+  const generalPaidAmount = filteredStudents.filter(s => !isRTEStudent(s)).reduce((sum, s) => sum + getStudentTotalPaid(s), 0);
   
   const totalPages = Math.max(1, Math.ceil(filteredStudents.length / itemsPerPage));
   const paginatedStudents = filteredStudents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -229,7 +229,7 @@ const PendingFees = () => {
             <p className="text-sm text-green-600 font-medium">Total Paid (Filtered)</p>
             <p className="text-3xl font-bold text-green-700">₹{totalPaidAmount.toLocaleString()}</p>
             <div className="flex gap-4 mt-2 text-xs font-semibold text-green-700 bg-green-100 px-3 py-1 rounded-full">
-               <span>RCC: ₹{rccPaidAmount.toLocaleString()}</span>
+               <span>RTE: ₹{RTEPaidAmount.toLocaleString()}</span>
                <span>General: ₹{generalPaidAmount.toLocaleString()}</span>
             </div>
           </CardContent>
@@ -315,17 +315,17 @@ const PendingFees = () => {
                 </select>
               </div>
 
-              {/* NEW ADDITION: RCC Student Category Filter Selection Dropdown */}
+              {/* NEW ADDITION: RTE Student Category Filter Selection Dropdown */}
               <div>
-                <Label>RCC Course Group</Label>
+                <Label>RTE Course Group</Label>
                 <select 
                   className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600 font-medium"
-                  value={rccFilter}
-                  onChange={(e) => setRccFilter(e.target.value)}
+                  value={RTEFilter}
+                  onChange={(e) => setRTEFilter(e.target.value)}
                 >
-                  <option value="All">All Students (RCC & General)</option>
-                  <option value="RCC">RCC Course Students Only</option>
-                  <option value="Non-RCC">General (Non-RCC) Students Only</option>
+                  <option value="All">All Students (RTE & General)</option>
+                  <option value="RTE">RTE Course Students Only</option>
+                  <option value="Non-RTE">General (Non-RTE) Students Only</option>
                 </select>
               </div>
             </div>
@@ -406,9 +406,9 @@ const PendingFees = () => {
                           )}
                         </TableCell>
                         <TableCell>
-                          {isRccStudent(student) ? (
+                          {isRTEStudent(student) ? (
                             <span className="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-bold text-purple-800 shadow-sm border border-purple-200">
-                              RCC
+                              RTE
                             </span>
                           ) : (
                             <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">

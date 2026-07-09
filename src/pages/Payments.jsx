@@ -261,7 +261,7 @@ const Payments = () => {
                       {payment.student?.studentName}
                       <span className="block text-xs text-gray-500">{payment.student?.admissionNumber}</span>
                       <span className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                        getStudentCategoryLabel(payment.student) === 'RCC'
+                        getStudentCategoryLabel(payment.student) === 'RTE'
                           ? 'bg-purple-100 text-purple-800'
                           : 'bg-gray-100 text-gray-700'
                       }`}>

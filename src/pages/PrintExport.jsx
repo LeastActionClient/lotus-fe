@@ -21,7 +21,7 @@ const AVAILABLE_FIELDS = [
   { id: 'religion', label: 'Religion' },
   { id: 'community', label: 'Community' },
   { id: 'caste', label: 'Caste' },
-  { id: 'rcc', label: 'RCC' },
+  { id: 'RTE', label: 'RTE' },
   { id: 'nationality', label: 'Nationality' },
   { id: 'fatherName', label: 'Father Name' },
   { id: 'motherName', label: 'Mother Name' },
@@ -47,7 +47,7 @@ const PrintExport = () => {
   const [phoneSearch, setPhoneSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-  const [rccOnly, setRccOnly] = useState(false);
+  const [RTEOnly, setRTEOnly] = useState(false);
 
   const [selectedFields, setSelectedFields] = useState(
     AVAILABLE_FIELDS.reduce((acc, field) => ({ ...acc, [field.id]: true }), {})
@@ -85,12 +85,12 @@ const PrintExport = () => {
         (s.motherPhone && s.motherPhone.includes(phoneSearch))
       );
     }
-    if (rccOnly) {
-      result = result.filter(s => s.rcc && s.rcc.trim().toLowerCase() === 'rcc');
+    if (RTEOnly) {
+      result = result.filter(s => s.RTE && s.RTE.trim().toLowerCase() === 'rte');
     }
     
     setFilteredStudents(result);
-  }, [selectedClass, selectedSection, phoneSearch, rccOnly, students]);
+  }, [selectedClass, selectedSection, phoneSearch, RTEOnly, students]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -255,12 +255,12 @@ const PrintExport = () => {
                   <div className="flex items-center space-x-2 h-10">
                     <input 
                       type="checkbox" 
-                      id="rccFilter"
-                      checked={rccOnly}
-                      onChange={(e) => setRccOnly(e.target.checked)}
+                      id="RTEFilter"
+                      checked={RTEOnly}
+                      onChange={(e) => setRTEOnly(e.target.checked)}
                       className="rounded border-gray-300 text-orange-600 focus:ring-orange-600 h-4 w-4"
                     />
-                    <Label htmlFor="rccFilter" className="cursor-pointer font-medium text-gray-700">RCC Students Only</Label>
+                    <Label htmlFor="RTEFilter" className="cursor-pointer font-medium text-gray-700">RTE Students Only</Label>
                   </div>
                 </div>
               </div>

@@ -8,7 +8,7 @@ import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import Pagination from '../components/ui/Pagination';
-import { isRccStudent } from '../utils/studentCategory';
+import { isRTEStudent } from '../utils/studentCategory';
 
 const Admissions = () => {
   const [students, setStudents] = useState([]);
@@ -34,9 +34,9 @@ const Admissions = () => {
   
   const [manualForm, setManualForm] = useState({
     studentName: '', fatherName: '', motherName: '', fatherPhone: '', motherPhone: '', address: '', admissionNumber: '',
-    dateOfBirth: '', gender: '', bloodGroup: '', aadhaarNumber: '', religion: '', community: '', caste: '', rcc: '', nationality: '', 
+    dateOfBirth: '', gender: '', bloodGroup: '', aadhaarNumber: '', religion: '', community: '', caste: '', RTE: '', nationality: '', 
     fatherOccupation: '', motherOccupation: '', guardian: '', city: '', state: '', pincode: '', whatsappNumber: '', emisNumber: '',
-    isRcc: false
+    isRTE: false
   });
   const [file, setFile] = useState(null);
 
@@ -70,13 +70,13 @@ const Admissions = () => {
       return;
     }
     try {
-      await api.post('/students/manual', { ...manualForm, rcc: manualForm.isRcc ? 'RCC' : 'General', currentClass: selectedClass, section: selectedSection });
+      await api.post('/students/manual', { ...manualForm, RTE: manualForm.isRTE ? 'RTE' : 'General', currentClass: selectedClass, section: selectedSection });
       setIsManualModalOpen(false);
       setManualForm({ 
         studentName: '', fatherName: '', motherName: '', fatherPhone: '', motherPhone: '', address: '', admissionNumber: '',
-        dateOfBirth: '', gender: '', bloodGroup: '', aadhaarNumber: '', religion: '', community: '', caste: '', rcc: '', nationality: '', 
+        dateOfBirth: '', gender: '', bloodGroup: '', aadhaarNumber: '', religion: '', community: '', caste: '', RTE: '', nationality: '', 
         fatherOccupation: '', motherOccupation: '', guardian: '', city: '', state: '', pincode: '', whatsappNumber: '', emisNumber: '',
-        isRcc: false
+        isRTE: false
       });
       fetchStudents();
       alert("Student added successfully!");
@@ -202,8 +202,8 @@ const Admissions = () => {
   };
 
   const visibleStudents = students.filter(student => {
-    if (studentGroupFilter === 'RCC') return isRccStudent(student);
-    if (studentGroupFilter === 'General') return !isRccStudent(student);
+    if (studentGroupFilter === 'RTE') return isRTEStudent(student);
+    if (studentGroupFilter === 'General') return !isRTEStudent(student);
     return true;
   });
   const totalPages = Math.max(1, Math.ceil(visibleStudents.length / itemsPerPage));
@@ -270,7 +270,7 @@ const Admissions = () => {
                   onChange={(e) => setStudentGroupFilter(e.target.value)}
                 >
                   <option value="All">All Students</option>
-                  <option value="RCC">RCC Students</option>
+                  <option value="RTE">RTE Students</option>
                   <option value="General">General Students</option>
                 </select>
               </div>
@@ -406,8 +406,8 @@ const Admissions = () => {
                   <p className="text-gray-900">{selectedStudent.caste || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">RCC</p>
-                  <p className="text-gray-900">{selectedStudent.rcc || '-'}</p>
+                  <p className="text-sm text-gray-500">RTE</p>
+                  <p className="text-gray-900">{selectedStudent.RTE || '-'}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Nationality</p>
@@ -605,8 +605,8 @@ const Admissions = () => {
                 <Input value={manualForm.caste} onChange={(e) => setManualForm({...manualForm, caste: e.target.value})} />
               </div>
               <div className="space-y-2">
-                <Label>RCC</Label>
-                <Input value={manualForm.rcc} onChange={(e) => setManualForm({...manualForm, rcc: e.target.value})} />
+                <Label>RTE</Label>
+                <Input value={manualForm.RTE} onChange={(e) => setManualForm({...manualForm, RTE: e.target.value})} />
               </div>
               <div className="space-y-2">
                 <Label>Nationality</Label>
@@ -617,11 +617,11 @@ const Admissions = () => {
                 <label className="flex items-center gap-3 rounded-md border-2 border-purple-300 bg-purple-50/30 px-3 py-2 text-sm font-semibold text-gray-800">
                   <input
                     type="checkbox"
-                    checked={manualForm.isRcc || false}
-                    onChange={(e) => setManualForm({ ...manualForm, isRcc: e.target.checked })}
+                    checked={manualForm.isRTE || false}
+                    onChange={(e) => setManualForm({ ...manualForm, isRTE: e.target.checked })}
                     className="h-4 w-4 rounded border-purple-400 text-purple-600 focus:ring-purple-600"
                   />
-                  <span>{manualForm.isRcc ? 'RCC Course Student' : 'General (Non-RCC) Student'}</span>
+                  <span>{manualForm.isRTE ? 'RTE Course Student' : 'General (Non-RTE) Student'}</span>
                 </label>
               </div>
             </div>
@@ -718,7 +718,7 @@ const Admissions = () => {
               <li>Religion</li>
               <li>Community</li>
               <li>Caste</li>
-              <li>RCC</li>
+              <li>RTE</li>
               <li>Nationality</li>
               <li>Father Name</li>
               <li>Father Phone</li>

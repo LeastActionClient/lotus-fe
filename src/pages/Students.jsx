@@ -9,7 +9,7 @@ import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import Pagination from '../components/ui/Pagination';
 import { Link } from 'react-router-dom';
-import { getStudentCategoryLabel, isRccStudent } from '../utils/studentCategory';
+import { getStudentCategoryLabel, isRTEStudent } from '../utils/studentCategory';
 
 
 
@@ -107,8 +107,8 @@ const Students = () => {
 
     if (!match) return false;
 
-    if (studentGroupFilter === 'RCC' && !isRccStudent(s)) return false;
-    if (studentGroupFilter === 'General' && isRccStudent(s)) return false;
+    if (studentGroupFilter === 'RTE' && !isRTEStudent(s)) return false;
+    if (studentGroupFilter === 'General' && isRTEStudent(s)) return false;
 
     if (feeFilter !== 'ALL') {
       const totalPending = s.studentFees?.reduce((sum, f) => sum + f.remainingAmount, 0) || 0;
@@ -262,7 +262,7 @@ const Students = () => {
               onChange={(e) => setStudentGroupFilter(e.target.value)}
             >
               <option value="All">All Groups</option>
-              <option value="RCC">RCC</option>
+              <option value="RTE">RTE</option>
               <option value="General">General</option>
             </select>
           </div>
@@ -297,7 +297,7 @@ const Students = () => {
                         <TableCell className="font-medium text-orange-600">
                           {student.studentName}
                           <span className={`ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                            getStudentCategoryLabel(student) === 'RCC'
+                            getStudentCategoryLabel(student) === 'RTE'
                               ? 'bg-purple-100 text-purple-800'
                               : 'bg-gray-100 text-gray-700'
                           }`}>

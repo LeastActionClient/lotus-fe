@@ -8,7 +8,7 @@ import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import Pagination from '../components/ui/Pagination';
 import { Link, useNavigate } from 'react-router-dom';
-import { getStudentCategoryLabel, isRccStudent } from '../utils/studentCategory';
+import { getStudentCategoryLabel, isRTEStudent } from '../utils/studentCategory';
 
 const OldStudents = () => {
   const [students, setStudents] = useState([]);
@@ -177,8 +177,8 @@ const OldStudents = () => {
     if (classFilter !== 'All' && s.currentClass !== classFilter) return false;
     if (sectionFilter !== 'All' && s.section !== sectionFilter) return false;
     if (academicYearFilter !== 'All' && s.academicYear !== academicYearFilter) return false;
-    if (studentGroupFilter === 'RCC' && !isRccStudent(s)) return false;
-    if (studentGroupFilter === 'General' && isRccStudent(s)) return false;
+    if (studentGroupFilter === 'RTE' && !isRTEStudent(s)) return false;
+    if (studentGroupFilter === 'General' && isRTEStudent(s)) return false;
 
     return true;
   });
@@ -374,7 +374,7 @@ const OldStudents = () => {
                   onChange={(e) => setStudentGroupFilter(e.target.value)}
                 >
                   <option value="All">All Students</option>
-                  <option value="RCC">RCC Students</option>
+                  <option value="RTE">RTE Students</option>
                   <option value="General">General Students</option>
                 </select>
               </div>
@@ -433,7 +433,7 @@ const OldStudents = () => {
                             {student.studentName}
                           </Link>
                           <span className={`ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                            getStudentCategoryLabel(student) === 'RCC'
+                            getStudentCategoryLabel(student) === 'RTE'
                               ? 'bg-purple-100 text-purple-800'
                               : 'bg-gray-100 text-gray-700'
                           }`}>

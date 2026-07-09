@@ -1,9 +1,9 @@
-export const isRccStudent = (student) => {
+export const isRTEStudent = (student) => {
   if (!student) return false;
-  if (typeof student.isRcc === 'boolean') return student.isRcc;
-  const value = `${student.rcc || ''}`.trim().toLowerCase();
-  return ['rcc', 'yes', 'true', '1'].includes(value);
+  if (typeof student.isRTE === 'boolean') return student.isRTE;
+  const value = `${student.RTE || ''}`.trim().toLowerCase();
+  return ['rte', 'yes', 'true', '1'].includes(value);
 };
 
-export const getStudentCategoryLabel = (student) => (isRccStudent(student) ? 'RCC' : 'General');
+export const getStudentCategoryLabel = (student) => (isRTEStudent(student) ? 'RTE' : 'General');
 

@@ -6,7 +6,7 @@ import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
-import { isRccStudent } from '../utils/studentCategory';
+import { isRTEStudent } from '../utils/studentCategory';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -15,7 +15,7 @@ const Dashboard = () => {
     approvedApplications: 0,
     students: 0,
     collections: 0,
-    rccStudents: 0,
+    RTEStudents: 0,
     generalStudents: 0,
   });
   const [loading, setLoading] = useState(true);
@@ -43,8 +43,8 @@ const Dashboard = () => {
       const pendingApps = appsRes.data.filter(app => app.status === 'PENDING').length;
       const approvedApps = appsRes.data.filter(app => app.status === 'APPROVED').length;
 
-      const rccStudents = studentsRes.data.filter(s => isRccStudent(s)).length;
-      const generalStudents = studentsRes.data.length - rccStudents;
+      const RTEStudents = studentsRes.data.filter(s => isRTEStudent(s)).length;
+      const generalStudents = studentsRes.data.length - RTEStudents;
 
       setStats({
         applications: appsRes.data.length,
@@ -52,7 +52,7 @@ const Dashboard = () => {
         approvedApplications: approvedApps,
         students: studentsRes.data.filter(s => !s.studentStatus || s.studentStatus === 'Active').length,
         collections: totalCollections,
-        rccStudents,
+        RTEStudents,
         generalStudents,
       });
 
@@ -198,12 +198,12 @@ const Dashboard = () => {
 
         <Card className="bg-gradient-to-br from-violet-50 to-white">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-violet-700 ">RCC Students</CardTitle>
+            <CardTitle className="text-sm font-medium text-violet-700 ">RTE Students</CardTitle>
             <Users className="h-4 w-4 text-violet-700 " />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-gray-900 ">{stats.rccStudents}</div>
-            <p className="text-xs text-gray-500 mt-1">Students marked as RCC</p>
+            <div className="text-3xl font-bold text-gray-900 ">{stats.RTEStudents}</div>
+            <p className="text-xs text-gray-500 mt-1">Students marked as RTE</p>
           </CardContent>
         </Card>
 
