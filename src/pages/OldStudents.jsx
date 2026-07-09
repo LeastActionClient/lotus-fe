@@ -9,6 +9,7 @@ import { Label } from '../components/ui/Label';
 import Pagination from '../components/ui/Pagination';
 import { Link, useNavigate } from 'react-router-dom';
 import { getStudentCategoryLabel, isRTEStudent } from '../utils/studentCategory';
+import { PageLoader } from '../components/ui/Spinner';
 
 const OldStudents = () => {
   const [students, setStudents] = useState([]);
@@ -24,6 +25,7 @@ const OldStudents = () => {
   const [sectionFilter, setSectionFilter] = useState('All');
   const [academicYearFilter, setAcademicYearFilter] = useState('All');
   const [studentGroupFilter, setStudentGroupFilter] = useState('All');
+  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -49,6 +51,8 @@ const OldStudents = () => {
       setClasses(res.data);
     } catch (error) {
       console.error("Error fetching classes", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -194,6 +198,8 @@ const OldStudents = () => {
   };
   const totalPages = Math.max(1, Math.ceil(filteredStudents.length / itemsPerPage));
   const paginatedStudents = filteredStudents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  if (loading) return <PageLoader />;
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">

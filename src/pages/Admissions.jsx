@@ -9,6 +9,7 @@ import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import Pagination from '../components/ui/Pagination';
 import { isRTEStudent } from '../utils/studentCategory';
+import { PageLoader } from '../components/ui/Spinner';
 
 const Admissions = () => {
   const [students, setStudents] = useState([]);
@@ -31,6 +32,7 @@ const Admissions = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [studentGroupFilter, setStudentGroupFilter] = useState('All');
+  const [pageLoading, setPageLoading] = useState(true);
   
   const [manualForm, setManualForm] = useState({
     studentName: '', fatherName: '', motherName: '', fatherPhone: '', motherPhone: '', address: '', admissionNumber: '',
@@ -60,6 +62,8 @@ const Admissions = () => {
       setClasses(res.data);
     } catch (error) {
       console.error("Error fetching classes", error);
+    } finally {
+      setPageLoading(false);
     }
   };
 
@@ -215,6 +219,8 @@ const Admissions = () => {
 
   const currentClassObj = classes.find(c => c.name === selectedClass);
   const sections = currentClassObj ? currentClassObj.sections : [];
+
+  if (pageLoading) return <PageLoader />;
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">

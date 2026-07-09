@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import Pagination from '../components/ui/Pagination';
+import { PageLoader } from '../components/ui/Spinner';
 
 const AVAILABLE_FIELDS = [
   { id: 'admissionNumber', label: 'Admission No' },
@@ -148,7 +149,7 @@ const PrintExport = () => {
     link.click();
   };
 
-  if (loading) return <div className="flex justify-center p-12">Loading...</div>;
+  if (loading) return <PageLoader />;
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 print-wrapper">

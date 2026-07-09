@@ -10,6 +10,7 @@ import { Label } from '../components/ui/Label';
 import Pagination from '../components/ui/Pagination';
 import Select from 'react-select';
 import { getStudentCategoryLabel } from '../utils/studentCategory';
+import { PageLoader } from '../components/ui/Spinner';
 import { useLocation } from 'react-router-dom';
 
 const Payments = () => {
@@ -25,6 +26,7 @@ const Payments = () => {
   const [studentFees, setStudentFees] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
   const [filterCategory, setFilterCategory] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -49,6 +51,8 @@ const Payments = () => {
       setFeeCategories(catRes.data);
     } catch (error) {
       console.error("Error fetching data", error);
+    } finally {
+      setPageLoading(false);
     }
   };
 
@@ -184,6 +188,8 @@ const Payments = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [filterCategory, payments.length]);
+
+  if (pageLoading) return <PageLoader />;
 
   const studentOptions = students
     .filter(s => !selectedClass || s.currentClass === selectedClass)

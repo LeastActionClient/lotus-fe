@@ -10,6 +10,7 @@ import { Label } from '../components/ui/Label';
 import Pagination from '../components/ui/Pagination';
 import Select from 'react-select';
 import { Link, useLocation } from 'react-router-dom';
+import { PageLoader } from '../components/ui/Spinner';
 
 const FeeCategories = () => {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -36,6 +37,7 @@ const FeeCategories = () => {
   });
   const [bulkFees, setBulkFees] = useState({});
   const [isEditingBulkFees, setIsEditingBulkFees] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -51,6 +53,8 @@ const FeeCategories = () => {
       setClasses(classRes.data);
     } catch (error) {
       console.error("Error fetching data", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -164,6 +168,8 @@ const FeeCategories = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [categories.length]);
+
+  if (loading) return <PageLoader />;
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">

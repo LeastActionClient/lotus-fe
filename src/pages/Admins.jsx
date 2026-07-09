@@ -8,6 +8,7 @@ import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import Pagination from '../components/ui/Pagination';
+import { PageLoader } from '../components/ui/Spinner';
 
 const Admins = () => {
   const [admins, setAdmins] = useState([]);
@@ -15,6 +16,7 @@ const Admins = () => {
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -33,6 +35,8 @@ const Admins = () => {
       setAdmins(res.data);
     } catch (error) {
       console.error("Error fetching admins", error);
+    } finally {
+      setPageLoading(false);
     }
   };
 
@@ -103,6 +107,8 @@ const Admins = () => {
       }
     }
   };
+
+  if (pageLoading) return <PageLoader />;
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">

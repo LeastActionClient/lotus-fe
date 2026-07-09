@@ -4,6 +4,7 @@ import { Button } from '../components/ui/Button';
 import api from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { PieChart, TrendingUp, Calendar, LayoutList } from 'lucide-react';
+import { PageLoader } from '../components/ui/Spinner';
 
 const Reports = () => {
   const [daily, setDaily] = useState([]);
@@ -66,7 +67,7 @@ const Reports = () => {
     link.click();
   };
 
-  if (loading && daily.length === 0) return <div className="flex justify-center p-12">Loading reports...</div>;
+  if (loading && daily.length === 0) return <PageLoader text="Loading reports..." />;
 
   const totalPending = pending.reduce((sum, item) => sum + (item.remainingAmount || 0), 0);
 

@@ -7,6 +7,7 @@ import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import { isRTEStudent } from '../utils/studentCategory';
+import { PageLoader } from '../components/ui/Spinner';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -133,9 +134,7 @@ const Dashboard = () => {
     }
   };
 
-  if (loading) {
-    return <div className="flex h-full items-center justify-center">Loading dashboard...</div>;
-  }
+  if (loading) return <PageLoader text="Loading dashboard..." />;
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">

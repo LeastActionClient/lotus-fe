@@ -9,6 +9,7 @@ import { Label } from '../components/ui/Label';
 import Pagination from '../components/ui/Pagination';
 import { Link, useNavigate } from 'react-router-dom';
 import { getStudentCategoryLabel, isRTEStudent } from '../utils/studentCategory';
+import { PageLoader } from '../components/ui/Spinner';
 
 const PendingFees = () => {
   const [students, setStudents] = useState([]);
@@ -22,6 +23,7 @@ const PendingFees = () => {
   const [statusFilter, setStatusFilter] = useState('All'); // Active, Old
   const [feeStatusFilter, setFeeStatusFilter] = useState('All'); // Pending, Paid, All
   const [RTEFilter, setRTEFilter] = useState('All'); // All, RTE, Non-RTE
+  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -73,6 +75,8 @@ const PendingFees = () => {
       setClasses(res.data);
     } catch (error) {
       console.error("Error fetching classes", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -187,6 +191,8 @@ const PendingFees = () => {
   
   const totalPages = Math.max(1, Math.ceil(filteredStudents.length / itemsPerPage));
   const paginatedStudents = filteredStudents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  if (loading) return <PageLoader />;
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">

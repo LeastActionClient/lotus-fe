@@ -10,6 +10,7 @@ import { Label } from '../components/ui/Label';
 import Pagination from '../components/ui/Pagination';
 import { Link } from 'react-router-dom';
 import { getStudentCategoryLabel, isRTEStudent } from '../utils/studentCategory';
+import { PageLoader } from '../components/ui/Spinner';
 
 
 
@@ -24,6 +25,7 @@ const Students = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [feeFilter, setFeeFilter] = useState('ALL');
   const [studentGroupFilter, setStudentGroupFilter] = useState('All');
+  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -55,6 +57,8 @@ const Students = () => {
       setClasses(res.data);
     } catch (error) {
       console.error("Error fetching classes", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -130,6 +134,8 @@ const Students = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [viewMode, selectedClass, selectedSection, searchQuery, feeFilter, studentGroupFilter]);
+
+  if (loading) return <PageLoader />;
 
   const handleSearch = (e) => {
     const val = e.target.value;

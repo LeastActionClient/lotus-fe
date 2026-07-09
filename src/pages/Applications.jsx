@@ -8,6 +8,7 @@ import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import Pagination from '../components/ui/Pagination';
 import { FileText, Plus, CheckCircle, Trash2, Settings } from 'lucide-react';
+import { PageLoader } from '../components/ui/Spinner';
 
 const Applications = () => {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -18,6 +19,7 @@ const Applications = () => {
   const [selectedAppId, setSelectedAppId] = useState(null);
   const [assignSection, setAssignSection] = useState('');
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [customIds, setCustomIds] = useState({ nextApplicationNo: '' });
@@ -67,6 +69,8 @@ const Applications = () => {
       setApplications(res.data);
     } catch (error) {
       console.error("Error fetching applications", error);
+    } finally {
+      setPageLoading(false);
     }
   };
 
@@ -169,6 +173,8 @@ const Applications = () => {
 
   const totalPages = Math.max(1, Math.ceil(applications.length / itemsPerPage));
   const paginatedApplications = applications.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  if (pageLoading) return <PageLoader />;
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
