@@ -7,7 +7,9 @@ import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
+import Pagination from '../components/ui/Pagination';
 import { Link } from 'react-router-dom';
+import { getStudentCategoryLabel, isRccStudent } from '../utils/studentCategory';
 
 
 
@@ -21,6 +23,9 @@ const Students = () => {
   const [selectedSection, setSelectedSection] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [feeFilter, setFeeFilter] = useState('ALL');
+  const [studentGroupFilter, setStudentGroupFilter] = useState('All');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const [isClassModalOpen, setIsClassModalOpen] = useState(false);
   const [isSectionModalOpen, setIsSectionModalOpen] = useState(false);
@@ -102,6 +107,9 @@ const Students = () => {
 
     if (!match) return false;
 
+    if (studentGroupFilter === 'RCC' && !isRccStudent(s)) return false;
+    if (studentGroupFilter === 'General' && isRccStudent(s)) return false;
+
     if (feeFilter !== 'ALL') {
       const totalPending = s.studentFees?.reduce((sum, f) => sum + f.remainingAmount, 0) || 0;
       const hasFees = s.studentFees?.length > 0;
@@ -115,6 +123,13 @@ const Students = () => {
     
     return true;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / itemsPerPage));
+  const paginatedStudents = filteredStudents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [viewMode, selectedClass, selectedSection, searchQuery, feeFilter, studentGroupFilter]);
 
   const handleSearch = (e) => {
     const val = e.target.value;
@@ -241,6 +256,15 @@ const Students = () => {
               <option value="PAID">Fully Paid</option>
               <option value="PENDING">Pending Dues</option>
             </select>
+            <select
+              className="flex h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+              value={studentGroupFilter}
+              onChange={(e) => setStudentGroupFilter(e.target.value)}
+            >
+              <option value="All">All Groups</option>
+              <option value="RCC">RCC</option>
+              <option value="General">General</option>
+            </select>
           </div>
           
           <Card>
@@ -265,10 +289,19 @@ const Students = () => {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredStudents.map((student) => (
+                    paginatedStudents.map((student) => (
                       <TableRow key={student._id}>
                         <TableCell className="font-mono text-sm">{student.admissionNumber}</TableCell>
-                        <TableCell className="font-medium text-orange-600">{student.studentName}</TableCell>
+                        <TableCell className="font-medium text-orange-600">
+                          {student.studentName}
+                          <span className={`ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                            getStudentCategoryLabel(student) === 'RCC'
+                              ? 'bg-purple-100 text-purple-800'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}>
+                            {getStudentCategoryLabel(student)}
+                          </span>
+                        </TableCell>
                         <TableCell>{student.currentClass} - {student.section}</TableCell>
                         <TableCell className="text-green-600 font-medium">Rs. {student.studentFees?.reduce((sum, f) => sum + f.paidAmount, 0) || 0}</TableCell>
                         <TableCell className="text-red-500 font-medium">Rs. {(() => {
@@ -308,11 +341,12 @@ const Students = () => {
                       </TableRow>
                     ))
                   )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </div>
+              </TableBody>
+            </Table>
+            <Pagination page={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+          </CardContent>
+        </Card>
+      </div>
       )}
 
       <Modal isOpen={isClassModalOpen} onClose={() => setIsClassModalOpen(false)} title="Add New Class">

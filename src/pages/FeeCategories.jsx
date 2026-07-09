@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
+import Pagination from '../components/ui/Pagination';
 import Select from 'react-select';
 import { Link, useLocation } from 'react-router-dom';
 
@@ -35,6 +36,8 @@ const FeeCategories = () => {
   });
   const [bulkFees, setBulkFees] = useState({});
   const [isEditingBulkFees, setIsEditingBulkFees] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const fetchData = async () => {
     try {
@@ -147,6 +150,13 @@ const FeeCategories = () => {
     }));
 
   const selectedStudent = students.find(s => s._id === selectedStudentId);
+  const visibleCategories = categories.filter(c => !['Base Fee', 'Included Charges', 'Activities', 'Full Fees'].includes(c.name));
+  const totalPages = Math.max(1, Math.ceil(visibleCategories.length / itemsPerPage));
+  const paginatedCategories = visibleCategories.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [categories.length]);
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -203,14 +213,14 @@ const FeeCategories = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {categories.filter(c => !['Base Fee', 'Included Charges', 'Activities', 'Full Fees'].includes(c.name)).length === 0 ? (
+              {visibleCategories.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center h-32 text-gray-500">
                     No fee categories found.
                   </TableCell>
                 </TableRow>
               ) : (
-                categories.filter(c => !['Base Fee', 'Included Charges', 'Activities', 'Full Fees'].includes(c.name)).map((cat) => (
+                paginatedCategories.map((cat) => (
                   <TableRow key={cat._id}>
                     <TableCell className="font-medium text-gray-900 ">{cat.name}</TableCell>
                     <TableCell>
@@ -242,6 +252,7 @@ const FeeCategories = () => {
               )}
             </TableBody>
           </Table>
+          <Pagination page={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
         </CardContent>
       </Card>
 

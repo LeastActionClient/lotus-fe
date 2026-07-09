@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
+import { isRccStudent } from '../utils/studentCategory';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -14,6 +15,8 @@ const Dashboard = () => {
     approvedApplications: 0,
     students: 0,
     collections: 0,
+    rccStudents: 0,
+    generalStudents: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -40,12 +43,17 @@ const Dashboard = () => {
       const pendingApps = appsRes.data.filter(app => app.status === 'PENDING').length;
       const approvedApps = appsRes.data.filter(app => app.status === 'APPROVED').length;
 
+      const rccStudents = studentsRes.data.filter(s => isRccStudent(s)).length;
+      const generalStudents = studentsRes.data.length - rccStudents;
+
       setStats({
         applications: appsRes.data.length,
         pendingApplications: pendingApps,
         approvedApplications: approvedApps,
         students: studentsRes.data.filter(s => !s.studentStatus || s.studentStatus === 'Active').length,
         collections: totalCollections,
+        rccStudents,
+        generalStudents,
       });
 
       // Prepare data for promotion modal
@@ -146,7 +154,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-5">
         <Card className="bg-gradient-to-br from-blue-50 to-white">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-orange-600 ">Total Applications</CardTitle>
@@ -185,6 +193,28 @@ const Dashboard = () => {
               <TrendingUp className="h-3 w-3 mr-1" />
               Collected through fees
             </p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-violet-50 to-white">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-violet-700 ">RCC Students</CardTitle>
+            <Users className="h-4 w-4 text-violet-700 " />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-gray-900 ">{stats.rccStudents}</div>
+            <p className="text-xs text-gray-500 mt-1">Students marked as RCC</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-slate-50 to-white">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-slate-700 ">General Students</CardTitle>
+            <Users className="h-4 w-4 text-slate-700 " />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-gray-900 ">{stats.generalStudents}</div>
+            <p className="text-xs text-gray-500 mt-1">Students marked as General</p>
           </CardContent>
         </Card>
       </div>

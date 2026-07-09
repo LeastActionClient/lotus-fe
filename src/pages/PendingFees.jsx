@@ -2,11 +2,13 @@ import React, { useState, useEffect, useMemo } from 'react';
 import api from '../services/api';
 import { Card, CardContent } from '../components/ui/Card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
-import { AlertCircle, Search, Filter, Users, CheckCircle } from 'lucide-react';
+import { AlertCircle, Search, Filter, Users, CheckCircle, Download } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
+import Pagination from '../components/ui/Pagination';
 import { Link, useNavigate } from 'react-router-dom';
+import { getStudentCategoryLabel, isRccStudent } from '../utils/studentCategory';
 
 const PendingFees = () => {
   const [students, setStudents] = useState([]);
@@ -19,6 +21,9 @@ const PendingFees = () => {
   const [sectionFilter, setSectionFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All'); // Active, Old
   const [feeStatusFilter, setFeeStatusFilter] = useState('Pending'); // Pending, Paid, All
+  const [rccFilter, setRccFilter] = useState('All'); // All, RCC, Non-RCC
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     fetchStudents();
@@ -40,7 +45,6 @@ const PendingFees = () => {
   const fetchStudents = async () => {
     try {
       const res = await api.get('/students');
-      // Set all students, we will filter in the UI
       setStudents(res.data);
     } catch (error) {
       console.error("Error fetching students", error);
@@ -62,6 +66,62 @@ const PendingFees = () => {
     setSectionFilter('All');
     setStatusFilter('All');
     setFeeStatusFilter('All');
+    setRccFilter('All');
+  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, classFilter, sectionFilter, statusFilter, feeStatusFilter, rccFilter]);
+
+  const escapeCSVValue = (value) => {
+    const text = value === null || value === undefined ? '' : String(value);
+    if (/[",\n]/.test(text)) {
+      return `"${text.replace(/"/g, '""')}"`;
+    }
+    return text;
+  };
+
+  const downloadCSV = () => {
+    const headers = [
+      'Admission No',
+      'Student Name',
+      'Status',
+      'RCC Status',
+      'Class',
+      'Section',
+      'Total Fee',
+      'Paid Amount',
+      'Pending Amount'
+    ];
+
+    const rows = filteredStudents.map((student) => {
+      const totalPending = getStudentTotalPending(student);
+      const totalPaid = getStudentTotalPaid(student);
+      const totalFee = getStudentTotalFee(student);
+
+      return [
+        student.admissionNumber || '',
+        student.studentName || '',
+        (!student.studentStatus || student.studentStatus === 'Active') ? 'Active' : `${student.studentStatus} (Old)`,
+        getStudentCategoryLabel(student),
+        student.currentClass || '',
+        student.section || '',
+        totalFee.toFixed(2),
+        totalPaid.toFixed(2),
+        totalPending.toFixed(2)
+      ].map(escapeCSVValue);
+    });
+
+    const csvContent = [headers.map(escapeCSVValue).join(','), ...rows.map((row) => row.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.href = url;
+    link.download = `pending_fees_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   };
 
   const availableSections = useMemo(() => {
@@ -87,6 +147,10 @@ const PendingFees = () => {
       if (!s.studentStatus || s.studentStatus === 'Active') return false;
     }
 
+    // New RCC Filter Evaluator
+    if (rccFilter === 'RCC' && !isRccStudent(s)) return false;
+    if (rccFilter === 'Non-RCC' && isRccStudent(s)) return false;
+
     const pendingAmount = getStudentTotalPending(s);
     if (feeStatusFilter === 'Pending') {
       if (pendingAmount <= 0) return false;
@@ -99,6 +163,8 @@ const PendingFees = () => {
 
   const totalPendingAmount = filteredStudents.reduce((sum, s) => sum + getStudentTotalPending(s), 0);
   const totalPaidAmount = filteredStudents.reduce((sum, s) => sum + getStudentTotalPaid(s), 0);
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / itemsPerPage));
+  const paginatedStudents = filteredStudents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -140,6 +206,7 @@ const PendingFees = () => {
         </Card>
       </div>
 
+      {/* Filter Options Control Panel Card */}
       <Card className="bg-white">
         <CardContent className="p-4">
           <div className="flex flex-col gap-4">
@@ -149,7 +216,8 @@ const PendingFees = () => {
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* Changed from lg:grid-cols-5 to lg:grid-cols-3 and expanded rows for clean spacing */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
                 <Label>Search</Label>
                 <Input 
@@ -216,15 +284,34 @@ const PendingFees = () => {
                   <option value="All">All Students</option>
                 </select>
               </div>
+
+              {/* NEW ADDITION: RCC Student Category Filter Selection Dropdown */}
+              <div>
+                <Label>RCC Course Group</Label>
+                <select 
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600 font-medium"
+                  value={rccFilter}
+                  onChange={(e) => setRccFilter(e.target.value)}
+                >
+                  <option value="All">All Students (RCC & General)</option>
+                  <option value="RCC">RCC Course Students Only</option>
+                  <option value="Non-RCC">General (Non-RCC) Students Only</option>
+                </select>
+              </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={clearFilters}>Clear Filters</Button>
+              <Button variant="outline" onClick={downloadCSV}>
+                <Download className="mr-2 h-4 w-4" />
+                Export CSV
+              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
+      {/* Main Data Render Table View */}
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -234,6 +321,7 @@ const PendingFees = () => {
                   <TableHead>Admission No</TableHead>
                   <TableHead>Student Name</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Course Type</TableHead>
                   <TableHead>Class & Section</TableHead>
                   <TableHead className="text-right">Total Fee</TableHead>
                   <TableHead className="text-right">Paid Amount</TableHead>
@@ -244,12 +332,12 @@ const PendingFees = () => {
               <TableBody>
                 {filteredStudents.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center h-32 text-gray-500">
+                    <TableCell colSpan={9} className="text-center h-32 text-gray-500">
                       No students match your filters.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredStudents.map(student => {
+                  paginatedStudents.map(student => {
                     const totalPending = getStudentTotalPending(student);
                     const totalPaid = getStudentTotalPaid(student);
                     const totalFee = getStudentTotalFee(student);
@@ -258,7 +346,7 @@ const PendingFees = () => {
                       <TableRow key={student._id}>
                         <TableCell className="font-medium text-gray-900">{student.admissionNumber}</TableCell>
                         <TableCell>
-                          <Link to={`/dashboard/students/edit/${student._id}`} className="text-orange-600 hover:underline">
+                          <Link to={`/dashboard/students/edit/${student._id}`} className="text-orange-600 hover:underline font-medium">
                             {student.studentName}
                           </Link>
                         </TableCell>
@@ -273,6 +361,20 @@ const PendingFees = () => {
                             </span>
                           )}
                         </TableCell>
+                        
+                        {/* RCC Status Table Cell Tag */}
+                        <TableCell>
+                          {isRccStudent(student) ? (
+                            <span className="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-bold text-purple-800 shadow-sm border border-purple-200">
+                              RCC
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                              General
+                            </span>
+                          )}
+                        </TableCell>
+
                         <TableCell>{student.currentClass} {student.section ? `- ${student.section}` : ''}</TableCell>
                         <TableCell className="text-right font-medium">₹{totalFee.toFixed(2)}</TableCell>
                         <TableCell className="text-right text-emerald-600">₹{totalPaid.toFixed(2)}</TableCell>
@@ -284,12 +386,12 @@ const PendingFees = () => {
                             <Button 
                               size="sm" 
                               onClick={() => navigate('/dashboard/payments')}
-                              className="bg-orange-600 hover:bg-orange-700 text-white"
+                              className="bg-orange-600 hover:bg-orange-700 text-white font-semibold"
                             >
                               Pay Pending
                             </Button>
                           ) : (
-                            <span className="text-sm font-medium text-green-600 px-3 flex items-center gap-1">
+                            <span className="text-sm font-semibold text-green-600 px-3 flex items-center gap-1">
                               <CheckCircle size={16} /> Paid
                             </span>
                           )}
@@ -300,6 +402,7 @@ const PendingFees = () => {
                 )}
               </TableBody>
             </Table>
+            <Pagination page={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
           </div>
         </CardContent>
       </Card>

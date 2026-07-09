@@ -7,6 +7,8 @@ import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
+import Pagination from '../components/ui/Pagination';
+import { isRccStudent } from '../utils/studentCategory';
 
 const Admissions = () => {
   const [students, setStudents] = useState([]);
@@ -19,11 +21,15 @@ const Admissions = () => {
   
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const [studentGroupFilter, setStudentGroupFilter] = useState('All');
   
   const [manualForm, setManualForm] = useState({
     studentName: '', fatherName: '', motherName: '', fatherPhone: '', motherPhone: '', address: '', admissionNumber: '',
     dateOfBirth: '', gender: '', bloodGroup: '', aadhaarNumber: '', religion: '', community: '', caste: '', rcc: '', nationality: '', 
-    fatherOccupation: '', motherOccupation: '', guardian: '', city: '', state: '', pincode: '', whatsappNumber: '', emisNumber: ''
+    fatherOccupation: '', motherOccupation: '', guardian: '', city: '', state: '', pincode: '', whatsappNumber: '', emisNumber: '',
+    isRcc: false
   });
   const [file, setFile] = useState(null);
 
@@ -57,12 +63,13 @@ const Admissions = () => {
       return;
     }
     try {
-      await api.post('/students/manual', { ...manualForm, currentClass: selectedClass, section: selectedSection });
+      await api.post('/students/manual', { ...manualForm, rcc: manualForm.isRcc ? 'RCC' : 'General', currentClass: selectedClass, section: selectedSection });
       setIsManualModalOpen(false);
       setManualForm({ 
         studentName: '', fatherName: '', motherName: '', fatherPhone: '', motherPhone: '', address: '', admissionNumber: '',
         dateOfBirth: '', gender: '', bloodGroup: '', aadhaarNumber: '', religion: '', community: '', caste: '', rcc: '', nationality: '', 
-        fatherOccupation: '', motherOccupation: '', guardian: '', city: '', state: '', pincode: '', whatsappNumber: '', emisNumber: ''
+        fatherOccupation: '', motherOccupation: '', guardian: '', city: '', state: '', pincode: '', whatsappNumber: '', emisNumber: '',
+        isRcc: false
       });
       fetchStudents();
       alert("Student added successfully!");
@@ -104,6 +111,18 @@ const Admissions = () => {
     setSelectedStudent(student);
     setIsViewModalOpen(true);
   };
+
+  const visibleStudents = students.filter(student => {
+    if (studentGroupFilter === 'RCC') return isRccStudent(student);
+    if (studentGroupFilter === 'General') return !isRccStudent(student);
+    return true;
+  });
+  const totalPages = Math.max(1, Math.ceil(visibleStudents.length / itemsPerPage));
+  const paginatedStudents = visibleStudents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [students.length, selectedClass, selectedSection, studentGroupFilter]);
 
   const currentClassObj = classes.find(c => c.name === selectedClass);
   const sections = currentClassObj ? currentClassObj.sections : [];
@@ -154,6 +173,18 @@ const Admissions = () => {
               </div>
             </div>
             <div className="flex gap-2 w-full md:w-auto">
+              <div className="space-y-1 min-w-44">
+                <Label>Student Group</Label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+                  value={studentGroupFilter}
+                  onChange={(e) => setStudentGroupFilter(e.target.value)}
+                >
+                  <option value="All">All Students</option>
+                  <option value="RCC">RCC Students</option>
+                  <option value="General">General Students</option>
+                </select>
+              </div>
               <Button onClick={() => {
                 if (!selectedClass) { alert("Please select a class first"); return; }
                 setIsImportModalOpen(true);
@@ -193,7 +224,7 @@ const Admissions = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                students.map((student) => (
+                paginatedStudents.map((student) => (
                   <TableRow key={student._id || student.id}>
                     <TableCell className="font-mono text-sm">{student.admissionNumber}</TableCell>
                     <TableCell className="font-medium">{student.studentName}</TableCell>
@@ -222,6 +253,7 @@ const Admissions = () => {
               )}
             </TableBody>
           </Table>
+          <Pagination page={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
         </CardContent>
       </Card>
 
@@ -423,6 +455,18 @@ const Admissions = () => {
               <div className="space-y-2">
                 <Label>Nationality</Label>
                 <Input value={manualForm.nationality} onChange={(e) => setManualForm({...manualForm, nationality: e.target.value})} />
+              </div>
+              <div className="space-y-2 md:col-span-3">
+                <Label className="font-bold text-gray-900">Student Group</Label>
+                <label className="flex items-center gap-3 rounded-md border-2 border-purple-300 bg-purple-50/30 px-3 py-2 text-sm font-semibold text-gray-800">
+                  <input
+                    type="checkbox"
+                    checked={manualForm.isRcc || false}
+                    onChange={(e) => setManualForm({ ...manualForm, isRcc: e.target.checked })}
+                    className="h-4 w-4 rounded border-purple-400 text-purple-600 focus:ring-purple-600"
+                  />
+                  <span>{manualForm.isRcc ? 'RCC Course Student' : 'General (Non-RCC) Student'}</span>
+                </label>
               </div>
             </div>
           </div>

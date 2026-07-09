@@ -2,11 +2,13 @@ import React, { useState, useEffect, useMemo } from 'react';
 import api from '../services/api';
 import { Card, CardContent } from '../components/ui/Card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
-import { Users, Search, Filter, IndianRupee, GraduationCap, XCircle, UserMinus } from 'lucide-react';
+import { Users, Search, Filter, IndianRupee, GraduationCap, XCircle, UserMinus, Download } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
+import Pagination from '../components/ui/Pagination';
 import { Link, useNavigate } from 'react-router-dom';
+import { getStudentCategoryLabel, isRccStudent } from '../utils/studentCategory';
 
 const OldStudents = () => {
   const [students, setStudents] = useState([]);
@@ -21,6 +23,9 @@ const OldStudents = () => {
   const [classFilter, setClassFilter] = useState('All');
   const [sectionFilter, setSectionFilter] = useState('All');
   const [academicYearFilter, setAcademicYearFilter] = useState('All');
+  const [studentGroupFilter, setStudentGroupFilter] = useState('All');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     fetchStudents();
@@ -55,6 +60,66 @@ const OldStudents = () => {
     setSectionFilter('All');
     setAcademicYearFilter('All');
     setQuickFeeFilter('ALL');
+    setStudentGroupFilter('All');
+  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [quickFeeFilter, searchQuery, exitTypeFilter, feeStatusFilter, classFilter, sectionFilter, academicYearFilter, studentGroupFilter]);
+
+  const escapeCSVValue = (value) => {
+    const text = value === null || value === undefined ? '' : String(value);
+    if (/[",\n]/.test(text)) {
+      return `"${text.replace(/"/g, '""')}"`;
+    }
+    return text;
+  };
+
+  const downloadCSV = () => {
+    const headers = [
+      'Admission No',
+      'Student Name',
+      'Exit Type',
+      'Class',
+      'Section',
+      'Academic Year',
+      'Exit Date',
+      'Total Fee',
+      'Total Paid',
+      'Pending Fee',
+      'Fee Status'
+    ];
+
+    const rows = filteredStudents.map((student) => {
+      const totalPending = getStudentTotalPending(student);
+      const totalPaid = getStudentTotalPaid(student);
+      const totalFee = getStudentTotalFee(student);
+
+      return [
+        student.admissionNumber || '',
+        student.studentName || '',
+        student.studentStatus || '',
+        student.currentClass || '',
+        student.section || '',
+        student.academicYear || 'N/A',
+        student.updatedAt ? new Date(student.updatedAt).toLocaleDateString() : '',
+        totalFee.toFixed(2),
+        totalPaid.toFixed(2),
+        totalPending.toFixed(2),
+        totalPending > 0 ? 'PENDING' : 'PAID'
+      ].map(escapeCSVValue);
+    });
+
+    const csvContent = [headers.map(escapeCSVValue).join(','), ...rows.map((row) => row.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.href = url;
+    link.download = `old_students_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   };
 
   const getStudentTotalPending = (s) => {
@@ -104,6 +169,8 @@ const OldStudents = () => {
     if (classFilter !== 'All' && s.currentClass !== classFilter) return false;
     if (sectionFilter !== 'All' && s.section !== sectionFilter) return false;
     if (academicYearFilter !== 'All' && s.academicYear !== academicYearFilter) return false;
+    if (studentGroupFilter === 'RCC' && !isRccStudent(s)) return false;
+    if (studentGroupFilter === 'General' && isRccStudent(s)) return false;
 
     return true;
   });
@@ -117,6 +184,8 @@ const OldStudents = () => {
     leftSchool: students.filter(s => s.studentStatus === 'Left School').length,
     pendingFees: students.filter(s => getStudentTotalPending(s) > 0).length,
   };
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / itemsPerPage));
+  const paginatedStudents = filteredStudents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -288,10 +357,27 @@ const OldStudents = () => {
                   ))}
                 </select>
               </div>
+
+              <div>
+                <Label>Student Group</Label>
+                <select 
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+                  value={studentGroupFilter}
+                  onChange={(e) => setStudentGroupFilter(e.target.value)}
+                >
+                  <option value="All">All Students</option>
+                  <option value="RCC">RCC Students</option>
+                  <option value="General">General Students</option>
+                </select>
+              </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={clearFilters}>Clear Filters</Button>
+              <Button variant="outline" onClick={downloadCSV}>
+                <Download className="mr-2 h-4 w-4" />
+                Export CSV
+              </Button>
             </div>
           </div>
         </CardContent>
@@ -325,7 +411,7 @@ const OldStudents = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredStudents.map(student => {
+                  paginatedStudents.map(student => {
                     const totalPending = getStudentTotalPending(student);
                     const totalPaid = getStudentTotalPaid(student);
                     const totalFee = getStudentTotalFee(student);
@@ -337,6 +423,13 @@ const OldStudents = () => {
                           <Link to={`/dashboard/students/edit/${student._id}`} className="text-orange-600 hover:underline">
                             {student.studentName}
                           </Link>
+                          <span className={`ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                            getStudentCategoryLabel(student) === 'RCC'
+                              ? 'bg-purple-100 text-purple-800'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}>
+                            {getStudentCategoryLabel(student)}
+                          </span>
                         </TableCell>
                         <TableCell>
                           <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
@@ -367,9 +460,9 @@ const OldStudents = () => {
                             <Button 
                               size="sm" 
                               onClick={() => navigate('/dashboard/payments')}
-                              className="bg-orange-600 hover:bg-orange-700 text-white"
+                              className="bg-orange-600 hover:bg-orange-700 text-white whitespace-nowrap"
                             >
-                              Pay Pending Fee
+                              Pay Pending
                             </Button>
                           ) : (
                             <span className="text-sm text-gray-500 italic">Fully Paid</span>
@@ -381,6 +474,7 @@ const OldStudents = () => {
                 )}
               </TableBody>
             </Table>
+            <Pagination page={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
           </div>
         </CardContent>
       </Card>

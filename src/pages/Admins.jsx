@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
+import Pagination from '../components/ui/Pagination';
 
 const Admins = () => {
   const [admins, setAdmins] = useState([]);
@@ -15,6 +16,9 @@ const Admins = () => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const [historyPage, setHistoryPage] = useState(1);
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -49,6 +53,19 @@ const Admins = () => {
   useEffect(() => {
     fetchAdmins();
   }, []);
+
+  const totalPages = Math.max(1, Math.ceil(admins.length / itemsPerPage));
+  const paginatedAdmins = admins.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const historyPages = Math.max(1, Math.ceil(logs.length / itemsPerPage));
+  const paginatedLogs = logs.slice((historyPage - 1) * itemsPerPage, historyPage * itemsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [admins.length]);
+
+  useEffect(() => {
+    setHistoryPage(1);
+  }, [logs.length, isHistoryModalOpen]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -127,7 +144,7 @@ const Admins = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                admins.map((admin) => {
+                paginatedAdmins.map((admin) => {
                   const lastActiveDate = admin.lastActivity ? new Date(admin.lastActivity) : new Date(admin.createdAt);
                   const hasActivity = admin.lastActivity && Math.abs(lastActiveDate.getTime() - new Date(admin.createdAt).getTime()) > 1000;
                   const isOnline = hasActivity ? (new Date().getTime() - lastActiveDate.getTime()) < 300000 : false;
@@ -199,6 +216,7 @@ const Admins = () => {
               )}
             </TableBody>
           </Table>
+          <Pagination page={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
         </CardContent>
       </Card>
 
@@ -271,7 +289,7 @@ const Admins = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                logs.map((log) => (
+                paginatedLogs.map((log) => (
                   <TableRow key={log.id}>
                     <TableCell className="font-medium">{log.user?.username || 'Unknown'}</TableCell>
                     <TableCell>{new Date(log.timestamp).toLocaleString()}</TableCell>
@@ -280,6 +298,7 @@ const Admins = () => {
               )}
             </TableBody>
           </Table>
+          <Pagination page={historyPage} totalPages={historyPages} onPageChange={setHistoryPage} className="mt-4" />
         </div>
         <div className="flex justify-end pt-4 border-t border-gray-200 mt-4">
           <Button onClick={() => setIsHistoryModalOpen(false)}>Close</Button>

@@ -7,6 +7,7 @@ import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import { ArrowLeft, User, BookOpen, Users, DollarSign, Save } from 'lucide-react';
 import { MultiSelectDropdown } from '../components/ui/MultiSelectDropdown';
+import { isRccStudent } from '../utils/studentCategory';
 
 const StudentEdit = () => {
   const { id } = useParams();
@@ -38,6 +39,7 @@ const StudentEdit = () => {
     admissionDate: '',
     academicYear: '',
     studentStatus: 'Active',
+    isRcc: false,
     fatherName: '',
     fatherPhone: '',
     fatherOccupation: '',
@@ -94,6 +96,7 @@ const StudentEdit = () => {
         admissionDate: student.admissionDate ? student.admissionDate.split('T')[0] : '',
         academicYear: student.academicYear || '',
         studentStatus: student.studentStatus || 'Active',
+        isRcc: isRccStudent(student),
         fatherName: student.fatherName || '',
         fatherPhone: student.fatherPhone || '',
         fatherOccupation: student.fatherOccupation || '',
@@ -134,6 +137,10 @@ const StudentEdit = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleRccToggleChange = (e) => {
+    setFormData(prev => ({ ...prev, isRcc: e.target.checked }));
+  };
+
   // Calculations
   const includedChargesTotal = selectedCharges.reduce((sum, chargeId) => {
     const charge = availableCharges.find(c => (c._id || c.id) === chargeId);
@@ -152,6 +159,7 @@ const StudentEdit = () => {
     try {
       const payload = {
         ...formData,
+        rcc: formData.isRcc ? 'RCC' : 'General',
         baseFee: Number(formData.baseFee),
         includedChargesTotal,
         activitiesTotal,
@@ -292,6 +300,20 @@ const StudentEdit = () => {
                   <option value="Left School">Left School</option>
                   <option value="Other">Other</option>
                 </select>
+              </div>
+
+              {/* NEW SELECTION MODULE: Choose between RCC or General Group classification */}
+              <div className="space-y-2">
+                <Label className="font-bold text-gray-900">Course Group Type *</Label>
+                <label className="flex items-center gap-3 rounded-md border-2 border-purple-300 bg-purple-50/30 px-3 py-2 text-sm font-semibold text-gray-800">
+                  <input
+                    type="checkbox"
+                    checked={formData.isRcc}
+                    onChange={handleRccToggleChange}
+                    className="h-4 w-4 rounded border-purple-400 text-purple-600 focus:ring-purple-600"
+                  />
+                  <span>{formData.isRcc ? 'RCC Course Student' : 'General (Non-RCC) Student'}</span>
+                </label>
               </div>
             </CardContent>
           </Card>

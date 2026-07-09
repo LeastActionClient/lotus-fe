@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
+import Pagination from '../components/ui/Pagination';
 import { FileText, Plus, CheckCircle, Trash2, Settings } from 'lucide-react';
 
 const Applications = () => {
@@ -17,6 +18,8 @@ const Applications = () => {
   const [selectedAppId, setSelectedAppId] = useState(null);
   const [assignSection, setAssignSection] = useState('');
   const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [customIds, setCustomIds] = useState({ nextApplicationNo: '', nextAdmissionNo: '' });
   const [formData, setFormData] = useState({
     applicationNo: '', date: '', adminNo: '', emisNo: '',
@@ -71,6 +74,10 @@ const Applications = () => {
     fetchApplications();
     fetchCustomIds();
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [applications.length]);
 
   const fetchCustomIds = async () => {
     try {
@@ -161,6 +168,9 @@ const Applications = () => {
     }
   };
 
+  const totalPages = Math.max(1, Math.ceil(applications.length / itemsPerPage));
+  const paginatedApplications = applications.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -204,7 +214,7 @@ const Applications = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                applications.map((app) => (
+                paginatedApplications.map((app) => (
                   <TableRow key={app.id}>
                     <TableCell className="font-mono text-sm">{app.applicationId}</TableCell>
                     <TableCell className="font-medium">{app.studentName}</TableCell>
@@ -257,6 +267,7 @@ const Applications = () => {
               )}
             </TableBody>
           </Table>
+          <Pagination page={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
         </CardContent>
       </Card>
 

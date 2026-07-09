@@ -6,6 +6,7 @@ import { Printer, Download, Search, CheckSquare, Square } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
+import Pagination from '../components/ui/Pagination';
 
 const AVAILABLE_FIELDS = [
   { id: 'admissionNumber', label: 'Admission No' },
@@ -44,6 +45,8 @@ const PrintExport = () => {
   const [selectedClass, setSelectedClass] = useState('FULL_SCHOOL');
   const [selectedSection, setSelectedSection] = useState('ALL_SECTIONS');
   const [phoneSearch, setPhoneSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const [selectedFields, setSelectedFields] = useState(
     AVAILABLE_FIELDS.reduce((acc, field) => ({ ...acc, [field.id]: true }), {})
@@ -85,6 +88,10 @@ const PrintExport = () => {
     setFilteredStudents(result);
   }, [selectedClass, selectedSection, phoneSearch, students]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedClass, selectedSection, phoneSearch, students.length, selectedFields]);
+
   const handlePrint = () => {
     window.print();
   };
@@ -99,6 +106,9 @@ const PrintExport = () => {
   const toggleAllFields = (select) => {
     setSelectedFields(AVAILABLE_FIELDS.reduce((acc, field) => ({ ...acc, [field.id]: select }), {}));
   };
+
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / itemsPerPage));
+  const paginatedStudents = filteredStudents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const downloadCSV = () => {
     const fieldsToExport = AVAILABLE_FIELDS.filter(f => selectedFields[f.id]);
@@ -278,7 +288,7 @@ const PrintExport = () => {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredStudents.slice(0, 100).map((student) => (
+                    paginatedStudents.map((student) => (
                       <TableRow key={student.id}>
                         <TableCell className="font-mono text-sm">{student.admissionNumber}</TableCell>
                         <TableCell className="font-medium text-gray-900">{student.studentName}</TableCell>
@@ -290,9 +300,10 @@ const PrintExport = () => {
                   )}
                 </TableBody>
               </Table>
-              {filteredStudents.length > 100 && (
+              <Pagination page={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} className="print:hidden" />
+              {filteredStudents.length > paginatedStudents.length && (
                 <div className="text-center p-4 text-sm text-gray-500 bg-gray-50 border-t print:hidden">
-                  Showing top 100 results in preview. Export CSV to see all {filteredStudents.length} students.
+                  Showing {paginatedStudents.length} preview results. Export CSV to see all {filteredStudents.length} students.
                 </div>
               )}
             </CardContent>

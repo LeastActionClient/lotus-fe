@@ -7,7 +7,9 @@ import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
+import Pagination from '../components/ui/Pagination';
 import Select from 'react-select';
+import { getStudentCategoryLabel } from '../utils/studentCategory';
 
 const Payments = () => {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -21,6 +23,8 @@ const Payments = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [filterCategory, setFilterCategory] = useState('All');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const [paymentData, setPaymentData] = useState({
     studentFeeId: '',
@@ -130,6 +134,12 @@ const Payments = () => {
   const filteredPayments = filterCategory === 'All' 
     ? payments 
     : payments.filter(p => p.studentFee?.feeCategory?.name === filterCategory);
+  const totalPages = Math.max(1, Math.ceil(filteredPayments.length / itemsPerPage));
+  const paginatedPayments = filteredPayments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterCategory, payments.length]);
 
   const studentOptions = students
     .filter(s => !selectedClass || s.currentClass === selectedClass)
@@ -199,13 +209,20 @@ const Payments = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredPayments.map((payment) => (
+                paginatedPayments.map((payment) => (
                   <TableRow key={payment._id || payment.id}>
                     <TableCell className="font-mono text-sm">{payment.invoice?.invoiceNumber || 'N/A'}</TableCell>
                     <TableCell>{new Date(payment.paymentDate).toLocaleDateString()}</TableCell>
-                    <TableCell className="font-medium text-gray-900 ">
+                  <TableCell className="font-medium text-gray-900 ">
                       {payment.student?.studentName}
                       <span className="block text-xs text-gray-500">{payment.student?.admissionNumber}</span>
+                      <span className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                        getStudentCategoryLabel(payment.student) === 'RCC'
+                          ? 'bg-purple-100 text-purple-800'
+                          : 'bg-gray-100 text-gray-700'
+                      }`}>
+                        {getStudentCategoryLabel(payment.student)}
+                      </span>
                     </TableCell>
                     <TableCell>
                       {payment.isFullPayment ? (
@@ -241,6 +258,7 @@ const Payments = () => {
               )}
             </TableBody>
           </Table>
+          <Pagination page={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
         </CardContent>
       </Card>
 

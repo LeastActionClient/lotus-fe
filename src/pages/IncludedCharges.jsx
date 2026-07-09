@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
+import Pagination from '../components/ui/Pagination';
 import { Link } from 'react-router-dom';
 
 const IncludedCharges = () => {
@@ -23,6 +24,8 @@ const IncludedCharges = () => {
 
   // Search, Pagination, Sort
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   
   useEffect(() => {
     fetchCharges();
@@ -87,6 +90,12 @@ const IncludedCharges = () => {
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.amount.toString().includes(searchTerm)
   );
+  const totalPages = Math.max(1, Math.ceil(filteredCharges.length / itemsPerPage));
+  const paginatedCharges = filteredCharges.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   if (currentUser.role !== 'SUPER_ADMIN' && currentUser.role !== 'ADMIN') {
     return <div className="p-8 text-center text-red-500">Access Denied</div>;
@@ -158,7 +167,7 @@ const IncludedCharges = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredCharges.map((charge) => (
+                paginatedCharges.map((charge) => (
                   <TableRow key={charge.id}>
                     <TableCell className="font-medium text-gray-900">{charge.name}</TableCell>
                     <TableCell>₹ {charge.amount}</TableCell>
@@ -185,6 +194,7 @@ const IncludedCharges = () => {
               )}
             </TableBody>
           </Table>
+          <Pagination page={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
         </CardContent>
       </Card>
 
