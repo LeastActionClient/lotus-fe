@@ -45,8 +45,12 @@ const PrintExport = () => {
   const [selectedClass, setSelectedClass] = useState('FULL_SCHOOL');
   const [selectedSection, setSelectedSection] = useState('ALL_SECTIONS');
   const [phoneSearch, setPhoneSearch] = useState('');
+<<<<<<< HEAD
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+=======
+  const [rccOnly, setRccOnly] = useState(false);
+>>>>>>> 17312b3df766fb4759b013b92b581d25785c3e95
 
   const [selectedFields, setSelectedFields] = useState(
     AVAILABLE_FIELDS.reduce((acc, field) => ({ ...acc, [field.id]: true }), {})
@@ -84,9 +88,12 @@ const PrintExport = () => {
         (s.motherPhone && s.motherPhone.includes(phoneSearch))
       );
     }
+    if (rccOnly) {
+      result = result.filter(s => s.rcc && s.rcc.trim().toLowerCase() === 'rcc');
+    }
     
     setFilteredStudents(result);
-  }, [selectedClass, selectedSection, phoneSearch, students]);
+  }, [selectedClass, selectedSection, phoneSearch, rccOnly, students]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -198,7 +205,7 @@ const PrintExport = () => {
         <div className="md:col-span-3 space-y-6">
           <Card className="bg-orange-50 border-orange-100">
             <CardContent className="pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="classFilter">Select Scope</Label>
                   <select 
@@ -244,6 +251,19 @@ const PrintExport = () => {
                       value={phoneSearch}
                       onChange={(e) => setPhoneSearch(e.target.value)}
                     />
+                  </div>
+                </div>
+
+                <div className="space-y-2 flex flex-col justify-end">
+                  <div className="flex items-center space-x-2 h-10">
+                    <input 
+                      type="checkbox" 
+                      id="rccFilter"
+                      checked={rccOnly}
+                      onChange={(e) => setRccOnly(e.target.checked)}
+                      className="rounded border-gray-300 text-orange-600 focus:ring-orange-600 h-4 w-4"
+                    />
+                    <Label htmlFor="rccFilter" className="cursor-pointer font-medium text-gray-700">RCC Students Only</Label>
                   </div>
                 </div>
               </div>
