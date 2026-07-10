@@ -28,12 +28,14 @@ const Payments = () => {
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   const [filterCategory, setFilterCategory] = useState('All');
+  const [filterTableClass, setFilterTableClass] = useState('All');
+  const [filterTableSection, setFilterTableSection] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
   const [paymentData, setPaymentData] = useState({
-    studentFeeId: '',
-    amount: '',
+    studentFeeIds: [],
+    amount: '0',
     paymentMethod: 'CASH',
     referenceNumber: '',
     remarks: ''
@@ -95,19 +97,19 @@ const Payments = () => {
         if (pendingFees.length === 1) {
           setPaymentData(prev => ({
             ...prev,
-            studentFeeId: pendingFees[0]._id || pendingFees[0].id,
+            studentFeeIds: [pendingFees[0]._id || pendingFees[0].id],
             amount: pendingFees[0].remainingAmount.toString()
           }));
         } else {
-          setPaymentData(prev => ({...prev, studentFeeId: '', amount: ''}));
+          setPaymentData(prev => ({...prev, studentFeeIds: [], amount: '0'}));
         }
       } else {
         setStudentFees([]);
-        setPaymentData(prev => ({...prev, studentFeeId: '', amount: ''}));
+        setPaymentData(prev => ({...prev, studentFeeIds: [], amount: '0'}));
       }
     } else {
       setStudentFees([]);
-      setPaymentData(prev => ({...prev, studentFeeId: '', amount: ''}));
+      setPaymentData(prev => ({...prev, studentFeeIds: [], amount: '0'}));
     }
   }, [selectedStudentId, students]);
 
@@ -121,10 +123,20 @@ const Payments = () => {
 
   const handlePayment = async (e) => {
     e.preventDefault();
-    if (hasPreviousYearPending && paymentData.studentFeeId && paymentData.studentFeeId !== 'FULL') {
-      const selectedFee = studentFees.find(f => (f._id || f.id) === paymentData.studentFeeId);
-      if (selectedFee && !isPreviousYearFee(selectedFee, selectedStudent)) {
-        alert("STRICT RULE: Please collect previous year pending fees before proceeding with current year payments.");
+    if (paymentData.studentFeeIds.length === 0) {
+      alert("Please select at least one fee to pay.");
+      return;
+    }
+
+    if (hasPreviousYearPending) {
+      const selectedPreviousYearFees = paymentData.studentFeeIds.filter(id => {
+        const fee = studentFees.find(f => (f._id || f.id) === id);
+        return fee && isPreviousYearFee(fee, selectedStudent);
+      });
+      const totalPreviousYearPending = studentFees.filter(f => isPreviousYearFee(f, selectedStudent) && f.remainingAmount > 0).length;
+      
+      if (selectedPreviousYearFees.length < totalPreviousYearPending) {
+        alert("STRICT RULE: Please select all previous year pending fees before proceeding with current year payments.");
         return;
       }
     }
@@ -132,7 +144,7 @@ const Payments = () => {
     try {
       await api.post('/payments', {
         studentId: selectedStudentId,
-        studentFeeId: paymentData.studentFeeId,
+        studentFeeIds: paymentData.studentFeeIds,
         amount: Number(paymentData.amount),
         paymentMethod: paymentData.paymentMethod,
         referenceNumber: paymentData.referenceNumber,
@@ -142,8 +154,8 @@ const Payments = () => {
       setSelectedStudentId('');
       setSelectedSection('');
       setPaymentData({
-        studentFeeId: '',
-        amount: '',
+        studentFeeIds: [],
+        amount: '0',
         paymentMethod: 'CASH',
         referenceNumber: '',
         remarks: ''
@@ -177,17 +189,64 @@ const Payments = () => {
 
   const uniqueClasses = [...new Set(students.map(s => s.currentClass).filter(Boolean))].sort();
   const uniqueSections = [...new Set(students.filter(s => !selectedClass || s.currentClass === selectedClass).map(s => s.section).filter(Boolean))].sort();
+  
+  const uniqueTableClasses = [...new Set(payments.map(p => p.studentId?.currentClass).filter(Boolean))].sort();
+  const uniqueTableSections = [...new Set(payments.filter(p => filterTableClass === 'All' || p.studentId?.currentClass === filterTableClass).map(p => p.studentId?.section).filter(Boolean))].sort();
+  
   const uniqueCategories = feeCategories.map(c => c.name).sort();
 
-  const filteredPayments = filterCategory === 'All' 
-    ? payments 
-    : payments.filter(p => p.studentFee?.feeCategory?.name === filterCategory);
+  const filteredPayments = payments.filter(p => {
+    const matchCategory = filterCategory === 'All' || p.studentFee?.feeCategory?.name === filterCategory;
+    const matchClass = filterTableClass === 'All' || p.studentId?.currentClass === filterTableClass;
+    const matchSection = filterTableSection === 'All' || p.studentId?.section === filterTableSection;
+    return matchCategory && matchClass && matchSection;
+  });
+
   const totalPages = Math.max(1, Math.ceil(filteredPayments.length / itemsPerPage));
   const paginatedPayments = filteredPayments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
+  const downloadCSV = () => {
+    const headers = ["Invoice No", "Date", "Student Name", "Admission No", "Class", "Section", "Fee Category", "Amount", "Method", "Recorded By"];
+    const rows = filteredPayments.map(p => {
+      let feeCategory = '';
+      if (p.feeAllocations?.length > 1) {
+        feeCategory = `Multiple Fees (${p.feeAllocations.length})`;
+      } else if (p.feeAllocations?.length === 1) {
+        feeCategory = p.feeAllocations[0].studentFeeId?.feeCategoryId?.name || 'Fee';
+      } else {
+        feeCategory = p.studentFee?.feeCategory?.name || 'N/A';
+      }
+      return [
+        p.invoice?.invoiceNumber || '-',
+        new Date(p.paymentDate).toLocaleDateString(),
+        p.studentId?.studentName || '-',
+        p.studentId?.admissionNumber || '-',
+        p.studentId?.currentClass || '-',
+        p.studentId?.section || '-',
+        feeCategory,
+        p.amount,
+        p.paymentMethod,
+        p.recordedById?.username || '-'
+      ];
+    });
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(r => r.map(f => `"${String(f).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Payments_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterCategory, payments.length]);
+  }, [filterCategory, filterTableClass, filterTableSection, payments.length]);
 
   if (pageLoading) return <PageLoader />;
 
@@ -209,31 +268,58 @@ const Payments = () => {
           </h1>
           <p className="text-gray-500  mt-2">Record fee collections and generate receipts</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" /> Record Payment
-        </Button>
+        <div className="flex space-x-2">
+          <Button variant="outline" onClick={downloadCSV}>
+            <Download className="mr-2 h-4 w-4" /> Export CSV
+          </Button>
+          <Button onClick={() => setIsModalOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" /> Record Payment
+          </Button>
+        </div>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-        <Button 
-          variant={filterCategory === 'All' ? 'default' : 'outline'} 
-          size="sm" 
-          onClick={() => setFilterCategory('All')}
-          className={`rounded-full px-4 ${filterCategory === 'All' ? 'bg-orange-600 hover:bg-orange-700 text-white border-0' : 'bg-white'}`}
-        >
-          All
-        </Button>
-        {uniqueCategories.map(cat => (
+      <div className="flex flex-col sm:flex-row justify-between gap-4">
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide flex-1">
           <Button 
-            key={cat} 
-            variant={filterCategory === cat ? 'default' : 'outline'} 
+            variant={filterCategory === 'All' ? 'default' : 'outline'} 
             size="sm" 
-            onClick={() => setFilterCategory(cat)}
-            className={`rounded-full px-4 whitespace-nowrap ${filterCategory === cat ? 'bg-orange-600 hover:bg-orange-700 text-white border-0' : 'bg-white'}`}
+            onClick={() => setFilterCategory('All')}
+            className={`rounded-full px-4 ${filterCategory === 'All' ? 'bg-orange-600 hover:bg-orange-700 text-white border-0' : 'bg-white'}`}
           >
-            {cat}
+            All
           </Button>
-        ))}
+          {uniqueCategories.map(cat => (
+            <Button 
+              key={cat} 
+              variant={filterCategory === cat ? 'default' : 'outline'} 
+              size="sm" 
+              onClick={() => setFilterCategory(cat)}
+              className={`rounded-full px-4 whitespace-nowrap ${filterCategory === cat ? 'bg-orange-600 hover:bg-orange-700 text-white border-0' : 'bg-white'}`}
+            >
+              {cat}
+            </Button>
+          ))}
+        </div>
+        
+        <div className="flex space-x-2 pb-2">
+          <select 
+            className="border border-gray-300 rounded-md px-3 py-1.5 text-sm bg-white min-w-[120px]" 
+            value={filterTableClass} 
+            onChange={(e) => { setFilterTableClass(e.target.value); setFilterTableSection('All'); }}
+          >
+            <option value="All">All Classes</option>
+            {uniqueTableClasses.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <select 
+            className="border border-gray-300 rounded-md px-3 py-1.5 text-sm bg-white min-w-[120px]" 
+            value={filterTableSection} 
+            onChange={(e) => setFilterTableSection(e.target.value)} 
+            disabled={filterTableClass === 'All'}
+          >
+            <option value="All">All Sections</option>
+            {uniqueTableSections.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
       </div>
 
       <Card>
@@ -275,8 +361,10 @@ const Payments = () => {
                       </span>
                     </TableCell>
                     <TableCell>
-                      {payment.isFullPayment ? (
-                        <span className="font-semibold text-emerald-600">Full Fees</span>
+                      {payment.feeAllocations?.length > 1 ? (
+                        <span className="font-semibold text-emerald-600">Multiple Fees ({payment.feeAllocations.length})</span>
+                      ) : payment.feeAllocations?.length === 1 ? (
+                        payment.feeAllocations[0].studentFeeId?.feeCategoryId?.name || 'Fee'
                       ) : (
                         payment.studentFee?.feeCategory?.name || 'N/A'
                       )}
@@ -376,57 +464,59 @@ const Payments = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="feeSelect">Select Assigned Fee</Label>
-            <select 
-              id="feeSelect" 
-              className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600 disabled:opacity-50"
-              value={paymentData.studentFeeId}
-              onChange={(e) => {
-                const feeId = e.target.value;
-                if (feeId === 'FULL') {
-                  const total = studentFees.reduce((sum, f) => sum + f.remainingAmount, 0);
-                  setPaymentData({
-                    ...paymentData, 
-                    studentFeeId: feeId,
-                    amount: total.toString()
-                  });
-                } else {
-                  const selectedFee = studentFees.find(f => (f._id || f.id) === feeId);
-                  setPaymentData({
-                    ...paymentData, 
-                    studentFeeId: feeId,
-                    amount: selectedFee ? selectedFee.remainingAmount.toString() : ''
-                  });
-                }
-              }}
-              required
-              disabled={!selectedStudentId || studentFees.length === 0}
-            >
-              <option value="">-- Choose Fee (Unpaid) --</option>
-              {studentFees.length > 1 && (
-                <option value="FULL" className="font-bold text-emerald-600">
-                  Full Fees - Rs. {studentFees.reduce((sum, f) => sum + f.remainingAmount, 0)}
-                </option>
-              )}
-              {studentFees.map(f => {
-                const isPrev = isPreviousYearFee(f, selectedStudent);
-                const isDisabled = hasPreviousYearPending && !isPrev;
-                
-                const classLabel = f.className && f.academicYear
-                  ? `[${f.className} - ${f.academicYear}]`
-                  : f.className
-                    ? `[${f.className}]`
-                    : '';
-                return (
-                  <option key={f._id || f.id} value={f._id || f.id} disabled={isDisabled}>
-                    {classLabel} {f.feeCategory?.name || 'Fee'} - Rs. {f.remainingAmount} {isDisabled ? '(Clear previous dues first)' : ''}
-                  </option>
-                );
-              })}
-            </select>
-            {selectedStudentId && studentFees.length === 0 && (
+            <Label>Select Fees to Pay</Label>
+            <div className="max-h-48 overflow-y-auto p-2 border border-gray-300 rounded-md bg-white space-y-2">
+            {studentFees.length === 0 && (
               <p className="text-xs text-red-500">This student has no pending fee dues.</p>
             )}
+            {studentFees.map(f => {
+              const feeId = f._id || f.id;
+              const isPrev = isPreviousYearFee(f, selectedStudent);
+              const isDisabled = hasPreviousYearPending && !isPrev && !paymentData.studentFeeIds.includes(feeId);
+              
+              const classLabel = f.className && f.academicYear
+                ? `[${f.className} - ${f.academicYear}]`
+                : f.className
+                  ? `[${f.className}]`
+                  : '';
+              
+              const isChecked = paymentData.studentFeeIds.includes(feeId);
+
+              return (
+                <div key={feeId} className={`flex items-center space-x-2 py-1 ${isDisabled ? 'opacity-50' : ''}`}>
+                  <input
+                    type="checkbox"
+                    id={`fee-${feeId}`}
+                    checked={isChecked}
+                    disabled={isDisabled}
+                    className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-600 cursor-pointer"
+                    onChange={(e) => {
+                      let newIds;
+                      if (e.target.checked) {
+                        newIds = [...paymentData.studentFeeIds, feeId];
+                      } else {
+                        newIds = paymentData.studentFeeIds.filter(id => id !== feeId);
+                      }
+                      
+                      const newTotal = newIds.reduce((sum, id) => {
+                        const fee = studentFees.find(sf => (sf._id || sf.id) === id);
+                        return sum + (fee ? fee.remainingAmount : 0);
+                      }, 0);
+
+                      setPaymentData({
+                        ...paymentData,
+                        studentFeeIds: newIds,
+                        amount: newTotal.toString()
+                      });
+                    }}
+                  />
+                  <Label htmlFor={`fee-${feeId}`} className={`text-sm cursor-pointer ${isChecked ? 'font-medium text-orange-700' : 'text-gray-700'}`}>
+                    {classLabel} {f.feeCategory?.name || 'Fee'} - Rs. {f.remainingAmount} {isDisabled && !isChecked ? '(Clear previous dues first)' : ''}
+                  </Label>
+                </div>
+              );
+            })}
+          </div>
             {selectedStudentId && (() => {
               const student = students.find(s => (s._id || s.id) === selectedStudentId);
               const prevPending = student?.previousClassFees?.reduce((sum, f) => sum + (f.remainingAmount || 0), 0) || 0;
@@ -445,14 +535,13 @@ const Payments = () => {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="amount">Amount (Rs.)</Label>
+              <Label htmlFor="amount">Total Amount (Rs.)</Label>
               <Input 
                 id="amount" 
-                type="number" 
-                min="0.01" step="0.01"
+                type="text" 
                 value={paymentData.amount}
-                onChange={(e) => setPaymentData({...paymentData, amount: e.target.value})}
-                required
+                readOnly
+                className="bg-gray-100 font-bold text-gray-900 cursor-not-allowed"
               />
             </div>
             <div className="space-y-2">
@@ -483,7 +572,7 @@ const Payments = () => {
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">
             <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={loading || !selectedStudentId || !paymentData.studentFeeId}>
+            <Button type="submit" disabled={loading || !selectedStudentId || paymentData.studentFeeIds.length === 0}>
               {loading ? 'Processing...' : 'Confirm Payment'}
             </Button>
           </div>

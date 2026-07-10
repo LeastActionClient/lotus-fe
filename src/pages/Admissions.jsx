@@ -44,8 +44,55 @@ const Admissions = () => {
 
   useEffect(() => {
     fetchStudents();
-    fetchClasses();
+    fetchClasses().then((fetchedClasses) => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const appId = urlParams.get('applicationId');
+      if (appId) {
+        handleApplicationAdmission(appId, fetchedClasses);
+      }
+    });
   }, []);
+
+  const getMatchedClass = (className, classList) => {
+    if (!className || !classList) return null;
+    const normalize = (s) => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
+    const target = normalize(className);
+    return classList.find(c => normalize(c.name) === target);
+  };
+
+  const handleApplicationAdmission = async (appId, classList) => {
+    try {
+      const res = await api.get(`/applications/${appId}`);
+      const app = res.data;
+      
+      const matchedClass = getMatchedClass(app.applyingClass, classList);
+      const finalClassName = matchedClass ? matchedClass.name : app.applyingClass;
+      
+      setSelectedClass(finalClassName);
+      
+      setManualForm(prev => ({
+        ...prev,
+        applicationId: app._id || app.id,
+        studentName: app.studentName || '',
+        fatherName: app.fatherName || '',
+        motherName: app.motherName || '',
+        guardian: app.parentName || app.guardian || '',
+        fatherPhone: app.fatherPhone || '',
+        motherPhone: app.motherPhone || '',
+        address: app.address || '',
+        admissionNumber: app.adminNo || ''
+      }));
+      
+      setIsManualModalOpen(true);
+      
+      // Clean up URL without reloading
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    } catch (error) {
+      console.error("Error fetching application details", error);
+      alert("Failed to load application details.");
+    }
+  };
 
   const fetchStudents = async () => {
     try {
@@ -60,8 +107,10 @@ const Admissions = () => {
     try {
       const res = await api.get('/classes');
       setClasses(res.data);
+      return res.data;
     } catch (error) {
       console.error("Error fetching classes", error);
+      return [];
     } finally {
       setPageLoading(false);
     }
@@ -74,16 +123,23 @@ const Admissions = () => {
       return;
     }
     try {
-      await api.post('/students/manual', { ...manualForm, RTE: manualForm.isRTE ? 'RTE' : 'General', currentClass: selectedClass, section: selectedSection });
+      await api.post('/students/manual', { 
+        ...manualForm, 
+        RTE: manualForm.isRTE ? 'RTE' : 'General', 
+        currentClass: selectedClass, 
+        section: manualForm.section || selectedSection 
+      });
       setIsManualModalOpen(false);
       setManualForm({ 
         studentName: '', fatherName: '', motherName: '', fatherPhone: '', motherPhone: '', address: '', admissionNumber: '',
         dateOfBirth: '', gender: '', bloodGroup: '', aadhaarNumber: '', religion: '', community: '', caste: '', RTE: '', nationality: '', 
         fatherOccupation: '', motherOccupation: '', guardian: '', city: '', state: '', pincode: '', whatsappNumber: '', emisNumber: '',
-        isRTE: false
+        isRTE: false,
+        section: '',
+        applicationId: ''
       });
       fetchStudents();
-      alert("Student added successfully!");
+      alert(manualForm.applicationId ? "Student added successfully and application approved." : "Student added successfully!");
     } catch (error) {
       alert(error.response?.data?.error || "Error adding student.");
     }
@@ -555,12 +611,54 @@ const Admissions = () => {
 
       <Modal isOpen={isManualModalOpen} onClose={() => setIsManualModalOpen(false)} title="KASTHURI NURSERY & PRIMARY SCHOOL APPLICATION FORM" className="max-w-4xl">
         <form onSubmit={handleManualSubmit} className="space-y-6 max-h-[75vh] overflow-y-auto pr-2">
-          <div className="bg-orange-50 p-3 rounded-md border border-orange-100 flex items-center sticky top-0 z-10 shadow-sm">
-            <Users className="text-orange-600 mr-2 h-5 w-5" />
-            <span className="text-sm font-medium text-orange-900">
-              Adding to Class: {selectedClass} {selectedSection && `(Section ${selectedSection})`}
-            </span>
-          </div>
+          {manualForm.applicationId ? (
+            <div className="bg-blue-50 p-3 rounded-md border border-blue-100 flex flex-col sm:flex-row sm:items-center justify-between sticky top-0 z-10 shadow-sm gap-2">
+              <div className="flex items-center">
+                <Users className="text-blue-600 mr-2 h-5 w-5" />
+                <span className="text-sm font-medium text-blue-900">
+                  Application Admission | Applied Class: {selectedClass}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Label className="whitespace-nowrap text-sm text-blue-900 font-semibold">Section <span className="text-red-500">*</span></Label>
+                <select
+                  required
+                  className="flex h-8 w-32 rounded-md border border-gray-300 bg-white px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                  value={manualForm.section || ''}
+                  onChange={(e) => setManualForm({...manualForm, section: e.target.value})}
+                >
+                  <option value="">Select Section</option>
+                  {classes.find(c => c.name === selectedClass)?.sections?.map((s) => (
+                    <option key={s._id || s.id} value={s.name}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-orange-50 p-3 rounded-md border border-orange-100 flex items-center justify-between sticky top-0 z-10 shadow-sm">
+              <div className="flex items-center">
+                <Users className="text-orange-600 mr-2 h-5 w-5" />
+                <span className="text-sm font-medium text-orange-900">
+                  Adding to Class: {selectedClass} {selectedSection && `(Section ${selectedSection})`}
+                </span>
+              </div>
+              {!selectedSection && (
+                <div className="flex items-center gap-2">
+                  <Label className="whitespace-nowrap text-sm text-orange-900 font-semibold">Section</Label>
+                  <select
+                    className="flex h-8 w-32 rounded-md border border-gray-300 bg-white px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600 focus:border-transparent"
+                    value={manualForm.section || ''}
+                    onChange={(e) => setManualForm({...manualForm, section: e.target.value})}
+                  >
+                    <option value="">No Section</option>
+                    {classes.find(c => c.name === selectedClass)?.sections?.map((s) => (
+                      <option key={s._id || s.id} value={s.name}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          )}
           
           <div>
             <h3 className="text-lg font-medium text-gray-900 mb-3 border-b pb-2">Personal Information</h3>
@@ -696,7 +794,10 @@ const Admissions = () => {
           </div>
           
           <div className="pt-4 flex justify-end gap-2 sticky bottom-0 bg-white border-t py-3 z-10">
-            <Button type="button" variant="outline" onClick={() => setIsManualModalOpen(false)}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={() => {
+              setIsManualModalOpen(false);
+              setManualForm(prev => ({...prev, applicationId: ''}));
+            }}>Cancel</Button>
             <Button type="submit">Add Student</Button>
           </div>
         </form>
