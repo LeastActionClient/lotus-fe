@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
 import { Card, CardContent } from '../components/ui/Card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
-import { CreditCard, Plus, Download, Trash2, DollarSign } from 'lucide-react';
+import { Plus, Download, Trash2, DollarSign, Printer } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
@@ -11,11 +11,12 @@ import Pagination from '../components/ui/Pagination';
 import Select from 'react-select';
 import { getStudentCategoryLabel } from '../utils/studentCategory';
 import { PageLoader } from '../components/ui/Spinner';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const Payments = () => {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const location = useLocation();
+  const navigate = useNavigate();
   const incomingStudentId = useRef(location.state?.studentId);
   const [payments, setPayments] = useState([]);
   const [students, setStudents] = useState([]);
@@ -185,6 +186,13 @@ const Payments = () => {
       console.error("Error downloading invoice", error);
       alert("Failed to download invoice");
     }
+  };
+
+  const openInvoicePreview = (payment) => {
+    const paymentId = payment._id || payment.id;
+    navigate(`/dashboard/payments/invoice/${paymentId}`, {
+      state: { payment }
+    });
   };
 
   const uniqueClasses = [...new Set(students.map(s => s.currentClass).filter(Boolean))].sort();
@@ -373,6 +381,11 @@ const Payments = () => {
                     <TableCell>{payment.paymentMethod}</TableCell>
                     <TableCell>{payment.recordedBy?.username}</TableCell>
                     <TableCell className="text-right flex justify-end gap-2">
+                      {payment.invoice && (
+                        <Button variant="outline" size="sm" onClick={() => openInvoicePreview(payment)}>
+                          <Printer className="h-4 w-4 mr-2" /> Print
+                        </Button>
+                      )}
                       {payment.invoice && (
                         <Button variant="outline" size="sm" onClick={() => downloadInvoice(payment._id || payment.id, payment.invoice.invoiceNumber)}>
                           <Download className="h-4 w-4 mr-2" /> PDF

@@ -65,7 +65,7 @@ const DashboardLayout = () => {
   }
 
   return (
-    <div className="flex h-auto bg-gray-100 ">
+    <div className="dashboard-shell flex h-auto bg-gray-100 ">
       {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div 
@@ -75,7 +75,7 @@ const DashboardLayout = () => {
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-30 w-64 bg-white shadow-md transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`dashboard-sidebar fixed inset-y-0 left-0 z-30 w-64 bg-white shadow-md transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-6 relative">
           <button 
             className="absolute top-4 right-4 md:hidden text-gray-500"
@@ -89,19 +89,25 @@ const DashboardLayout = () => {
           <p className="text-sm text-gray-500 mt-1 text-center">Logged in as {user.username}</p>
         </div>
         <nav className="mt-6">
-          {navItems.map((item) => (
+          {navItems.map((item) => {
+            const isActive = item.path === '/dashboard'
+              ? location.pathname === item.path
+              : location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
+
+            return (
             <Link
               key={item.name}
               to={item.path}
               onClick={() => setIsSidebarOpen(false)}
               className={`flex items-center px-6 py-3 text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors ${
-                location.pathname === item.path ? 'bg-orange-50 border-r-4 border-orange-600 text-orange-600 font-medium' : ''
+                isActive ? 'bg-orange-50 border-r-4 border-orange-600 text-orange-600 font-medium' : ''
               }`}
             >
               {item.icon}
               <span className="ml-3">{item.name}</span>
             </Link>
-          ))}
+            );
+          })}
           <button
             onClick={handleLogout}
             className="w-full flex items-center px-6 py-3 text-red-600 hover:bg-red-50 transition-colors"
@@ -115,7 +121,7 @@ const DashboardLayout = () => {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         {/* Mobile Header */}
-        <header className="md:hidden bg-white shadow-sm flex items-center p-4">
+        <header className="dashboard-mobile-header md:hidden bg-white shadow-sm flex items-center p-4">
           <button 
             onClick={() => setIsSidebarOpen(true)}
             className="text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-orange-500 p-2 rounded-md"
@@ -126,8 +132,8 @@ const DashboardLayout = () => {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100">
-          <div className="p-4 md:p-8">
+        <main className="dashboard-main flex-1 overflow-x-hidden overflow-y-auto bg-gray-100">
+          <div className="dashboard-content-inner p-4 md:p-8">
             <Outlet />
           </div>
         </main>

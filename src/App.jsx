@@ -8,6 +8,7 @@ import Admissions from './pages/Admissions';
 import Students from './pages/Students';
 import FeeCategories from './pages/FeeCategories';
 import Payments from './pages/Payments';
+import InvoiceGenerated from './pages/InvoiceGenerated';
 import Reports from './pages/Reports';
 import Admins from './pages/Admins';
 import PrintExport from './pages/PrintExport';
@@ -48,6 +49,7 @@ const App = () => {
         <Route path="fee-categories/included-charges" element={<IncludedCharges />} />
         <Route path="fee-categories/activities" element={<Activities />} />
         <Route path="payments" element={<Payments />} />
+        <Route path="payments/invoice/:id" element={<InvoiceGenerated />} />
         <Route path="reports" element={<Reports />} />
         <Route path="admins" element={<Admins />} />
         <Route path="print-export" element={<PrintExport />} />
