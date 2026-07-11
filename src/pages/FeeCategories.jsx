@@ -23,6 +23,7 @@ const FeeCategories = () => {
   const [isBulkAssignModalOpen, setIsBulkAssignModalOpen] = useState(false);
   
   const [catName, setCatName] = useState('');
+  const [catMandatory, setCatMandatory] = useState(false);
   
   // For Assign to Student (Special Fee)
   const [selectedStudentId, setSelectedStudentId] = useState('');
@@ -36,6 +37,7 @@ const FeeCategories = () => {
     sectionName: ''
   });
   const [bulkFees, setBulkFees] = useState({});
+  const [selectedBulkCats, setSelectedBulkCats] = useState({});
   const [isEditingBulkFees, setIsEditingBulkFees] = useState(true);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -62,12 +64,71 @@ const FeeCategories = () => {
     fetchData();
   }, []);
 
+  const initializeBulkAssign = (clsName, secName) => {
+    let defaultFees = {};
+    const clsObj = classes.find(c => c.name === clsName);
+    if (clsObj) {
+      if (secName) {
+        const secObj = clsObj.sections?.find(s => s.name === secName);
+        if (secObj && secObj.defaultFees && Object.keys(secObj.defaultFees).length > 0) {
+          defaultFees = secObj.defaultFees;
+        } else if (clsObj.defaultFees) {
+          defaultFees = clsObj.defaultFees;
+        }
+      } else if (clsObj.defaultFees) {
+        defaultFees = clsObj.defaultFees;
+      }
+    }
+
+    const initialFees = {};
+    const initialSelected = {};
+
+    categories.forEach(cat => {
+      if (!cat.isEnabled || ['Base Fee', 'Included Charges', 'Activities', 'Full Fees'].includes(cat.name)) {
+        return;
+      }
+      
+      const savedFeeConfig = defaultFees[cat._id];
+      if (savedFeeConfig !== undefined && savedFeeConfig !== null) {
+        initialSelected[cat._id] = true;
+        if (cat.name.toLowerCase() === 'uniform') {
+          initialFees[`${cat._id}_top`] = savedFeeConfig?.pricing?.topPerMetre || '';
+          initialFees[`${cat._id}_bottom`] = savedFeeConfig?.pricing?.bottomPerMetre || '';
+        } else {
+          initialFees[cat._id] = typeof savedFeeConfig === 'number' ? savedFeeConfig : (savedFeeConfig?.amount || '');
+        }
+      } else {
+        initialSelected[cat._id] = cat.mandatory ? true : false;
+        if (cat.name.toLowerCase() === 'uniform') {
+          initialFees[`${cat._id}_top`] = '';
+          initialFees[`${cat._id}_bottom`] = '';
+        } else {
+          initialFees[cat._id] = '';
+        }
+      }
+    });
+
+    setBulkFees(initialFees);
+    setSelectedBulkCats(initialSelected);
+    setIsEditingBulkFees(Object.keys(defaultFees).length === 0);
+  };
+
+  useEffect(() => {
+    if (isBulkAssignModalOpen) {
+      setBulkAssignData({ className: '', sectionName: '' });
+      setBulkFees({});
+      setSelectedBulkCats({});
+      setIsEditingBulkFees(true);
+    }
+  }, [isBulkAssignModalOpen]);
+
   const handleCreateCategory = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/fees/categories', { name: catName });
+      await api.post('/fees/categories', { name: catName, mandatory: catMandatory });
       setIsNewCatModalOpen(false);
       setCatName('');
+      setCatMandatory(false);
       fetchData();
     } catch (error) {
       console.error("Error creating category", error);
@@ -121,12 +182,33 @@ const FeeCategories = () => {
   const handleBulkAssignFee = async (e) => {
     e.preventDefault();
     try {
-      const feesPayload = Object.entries(bulkFees)
-        .filter(([_, amount]) => amount && Number(amount) > 0)
-        .map(([feeCategoryId, amount]) => ({ feeCategoryId, amount }));
+      const feesPayload = Object.entries(selectedBulkCats)
+        .filter(([_, isChecked]) => isChecked)
+        .map(([feeCategoryId]) => {
+          const cat = categories.find(c => c._id === feeCategoryId);
+          if (cat && cat.name.toLowerCase() === 'uniform') {
+            return {
+              feeCategoryId,
+              topPerMetre: bulkFees[`${feeCategoryId}_top`] !== '' ? Number(bulkFees[`${feeCategoryId}_top`]) : 0,
+              bottomPerMetre: bulkFees[`${feeCategoryId}_bottom`] !== '' ? Number(bulkFees[`${feeCategoryId}_bottom`]) : 0
+            };
+          } else {
+            return {
+              feeCategoryId,
+              amount: bulkFees[feeCategoryId] !== '' ? Number(bulkFees[feeCategoryId]) : 0
+            };
+          }
+        });
 
-      if (feesPayload.length === 0) {
-        alert("Please enter an amount for at least one fee category.");
+      const hasInvalidAmount = feesPayload.some(f => {
+        if (f.topPerMetre !== undefined) {
+          return f.topPerMetre <= 0 || f.bottomPerMetre <= 0;
+        }
+        return f.amount <= 0;
+      });
+
+      if (hasInvalidAmount) {
+        alert("Please enter a valid rate/amount greater than 0 for all checked categories.");
         return;
       }
 
@@ -138,6 +220,7 @@ const FeeCategories = () => {
       setIsBulkAssignModalOpen(false);
       setBulkAssignData({ className: '', sectionName: '' });
       setBulkFees({});
+      setSelectedBulkCats({});
       setIsEditingBulkFees(true);
       fetchData();
       alert(res.data.message);
@@ -194,32 +277,13 @@ const FeeCategories = () => {
         </div>
       </div>
 
-      <div className="flex overflow-x-auto border-b border-gray-200">
-        <Link 
-          to="/dashboard/fee-categories" 
-          className="border-orange-500 text-orange-600 whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm"
-        >
-          Fee Categories
-        </Link>
-        <Link 
-          to="/dashboard/fee-categories/included-charges" 
-          className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm"
-        >
-          Included Charges
-        </Link>
-        <Link 
-          to="/dashboard/fee-categories/activities" 
-          className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm"
-        >
-          Activities
-        </Link>
-      </div>
       <Card>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Category Name</TableHead>
+                <TableHead>Type</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Created At</TableHead>
                 <TableHead className="text-right">Action</TableHead>
@@ -228,7 +292,7 @@ const FeeCategories = () => {
             <TableBody>
               {visibleCategories.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center h-32 text-gray-500">
+                  <TableCell colSpan={5} className="text-center h-32 text-gray-500">
                     No fee categories found.
                   </TableCell>
                 </TableRow>
@@ -236,6 +300,13 @@ const FeeCategories = () => {
                 paginatedCategories.map((cat) => (
                   <TableRow key={cat._id}>
                     <TableCell className="font-medium text-gray-900 ">{cat.name}</TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        cat.mandatory ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {cat.mandatory ? 'Mandatory' : 'Optional'}
+                      </span>
+                    </TableCell>
                     <TableCell>
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         cat.isEnabled ? 'bg-green-100 text-green-800 /30 ' : 'bg-red-100 text-red-800 /30 '
@@ -269,7 +340,7 @@ const FeeCategories = () => {
         </CardContent>
       </Card>
 
-      <Modal isOpen={isNewCatModalOpen} onClose={() => setIsNewCatModalOpen(false)} title="Create Fee Category">
+      <Modal isOpen={isNewCatModalOpen} onClose={() => { setIsNewCatModalOpen(false); setCatName(''); setCatMandatory(false); }} title="Create Fee Category">
         <form onSubmit={handleCreateCategory} className="space-y-4 pt-2">
           <div className="space-y-2">
             <Label htmlFor="catName">Category Name</Label>
@@ -281,8 +352,18 @@ const FeeCategories = () => {
               required 
             />
           </div>
+          <div className="flex items-center space-x-2 pt-2">
+            <input 
+              type="checkbox"
+              id="catMandatory" 
+              checked={catMandatory} 
+              onChange={(e) => setCatMandatory(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
+            />
+            <Label htmlFor="catMandatory" className="cursor-pointer font-medium text-gray-700">Mandatory</Label>
+          </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200  mt-6">
-            <Button type="button" variant="ghost" onClick={() => setIsNewCatModalOpen(false)}>Cancel</Button>
+            <Button type="button" variant="ghost" onClick={() => { setIsNewCatModalOpen(false); setCatName(''); setCatMandatory(false); }}>Cancel</Button>
             <Button type="submit">Create Category</Button>
           </div>
         </form>
@@ -299,14 +380,7 @@ const FeeCategories = () => {
                 onChange={(e) => {
                   const clsName = e.target.value;
                   setBulkAssignData({...bulkAssignData, className: clsName, sectionName: ''});
-                  const clsObj = classes.find(c => c.name === clsName);
-                  if (clsObj && clsObj.defaultFees && Object.keys(clsObj.defaultFees).length > 0) {
-                    setBulkFees(clsObj.defaultFees);
-                    setIsEditingBulkFees(false);
-                  } else {
-                    setBulkFees({});
-                    setIsEditingBulkFees(true);
-                  }
+                  initializeBulkAssign(clsName, '');
                 }}
                 required
               >
@@ -324,17 +398,7 @@ const FeeCategories = () => {
                 onChange={(e) => {
                   const secName = e.target.value;
                   setBulkAssignData({...bulkAssignData, sectionName: secName});
-                  const secObj = selectedClassObjBulk?.sections?.find(s => s.name === secName);
-                  if (secObj && secObj.defaultFees && Object.keys(secObj.defaultFees).length > 0) {
-                    setBulkFees(secObj.defaultFees);
-                    setIsEditingBulkFees(false);
-                  } else if (selectedClassObjBulk && selectedClassObjBulk.defaultFees && Object.keys(selectedClassObjBulk.defaultFees).length > 0) {
-                    setBulkFees(selectedClassObjBulk.defaultFees);
-                    setIsEditingBulkFees(false);
-                  } else {
-                    setBulkFees({});
-                    setIsEditingBulkFees(true);
-                  }
+                  initializeBulkAssign(bulkAssignData.className, secName);
                 }}
                 disabled={!bulkAssignData.className}
               >
@@ -352,6 +416,7 @@ const FeeCategories = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12"></TableHead>
                     <TableHead>Category Name</TableHead>
                     <TableHead className="w-1/2">Amount (₹)</TableHead>
                   </TableRow>
@@ -359,25 +424,88 @@ const FeeCategories = () => {
                 <TableBody>
                   {categories.filter(c => c.isEnabled && !['Base Fee', 'Included Charges', 'Activities', 'Full Fees'].includes(c.name)).length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={2} className="text-center text-gray-500">No active fee categories available.</TableCell>
+                      <TableCell colSpan={3} className="text-center text-gray-500">No active fee categories available.</TableCell>
                     </TableRow>
                   ) : (
-                    categories.filter(c => c.isEnabled && !['Base Fee', 'Included Charges', 'Activities', 'Full Fees'].includes(c.name)).map(cat => (
-                      <TableRow key={cat._id}>
-                        <TableCell className="font-medium">{cat.name}</TableCell>
-                        <TableCell>
-                          <Input 
-                            type="number" 
-                            min="0" step="0.01"
-                            placeholder="e.g., 5000"
-                            value={bulkFees[cat._id] || ''}
-                            onChange={(e) => setBulkFees({...bulkFees, [cat._id]: e.target.value})}
-                            readOnly={!isEditingBulkFees}
-                            className={!isEditingBulkFees ? "bg-gray-100" : ""}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    ))
+                    categories.filter(c => c.isEnabled && !['Base Fee', 'Included Charges', 'Activities', 'Full Fees'].includes(c.name)).map(cat => {
+                      const isUniform = cat.name.toLowerCase() === 'uniform';
+                      return (
+                        <React.Fragment key={cat._id}>
+                          <TableRow>
+                            <TableCell className="w-10">
+                              <input 
+                                type="checkbox"
+                                checked={!!selectedBulkCats[cat._id]}
+                                onChange={(e) => {
+                                  if (!isEditingBulkFees) return;
+                                  setSelectedBulkCats({
+                                    ...selectedBulkCats,
+                                    [cat._id]: e.target.checked
+                                  });
+                                }}
+                                disabled={!isEditingBulkFees}
+                                className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500 disabled:opacity-50 cursor-pointer"
+                              />
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              {cat.name} {cat.mandatory && <span className="text-xs text-orange-600 font-normal">(Mandatory)</span>}
+                            </TableCell>
+                            <TableCell>
+                              {!isUniform ? (
+                                <Input 
+                                  type="number" 
+                                  min="0" step="0.01"
+                                  placeholder="e.g., 5000"
+                                  value={bulkFees[cat._id] || ''}
+                                  onChange={(e) => setBulkFees({...bulkFees, [cat._id]: e.target.value})}
+                                  readOnly={!isEditingBulkFees || !selectedBulkCats[cat._id]}
+                                  className={(!isEditingBulkFees || !selectedBulkCats[cat._id]) ? "bg-gray-100" : ""}
+                                  required={selectedBulkCats[cat._id]}
+                                />
+                              ) : (
+                                <span className="text-xs text-gray-500 font-semibold">Configure per metre rates below</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                          
+                          {isUniform && selectedBulkCats[cat._id] && (
+                            <TableRow className="bg-orange-50/30">
+                              <TableCell></TableCell>
+                              <TableCell colSpan={2} className="py-3 px-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-1">
+                                    <Label className="text-xs font-semibold text-gray-600">Top Price / Metre (₹)</Label>
+                                    <Input 
+                                      type="number"
+                                      min="0" step="0.01"
+                                      placeholder="e.g., 450"
+                                      value={bulkFees[`${cat._id}_top`] || ''}
+                                      onChange={(e) => setBulkFees({...bulkFees, [`${cat._id}_top`]: e.target.value})}
+                                      readOnly={!isEditingBulkFees}
+                                      className={!isEditingBulkFees ? "bg-gray-100 h-8 text-xs" : "h-8 text-xs"}
+                                      required
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs font-semibold text-gray-600">Bottom Price / Metre (₹)</Label>
+                                    <Input 
+                                      type="number"
+                                      min="0" step="0.01"
+                                      placeholder="e.g., 350"
+                                      value={bulkFees[`${cat._id}_bottom`] || ''}
+                                      onChange={(e) => setBulkFees({...bulkFees, [`${cat._id}_bottom`]: e.target.value})}
+                                      readOnly={!isEditingBulkFees}
+                                      className={!isEditingBulkFees ? "bg-gray-100 h-8 text-xs" : "h-8 text-xs"}
+                                      required
+                                    />
+                                  </div>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </React.Fragment>
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>

@@ -111,6 +111,16 @@ const Dashboard = () => {
       alert("Please specify From and To academic years.");
       return;
     }
+
+    const yearRegex = /^\d{4}-\d{4}$/;
+    if (!yearRegex.test(fromYear)) {
+      alert("From Academic Year must be in YYYY-YYYY format (e.g., 2026-2027).");
+      return;
+    }
+    if (!yearRegex.test(toYear)) {
+      alert("To Academic Year must be in YYYY-YYYY format (e.g., 2027-2028).");
+      return;
+    }
     
     if (!window.confirm(`Are you sure you want to promote students from ${fromYear} to ${toYear}? This will update their current class and academic year.`)) {
       return;
@@ -224,25 +234,12 @@ const Dashboard = () => {
           <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border">
             <div>
               <Label>From Academic Year</Label>
-              {academicYears.length > 0 ? (
-                <select 
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
-                  value={fromYear}
-                  onChange={(e) => setFromYear(e.target.value)}
-                  required
-                >
-                  {academicYears.map(year => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
-              ) : (
-                <Input 
-                  value={fromYear} 
-                  onChange={e => setFromYear(e.target.value)} 
-                  placeholder="e.g. 2023-2024" 
-                  required 
-                />
-              )}
+              <Input 
+                value={fromYear} 
+                onChange={e => setFromYear(e.target.value)} 
+                placeholder="e.g. 2026-2027" 
+                required 
+              />
             </div>
             <div>
               <Label>To Academic Year</Label>

@@ -16,9 +16,12 @@ const StudentEdit = () => {
 
   const [loading, setLoading] = useState(true);
   
-  // Master lists for dropdowns
-  const [availableCharges, setAvailableCharges] = useState([]);
-  const [availableActivities, setAvailableActivities] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [classes, setClasses] = useState([]);
+  const [defaultFees, setDefaultFees] = useState({});
+  const [selectedCharges, setSelectedCharges] = useState([]); // Selected optional category IDs
+  const [topLength, setTopLength] = useState('');
+  const [bottomLength, setBottomLength] = useState('');
 
   // Form State
   const [formData, setFormData] = useState({
@@ -51,11 +54,29 @@ const StudentEdit = () => {
     city: '',
     state: '',
     pincode: '',
-    baseFee: 0,
   });
 
-  const [selectedCharges, setSelectedCharges] = useState([]);
-  const [selectedActivities, setSelectedActivities] = useState([]);
+  const handleTopLengthChange = (val) => {
+    if (val === '') {
+      setTopLength('');
+      return;
+    }
+    const num = parseFloat(val);
+    if (num >= 0) {
+      setTopLength(val);
+    }
+  };
+
+  const handleBottomLengthChange = (val) => {
+    if (val === '') {
+      setBottomLength('');
+      return;
+    }
+    const num = parseFloat(val);
+    if (num >= 0) {
+      setBottomLength(val);
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -64,18 +85,35 @@ const StudentEdit = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [studentRes, chargesRes, activitiesRes] = await Promise.all([
+      const [studentRes, categoriesRes, classesRes] = await Promise.all([
         api.get(`/students/${id}`),
-        api.get('/included-charges'),
-        api.get('/activities')
+        api.get('/fees/categories'),
+        api.get('/classes')
       ]);
 
       const student = studentRes.data;
-      const charges = chargesRes.data;
-      const activities = activitiesRes.data;
+      const cats = categoriesRes.data;
+      const cls = classesRes.data;
 
-      setAvailableCharges(charges);
-      setAvailableActivities(activities);
+      setCategories(cats);
+      setClasses(cls);
+
+      // Find Class and Section default fees
+      let defFees = {};
+      const clsObj = cls.find(c => c.name === student.currentClass);
+      if (clsObj) {
+        if (student.section) {
+          const secObj = clsObj.sections?.find(s => s.name === student.section);
+          if (secObj && secObj.defaultFees && Object.keys(secObj.defaultFees).length > 0) {
+            defFees = secObj.defaultFees;
+          } else if (clsObj.defaultFees) {
+            defFees = clsObj.defaultFees;
+          }
+        } else if (clsObj.defaultFees) {
+          defFees = clsObj.defaultFees;
+        }
+      }
+      setDefaultFees(defFees);
 
       // Map existing student data to form
       setFormData({
@@ -108,21 +146,33 @@ const StudentEdit = () => {
         city: student.city || '',
         state: student.state || '',
         pincode: student.pincode || '',
-        baseFee: (() => {
-          if (student.baseFee && student.baseFee > 0) return student.baseFee;
-          if (student.studentFees && student.studentFees.length > 0) {
-            const baseFees = student.studentFees.filter(f => 
-              !f.feeCategory?.name?.toLowerCase().includes('included') && 
-              !f.feeCategory?.name?.toLowerCase().includes('activities')
-            );
-            return baseFees.reduce((sum, f) => sum + (f.totalAmount || 0), 0);
-          }
-          return 0;
-        })(),
       });
 
-      setSelectedCharges(student.includedCharges?.map(c => c.includedChargeId?._id || c.includedChargeId) || []);
-      setSelectedActivities(student.activities?.map(a => a.activityId?._id || a.activityId) || []);
+      // Find which optional categories student has in studentFees (excl. Uniform)
+      const studentOptionalFeeCatIds = (student.studentFees || [])
+        .filter(f => {
+          const catId = f.feeCategoryId?._id || f.feeCategoryId;
+          const cat = cats.find(c => c._id === catId);
+          return cat && !cat.mandatory && cat.name.toLowerCase() !== 'uniform';
+        })
+        .map(f => f.feeCategoryId?._id || f.feeCategoryId);
+
+      setSelectedCharges(studentOptionalFeeCatIds);
+
+      // Load Uniform lengths
+      const uniformFee = (student.studentFees || []).find(f => {
+        const catId = f.feeCategoryId?._id || f.feeCategoryId;
+        const cat = cats.find(c => c._id === catId);
+        return cat && cat.name.toLowerCase() === 'uniform';
+      });
+
+      if (uniformFee && uniformFee.uniformDetails) {
+        setTopLength(uniformFee.uniformDetails.topLength !== undefined ? uniformFee.uniformDetails.topLength : 0);
+        setBottomLength(uniformFee.uniformDetails.bottomLength !== undefined ? uniformFee.uniformDetails.bottomLength : 0);
+      } else {
+        setTopLength(0);
+        setBottomLength(0);
+      }
 
     } catch (error) {
       console.error("Error fetching student details", error);
@@ -141,31 +191,97 @@ const StudentEdit = () => {
     setFormData(prev => ({ ...prev, isRTE: e.target.checked }));
   };
 
+  // Recompute defaultFees whenever currentClass or section changes
+  useEffect(() => {
+    if (classes.length === 0 || categories.length === 0) return;
+
+    let defFees = {};
+    const clsObj = classes.find(c => c.name === formData.currentClass);
+    if (clsObj) {
+      if (formData.section) {
+        const secObj = clsObj.sections?.find(s => s.name === formData.section);
+        if (secObj && secObj.defaultFees && Object.keys(secObj.defaultFees).length > 0) {
+          defFees = secObj.defaultFees;
+        } else if (clsObj.defaultFees) {
+          defFees = clsObj.defaultFees;
+        }
+      } else if (clsObj.defaultFees) {
+        defFees = clsObj.defaultFees;
+      }
+    }
+    setDefaultFees(defFees);
+  }, [formData.currentClass, formData.section, classes, categories]);
+
+  const getFeeAmount = (feeConfig) => {
+    if (typeof feeConfig === 'number') return feeConfig;
+    if (feeConfig && typeof feeConfig === 'object') {
+      if (feeConfig.amount !== undefined) return Number(feeConfig.amount);
+    }
+    return 0;
+  };
+
   // Calculations
-  const includedChargesTotal = selectedCharges.reduce((sum, chargeId) => {
-    const charge = availableCharges.find(c => (c._id || c.id) === chargeId);
-    return sum + (charge ? charge.amount : 0);
+  const mandatoryCats = categories.filter(cat => cat.isEnabled && cat.mandatory && cat.name.toLowerCase() !== 'uniform' && getFeeAmount(defaultFees[cat._id]) > 0);
+  const baseFeeAmount = mandatoryCats.reduce((sum, cat) => {
+    return sum + getFeeAmount(defaultFees[cat._id]);
   }, 0);
 
-  const activitiesTotal = selectedActivities.reduce((sum, activityId) => {
-    const activity = availableActivities.find(a => (a._id || a.id) === activityId);
-    return sum + (activity ? activity.amount : 0);
+  const optionalCats = categories.filter(cat => cat.isEnabled && !cat.mandatory && cat.name.toLowerCase() !== 'uniform' && getFeeAmount(defaultFees[cat._id]) > 0);
+  const chargesOptions = optionalCats.map(cat => {
+    const amt = getFeeAmount(defaultFees[cat._id]);
+    return {
+      value: cat._id,
+      label: `${cat.name} (₹${amt})`
+    };
+  });
+
+  const uniformCategory = categories.find(cat => cat.name.toLowerCase() === 'uniform');
+  const uniformConfig = uniformCategory ? defaultFees[uniformCategory._id] : null;
+  const hasUniform = !!uniformConfig;
+
+  const topPrice = parseFloat(uniformConfig?.pricing?.topPerMetre || 0);
+  const bottomPrice = parseFloat(uniformConfig?.pricing?.bottomPerMetre || 0);
+
+  const topLen = parseFloat(topLength || 0);
+  const bottomLen = parseFloat(bottomLength || 0);
+
+  const topTotal = topLen * topPrice;
+  const bottomTotal = bottomLen * bottomPrice;
+  const uniformTotal = topTotal + bottomTotal;
+
+  const normalChargesTotal = selectedCharges.reduce((sum, catId) => {
+    return sum + getFeeAmount(defaultFees[catId]);
   }, 0);
 
-  const grandTotal = Number(formData.baseFee || 0) + includedChargesTotal + activitiesTotal;
+  const chargesTotal = normalChargesTotal + uniformTotal;
+
+  const grandTotal = baseFeeAmount + chargesTotal;
 
   const handleSave = async (e) => {
     e.preventDefault();
     try {
+      const mandatoryCatIds = categories
+        .filter(cat => cat.isEnabled && cat.mandatory && cat.name.toLowerCase() !== 'uniform' && getFeeAmount(defaultFees[cat._id]) > 0)
+        .map(cat => cat._id);
+
+      const selectedFeeCategoryIds = [...mandatoryCatIds, ...selectedCharges];
+
+      if (hasUniform && uniformCategory) {
+        if (!selectedFeeCategoryIds.includes(uniformCategory._id)) {
+          selectedFeeCategoryIds.push(uniformCategory._id);
+        }
+      }
+
       const payload = {
         ...formData,
         RTE: formData.isRTE ? 'RTE' : 'General',
-        baseFee: Number(formData.baseFee),
-        includedChargesTotal,
-        activitiesTotal,
-        grandTotal,
-        includedChargesIds: selectedCharges,
-        activitiesIds: selectedActivities
+        baseFee: baseFeeAmount,
+        grandTotal: grandTotal,
+        selectedFeeCategoryIds,
+        uniformDetails: {
+          topLength: topLength !== '' ? parseFloat(topLength) : 0,
+          bottomLength: bottomLength !== '' ? parseFloat(bottomLength) : 0
+        }
       };
 
       await api.put(`/students/${id}`, payload);
@@ -178,9 +294,6 @@ const StudentEdit = () => {
   };
 
   if (loading) return <div className="p-8 text-center text-gray-500">Loading student details...</div>;
-
-  const chargeOptions = availableCharges.filter(c => c.status !== false).map(c => ({ value: c._id || c.id, label: `${c.name} (₹${c.amount})` }));
-  const activityOptions = availableActivities.filter(a => a.status !== false).map(a => ({ value: a._id || a.id, label: `${a.name} (₹${a.amount})` }));
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
@@ -382,47 +495,138 @@ const StudentEdit = () => {
             <CardContent className="pt-6 space-y-6">
               
               <div className="space-y-2">
-                <Label>Base Fee Amount</Label>
-                <Input type="number" min="0" name="baseFee" value={formData.baseFee} onChange={handleInputChange} />
+                <Label>Base Amount</Label>
+                <Input type="number" name="baseFee" value={baseFeeAmount} disabled className="bg-gray-100 cursor-not-allowed" />
               </div>
 
               {currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN' ? (
-                <>
-                  <MultiSelectDropdown 
-                    label="Included Charges"
-                    options={chargeOptions}
-                    selected={selectedCharges}
-                    onChange={setSelectedCharges}
-                    placeholder="Search charges..."
-                  />
-
-                  <MultiSelectDropdown 
-                    label="Activities"
-                    options={activityOptions}
-                    selected={selectedActivities}
-                    onChange={setSelectedActivities}
-                    placeholder="Search activities..."
-                  />
-                </>
+                <MultiSelectDropdown 
+                  label="Charges"
+                  options={chargesOptions}
+                  selected={selectedCharges}
+                  onChange={setSelectedCharges}
+                  placeholder="Select optional charges..."
+                />
               ) : null}
+
+              {hasUniform && (
+                <div className="border border-orange-100 rounded-lg p-4 bg-orange-50/20 space-y-4">
+                  <h3 className="font-semibold text-sm text-orange-800 border-b border-orange-100 pb-1 flex items-center">
+                    Uniform details
+                  </h3>
+                  
+                  {/* Top Cloth */}
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center text-xs font-bold text-gray-700">
+                      <span>Top Cloth</span>
+                      <span className="text-gray-500 font-normal">Rate: ₹{topPrice}/m</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-gray-600">Length (Metre)</Label>
+                        <Input 
+                          type="number"
+                          min="0" step="0.01"
+                          placeholder="e.g., 2"
+                          value={topLength}
+                          onChange={(e) => handleTopLengthChange(e.target.value)}
+                          className="h-9 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-gray-600">Total (₹)</Label>
+                        <Input 
+                          type="text"
+                          value={topTotal.toFixed(2)}
+                          disabled
+                          className="bg-gray-100 cursor-not-allowed h-9 text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bottom Cloth */}
+                  <div className="space-y-3 pt-2 border-t border-orange-100">
+                    <div className="flex justify-between items-center text-xs font-bold text-gray-700">
+                      <span>Bottom Cloth</span>
+                      <span className="text-gray-500 font-normal">Rate: ₹{bottomPrice}/m</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-gray-600">Length (Metre)</Label>
+                        <Input 
+                          type="number"
+                          min="0" step="0.01"
+                          placeholder="e.g., 2"
+                          value={bottomLength}
+                          onChange={(e) => handleBottomLengthChange(e.target.value)}
+                          className="h-9 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-gray-600">Total (₹)</Label>
+                        <Input 
+                          type="text"
+                          value={bottomTotal.toFixed(2)}
+                          disabled
+                          className="bg-gray-100 cursor-not-allowed h-9 text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center text-xs font-bold text-orange-800 pt-2 border-t border-orange-100">
+                    <span>Uniform Total</span>
+                    <span>₹ {uniformTotal.toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
 
               {/* Fee Summary */}
               <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mt-6 space-y-3">
                 <h3 className="font-semibold text-gray-800 border-b border-gray-200 pb-2">Fee Summary</h3>
                 
                 <div className="flex justify-between text-sm text-gray-600">
-                  <span>Base Fee</span>
-                  <span>₹ {Number(formData.baseFee || 0).toFixed(2)}</span>
+                  <span>Base Amount</span>
+                  <span>₹ {baseFeeAmount.toFixed(2)}</span>
                 </div>
                 
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>Included Charges</span>
-                  <span>₹ {includedChargesTotal.toFixed(2)}</span>
+                <div className="space-y-1.5 pt-1 border-t border-gray-100">
+                  <span className="text-xs font-semibold text-gray-500 block mb-1">Charges Breakdown</span>
+                  
+                  {/* Selected charges */}
+                  {selectedCharges.map(catId => {
+                    const cat = categories.find(c => c._id === catId);
+                    if (!cat || cat.name.toLowerCase() === 'uniform') return null;
+                    const feeConfig = defaultFees[catId];
+                    const amt = typeof feeConfig === 'number' ? feeConfig : Number(feeConfig?.amount || 0);
+                    return (
+                      <div key={catId} className="flex justify-between text-xs text-gray-600 pl-2">
+                        <span>{cat.name}</span>
+                        <span>₹ {amt.toFixed(2)}</span>
+                      </div>
+                    );
+                  })}
+                  
+                  {/* Uniform charge */}
+                  {hasUniform && (
+                    <div className="flex justify-between text-xs text-gray-600 pl-2">
+                      <span>Uniform</span>
+                      <span>₹ {uniformTotal.toFixed(2)}</span>
+                    </div>
+                  )}
+
+                  {selectedCharges.filter(catId => {
+                    const cat = categories.find(c => c._id === catId);
+                    return cat && cat.name.toLowerCase() !== 'uniform';
+                  }).length === 0 && !hasUniform && (
+                    <div className="text-xs text-gray-400 italic pl-2">No charges selected</div>
+                  )}
                 </div>
-                
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>Activities</span>
-                  <span>₹ {activitiesTotal.toFixed(2)}</span>
+
+                <div className="flex justify-between text-sm font-semibold text-gray-700 border-t border-gray-200 pt-2">
+                  <span>Charges Total</span>
+                  <span>₹ {chargesTotal.toFixed(2)}</span>
                 </div>
                 
                 <div className="flex justify-between items-center text-lg font-bold text-gray-900 border-t border-gray-300 pt-3 mt-3">
