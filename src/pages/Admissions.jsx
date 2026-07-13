@@ -60,6 +60,19 @@ const Admissions = () => {
     return classList.find(c => normalize(c.name) === target);
   };
 
+
+  const handleValidatedChange = (field, e, validationType, stateObj, setState) => {
+    let val = e.target.value;
+    if (validationType === 'letters') {
+      val = val.replace(/[^a-zA-Z\s]/g, '');
+    } else if (validationType === 'numbers') {
+      val = val.replace(/[^0-9]/g, '');
+    } else if (validationType === 'alphanumeric') {
+      val = val.replace(/[^a-zA-Z0-9\s\-\+]/g, '');
+    }
+    setState({ ...stateObj, [field]: val });
+  };
+
   const handleApplicationAdmission = async (appId, classList) => {
     try {
       const res = await api.get(`/applications/${appId}`);
@@ -665,15 +678,15 @@ const Admissions = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Admission Number *</Label>
-                <Input required value={manualForm.admissionNumber} onChange={(e) => setManualForm({...manualForm, admissionNumber: e.target.value})} placeholder="Enter admission number" />
+                <Input required value={manualForm.admissionNumber} onChange={(e) => handleValidatedChange('admissionNumber', e, 'alphanumeric', manualForm, setManualForm)} placeholder="Enter admission number" />
               </div>
               <div className="space-y-2">
                 <Label>EMIS No</Label>
-                <Input value={manualForm.emisNumber} onChange={(e) => setManualForm({...manualForm, emisNumber: e.target.value})} />
+                <Input value={manualForm.emisNumber} onChange={(e) => handleValidatedChange('emisNumber', e, 'numbers', manualForm, setManualForm)} />
               </div>
               <div className="space-y-2">
                 <Label>Student Name *</Label>
-                <Input required value={manualForm.studentName} onChange={(e) => setManualForm({...manualForm, studentName: e.target.value})} />
+                <Input required value={manualForm.studentName} onChange={(e) => handleValidatedChange('studentName', e, 'letters', manualForm, setManualForm)} />
               </div>
               <div className="space-y-2">
                 <Label>Date of Birth</Label>
@@ -690,31 +703,31 @@ const Admissions = () => {
               </div>
               <div className="space-y-2">
                 <Label>Blood Group</Label>
-                <Input value={manualForm.bloodGroup} onChange={(e) => setManualForm({...manualForm, bloodGroup: e.target.value})} />
+                <Input value={manualForm.bloodGroup} onChange={(e) => handleValidatedChange('bloodGroup', e, 'alphanumeric', manualForm, setManualForm)} />
               </div>
               <div className="space-y-2">
                 <Label>Aadhaar No</Label>
-                <Input value={manualForm.aadhaarNumber} onChange={(e) => setManualForm({...manualForm, aadhaarNumber: e.target.value})} />
+                <Input value={manualForm.aadhaarNumber} onChange={(e) => handleValidatedChange('aadhaarNumber', e, 'numbers', manualForm, setManualForm)} />
               </div>
               <div className="space-y-2">
                 <Label>Religion</Label>
-                <Input value={manualForm.religion} onChange={(e) => setManualForm({...manualForm, religion: e.target.value})} />
+                <Input value={manualForm.religion} onChange={(e) => handleValidatedChange('religion', e, 'letters', manualForm, setManualForm)} />
               </div>
               <div className="space-y-2">
                 <Label>Community</Label>
-                <Input value={manualForm.community} onChange={(e) => setManualForm({...manualForm, community: e.target.value})} />
+                <Input value={manualForm.community} onChange={(e) => handleValidatedChange('community', e, 'letters', manualForm, setManualForm)} />
               </div>
               <div className="space-y-2">
                 <Label>Caste</Label>
-                <Input value={manualForm.caste} onChange={(e) => setManualForm({...manualForm, caste: e.target.value})} />
+                <Input value={manualForm.caste} onChange={(e) => handleValidatedChange('caste', e, 'letters', manualForm, setManualForm)} />
               </div>
               <div className="space-y-2">
                 <Label>RTE</Label>
-                <Input value={manualForm.RTE} onChange={(e) => setManualForm({...manualForm, RTE: e.target.value})} />
+                <Input value={manualForm.RTE} onChange={(e) => handleValidatedChange('RTE', e, 'letters', manualForm, setManualForm)} />
               </div>
               <div className="space-y-2">
                 <Label>Nationality</Label>
-                <Input value={manualForm.nationality} onChange={(e) => setManualForm({...manualForm, nationality: e.target.value})} />
+                <Input value={manualForm.nationality} onChange={(e) => handleValidatedChange('nationality', e, 'letters', manualForm, setManualForm)} />
               </div>
               <div className="space-y-2 md:col-span-3">
                 <Label className="font-bold text-gray-900">Student Group</Label>
@@ -736,35 +749,35 @@ const Admissions = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Father Name</Label>
-                <Input value={manualForm.fatherName} onChange={(e) => setManualForm({...manualForm, fatherName: e.target.value})} />
+                <Input value={manualForm.fatherName} onChange={(e) => handleValidatedChange('fatherName', e, 'letters', manualForm, setManualForm)} />
               </div>
               <div className="space-y-2">
                 <Label>Mother Name</Label>
-                <Input value={manualForm.motherName} onChange={(e) => setManualForm({...manualForm, motherName: e.target.value})} />
+                <Input value={manualForm.motherName} onChange={(e) => handleValidatedChange('motherName', e, 'letters', manualForm, setManualForm)} />
               </div>
               <div className="space-y-2">
                 <Label>Guardian Name</Label>
-                <Input value={manualForm.guardian} onChange={(e) => setManualForm({...manualForm, guardian: e.target.value})} />
+                <Input value={manualForm.guardian} onChange={(e) => handleValidatedChange('guardian', e, 'letters', manualForm, setManualForm)} />
               </div>
               <div className="space-y-2">
                 <Label>Father Phone</Label>
-                <Input value={manualForm.fatherPhone} onChange={(e) => setManualForm({...manualForm, fatherPhone: e.target.value})} />
+                <Input value={manualForm.fatherPhone} onChange={(e) => handleValidatedChange('fatherPhone', e, 'numbers', manualForm, setManualForm)} />
               </div>
               <div className="space-y-2">
                 <Label>Mother Phone</Label>
-                <Input value={manualForm.motherPhone} onChange={(e) => setManualForm({...manualForm, motherPhone: e.target.value})} />
+                <Input value={manualForm.motherPhone} onChange={(e) => handleValidatedChange('motherPhone', e, 'numbers', manualForm, setManualForm)} />
               </div>
               <div className="space-y-2">
                 <Label>Whatsapp Number</Label>
-                <Input value={manualForm.whatsappNumber} onChange={(e) => setManualForm({...manualForm, whatsappNumber: e.target.value})} />
+                <Input value={manualForm.whatsappNumber} onChange={(e) => handleValidatedChange('whatsappNumber', e, 'numbers', manualForm, setManualForm)} />
               </div>
               <div className="space-y-2">
                 <Label>Father Occupation</Label>
-                <Input value={manualForm.fatherOccupation} onChange={(e) => setManualForm({...manualForm, fatherOccupation: e.target.value})} />
+                <Input value={manualForm.fatherOccupation} onChange={(e) => handleValidatedChange('fatherOccupation', e, 'letters', manualForm, setManualForm)} />
               </div>
               <div className="space-y-2">
                 <Label>Mother Occupation</Label>
-                <Input value={manualForm.motherOccupation} onChange={(e) => setManualForm({...manualForm, motherOccupation: e.target.value})} />
+                <Input value={manualForm.motherOccupation} onChange={(e) => handleValidatedChange('motherOccupation', e, 'letters', manualForm, setManualForm)} />
               </div>
             </div>
           </div>
@@ -779,15 +792,15 @@ const Admissions = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>City</Label>
-                  <Input value={manualForm.city} onChange={(e) => setManualForm({...manualForm, city: e.target.value})} />
+                  <Input value={manualForm.city} onChange={(e) => handleValidatedChange('city', e, 'letters', manualForm, setManualForm)} />
                 </div>
                 <div className="space-y-2">
                   <Label>State</Label>
-                  <Input value={manualForm.state} onChange={(e) => setManualForm({...manualForm, state: e.target.value})} />
+                  <Input value={manualForm.state} onChange={(e) => handleValidatedChange('state', e, 'letters', manualForm, setManualForm)} />
                 </div>
                 <div className="space-y-2">
                   <Label>Pincode</Label>
-                  <Input value={manualForm.pincode} onChange={(e) => setManualForm({...manualForm, pincode: e.target.value})} />
+                  <Input value={manualForm.pincode} onChange={(e) => handleValidatedChange('pincode', e, 'numbers', manualForm, setManualForm)} />
                 </div>
               </div>
             </div>

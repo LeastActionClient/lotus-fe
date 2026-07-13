@@ -5,7 +5,7 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = sessionStorage.getItem('token');
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -18,8 +18,8 @@ api.interceptors.response.use(
     const isLoginRequest = error.config?.url?.includes('/auth/login');
 
     if (error.response?.status === 401 && !isLoginRequest) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
       window.location.href = '/';
     }
     return Promise.reject(error);
