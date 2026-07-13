@@ -135,6 +135,20 @@ const FeeCategories = () => {
     }
   };
 
+  const handleToggleCategory = async (category) => {
+    try {
+      await api.put(`/fees/categories/${category._id}`, { 
+        name: category.name, 
+        mandatory: category.mandatory, 
+        isEnabled: !category.isEnabled 
+      });
+      fetchData();
+    } catch (error) {
+      console.error("Error toggling category", error);
+      alert(error.response?.data?.error || 'Error updating category');
+    }
+  };
+
   const handleAssignFee = async (e) => {
     e.preventDefault();
     try {
@@ -308,11 +322,13 @@ const FeeCategories = () => {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        cat.isEnabled ? 'bg-green-100 text-green-800 /30 ' : 'bg-red-100 text-red-800 /30 '
+                      <button 
+                        onClick={() => handleToggleCategory(cat)}
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity ${
+                        cat.isEnabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                       }`}>
                         {cat.isEnabled ? 'Active' : 'Disabled'}
-                      </span>
+                      </button>
                     </TableCell>
                     <TableCell>{new Date(cat.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">

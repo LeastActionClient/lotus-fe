@@ -39,7 +39,9 @@ const Dashboard = () => {
         api.get('/classes')
       ]);
 
-      const totalCollections = paymentsRes.data.reduce((sum, payment) => sum + payment.amount, 0);
+      const paymentsTotal = paymentsRes.data.reduce((sum, payment) => sum + payment.amount, 0);
+      const appFeesTotal = appsRes.data.filter(app => app.feePaid).reduce((sum, app) => sum + (app.feeAmount || 0), 0);
+      const totalCollections = paymentsTotal + appFeesTotal;
 
       const pendingApps = appsRes.data.filter(app => app.status === 'PENDING').length;
       const approvedApps = appsRes.data.filter(app => app.status === 'APPROVED').length;

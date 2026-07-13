@@ -18,6 +18,9 @@ const Reports = () => {
   const [startDate, setStartDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
 
+  const [feeCategories, setFeeCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('ALL');
+
   useEffect(() => {
     const fetchReports = async () => {
       setLoading(true);
@@ -28,12 +31,14 @@ const Reports = () => {
           collectionEndpoint = `/reports/custom-collection?startDate=${startDate}&endDate=${endDate}`;
         }
 
-        const [collectionRes, pendingRes] = await Promise.all([
+        const [collectionRes, pendingRes, categoriesRes] = await Promise.all([
           api.get(collectionEndpoint),
           api.get('/reports/pending-fees'),
+          api.get('/fees/categories')
         ]);
         setDaily(collectionRes.data.payments || []);
         setPending(pendingRes.data.pendingFees || []);
+        setFeeCategories(categoriesRes.data || []);
       } catch (error) {
         console.error("Error fetching reports", error);
       } finally {
@@ -47,9 +52,23 @@ const Reports = () => {
     }
   }, [timeframe, startDate, endDate]);
 
+  const filteredCollections = daily.filter(item => {
+    if (selectedCategory === 'ALL') return true;
+    
+    const catName = item.studentFee?.feeCategory?.name || item.studentFeeId?.feeCategoryId?.name;
+    const catId = item.studentFee?.feeCategory?._id || item.studentFee?.feeCategory || item.studentFeeId?.feeCategoryId?._id || item.studentFeeId?.feeCategoryId;
+    
+    if (selectedCategory === 'APPLICATION_FEES') {
+      return catName === 'Application Fee';
+    }
+    return catId === selectedCategory;
+  });
+
+  const totalFilteredCollections = filteredCollections.reduce((sum, item) => sum + (item.amount || 0), 0);
+
   const downloadCSV = () => {
     const headers = ['Date', 'Student Name', 'Admission No', 'Fee Category', 'Amount', 'Collected By'];
-    const rows = daily.map(item => [
+    const rows = filteredCollections.map(item => [
       new Date(item.paymentDate).toLocaleDateString(),
       item.student?.studentName || item.studentId?.studentName || '',
       item.student?.admissionNumber || item.studentId?.admissionNumber || '',
@@ -88,6 +107,18 @@ const Reports = () => {
               <Calendar className="h-5 w-5 mr-2 text-orange-600" /> Collections
             </CardTitle>
             <div className="flex flex-wrap gap-2 items-center">
+              <select
+                className="border border-gray-300 rounded-md text-sm p-1.5 focus:outline-none focus:ring-1 focus:ring-orange-500 max-w-[200px] truncate"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+              >
+                <option value="ALL">All Categories</option>
+                <option value="APPLICATION_FEES">Application Fees</option>
+                {feeCategories.map(cat => (
+                  <option key={cat._id} value={cat._id}>{cat.name}</option>
+                ))}
+              </select>
+
               <select 
                 className="border border-gray-300 rounded-md text-sm p-1.5 focus:outline-none focus:ring-1 focus:ring-orange-500"
                 value={timeframe}
@@ -132,16 +163,20 @@ const Reports = () => {
           )}
 
           <CardContent className={timeframe === 'custom' ? "pt-4" : "pt-6"}>
-            {!daily || daily.length === 0 ? <p className="text-gray-500">No recent collections in this period.</p> : (
+            <div className="flex justify-between items-center mb-4">
+              <span className="font-semibold text-gray-700">Total Collected:</span>
+              <span className="text-xl font-bold text-orange-600">₹{totalFilteredCollections.toFixed(2)}</span>
+            </div>
+            {!filteredCollections || filteredCollections.length === 0 ? <p className="text-gray-500">No recent collections in this period.</p> : (
               <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-                {daily.map((item, i) => (
+                {filteredCollections.map((item, i) => (
                   <div key={i} className="flex justify-between items-center border-b border-gray-100 pb-2">
                     <div className="flex flex-col">
                       <span className="font-medium">
                         {new Date(item.paymentDate).toLocaleDateString()} - {item.student?.studentName || item.studentId?.studentName}
                       </span>
                       <span className="text-xs text-gray-500">
-                        Admission No: {item.student?.admissionNumber || item.studentId?.admissionNumber} | Collected by: {item.recordedBy?.username || item.recordedById?.username || ''}
+                        {item.studentFee?.feeCategory?.name || item.studentFeeId?.feeCategoryId?.name} | Admission No: {item.student?.admissionNumber || item.studentId?.admissionNumber} | Collected by: {item.recordedBy?.username || item.recordedById?.username || ''}
                       </span>
                     </div>
                     <span className="font-bold text-emerald-600">Rs. {item.amount?.toFixed(2) || '0.00'}</span>
