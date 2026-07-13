@@ -201,10 +201,46 @@ const Payments = () => {
   const uniqueTableClasses = [...new Set(payments.map(p => p.studentId?.currentClass).filter(Boolean))].sort();
   const uniqueTableSections = [...new Set(payments.filter(p => filterTableClass === 'All' || p.studentId?.currentClass === filterTableClass).map(p => p.studentId?.section).filter(Boolean))].sort();
   
-  const uniqueCategories = feeCategories.map(c => c.name).sort();
+  const uniqueCategories = [
+    ...feeCategories.map(c => c.name)
+  ].filter((value, index, arr) => arr.indexOf(value) === index).sort();
+
+  const getPaymentCategoryDescriptors = (payment) => {
+    const allocationDescriptors = (payment.feeAllocations || [])
+      .map((alloc) => {
+        const feeCategory = alloc.studentFeeId?.feeCategoryId;
+        if (!feeCategory) return null;
+        return {
+          id: feeCategory._id || feeCategory.id || feeCategory.name,
+          name: feeCategory.name,
+          title: feeCategory.name
+        };
+      })
+      .filter(Boolean);
+
+    if (allocationDescriptors.length > 0) {
+      return allocationDescriptors;
+    }
+
+    const singleCategory = payment.studentFee?.feeCategory;
+    if (singleCategory) {
+      return [{
+        id: singleCategory._id || singleCategory.id || singleCategory.name,
+        name: singleCategory.name,
+        title: singleCategory.name
+      }];
+    }
+
+    return [];
+  };
+
+  const matchesCategoryFilter = (payment) => {
+    if (filterCategory === 'All') return true;
+    return getPaymentCategoryDescriptors(payment).some((category) => category.name === filterCategory);
+  };
 
   const filteredPayments = payments.filter(p => {
-    const matchCategory = filterCategory === 'All' || p.studentFee?.feeCategory?.name === filterCategory;
+    const matchCategory = matchesCategoryFilter(p);
     const matchClass = filterTableClass === 'All' || p.studentId?.currentClass === filterTableClass;
     const matchSection = filterTableSection === 'All' || p.studentId?.section === filterTableSection;
     return matchCategory && matchClass && matchSection;
@@ -216,14 +252,7 @@ const Payments = () => {
   const downloadCSV = () => {
     const headers = ["Invoice No", "Date", "Student Name", "Admission No", "Class", "Section", "Fee Category", "Amount", "Method", "Recorded By"];
     const rows = filteredPayments.map(p => {
-      let feeCategory = '';
-      if (p.feeAllocations?.length > 1) {
-        feeCategory = `Multiple Fees (${p.feeAllocations.length})`;
-      } else if (p.feeAllocations?.length === 1) {
-        feeCategory = p.feeAllocations[0].studentFeeId?.feeCategoryId?.name || 'Fee';
-      } else {
-        feeCategory = p.studentFee?.feeCategory?.name || 'N/A';
-      }
+      const feeCategory = getPaymentCategoryDescriptors(p).map((category) => category.title).join(', ') || 'N/A';
       return [
         p.invoice?.invoiceNumber || '-',
         new Date(p.paymentDate).toLocaleDateString(),
@@ -369,13 +398,17 @@ const Payments = () => {
                       </span>
                     </TableCell>
                     <TableCell>
-                      {payment.feeAllocations?.length > 1 ? (
-                        <span className="font-semibold text-emerald-600">Multiple Fees ({payment.feeAllocations.length})</span>
-                      ) : payment.feeAllocations?.length === 1 ? (
-                        payment.feeAllocations[0].studentFeeId?.feeCategoryId?.name || 'Fee'
-                      ) : (
-                        payment.studentFee?.feeCategory?.name || 'N/A'
-                      )}
+                      <div className="flex flex-wrap gap-1">
+                        {getPaymentCategoryDescriptors(payment).length > 0 ? (
+                          getPaymentCategoryDescriptors(payment).map((category) => (
+                            <span key={category.id} className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700" title={category.title}>
+                              {category.name}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-gray-500">N/A</span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="font-semibold text-emerald-600">Rs. {payment.amount.toFixed(2)}</TableCell>
                     <TableCell>{payment.paymentMethod}</TableCell>

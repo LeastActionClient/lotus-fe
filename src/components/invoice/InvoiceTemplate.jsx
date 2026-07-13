@@ -1,4 +1,5 @@
 import React from 'react';
+import logo from '../../assets/logo.png';
 
 const money = (value) => `Rs. ${(Number(value) || 0).toFixed(2)}`;
 
@@ -42,7 +43,7 @@ const InvoiceTemplate = ({ payment }) => {
       <div className="px-6 pb-6 pt-4 sm:px-8">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-            <img src="/logo.svg" alt="Kasthuri School Logo" className="mt-1 h-11 w-11 object-contain" />
+            <img src={logo} alt="Kasthuri School Logo" className="mt-1 h-13 w-20 object-contain" />
             <div>
               <h2 className="text-[15px] font-bold uppercase leading-tight text-blue-800 sm:text-[17px]">
                 KASTHURI NURSERY &amp; PRIMARY SCHOOL

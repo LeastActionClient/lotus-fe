@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { Home, Users, FileText, UserPlus, DollarSign, FileCheck, PieChart, LogOut, Printer, Menu, X } from 'lucide-react';
+import logo from '../assets/logo.png';
 
 const DashboardLayout = () => {
   const navigate = useNavigate();
@@ -84,7 +85,7 @@ const DashboardLayout = () => {
             <X size={24} />
           </button>
           <div className="flex justify-center mb-4">
-            <img src="/logo.svg" alt="Logo" className="w-24 h-24" />
+            <img src={logo} alt="Logo" className="w-24 h-20" />
           </div>
           <p className="text-sm text-gray-500 mt-1 text-center">Logged in as {user.username}</p>
         </div>

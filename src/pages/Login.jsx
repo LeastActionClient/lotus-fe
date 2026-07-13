@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { Eye, EyeOff } from 'lucide-react';
+import logo from '../assets/logo.png';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -57,8 +58,7 @@ const Login = () => {
         <div className="w-full max-w-md">
         <div className="flex flex-col items-center justify-center mb-8">
           <div className="flex items-center justify-center mb-2">
-            <img src="/logo.svg" alt="Kasthuri School Logo" className="w-24 h-24 mr-3" />
-            <h1 className="text-3xl font-bold text-gray-800 leading-tight">Kasthuri<br/>School</h1>
+            <img src={logo} alt="Kasthuri School Logo" className="w-29 h-24 mr-3" />
           </div>
         </div>
         
