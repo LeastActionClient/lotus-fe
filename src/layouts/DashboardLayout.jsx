@@ -7,7 +7,7 @@ import logo from '../assets/logo.png';
 const DashboardLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
   const timeoutRef = useRef(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -17,8 +17,8 @@ const DashboardLayout = () => {
     } catch (e) {
       console.error('Logout error', e);
     }
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     navigate('/', { replace: true });
   };
 
@@ -26,15 +26,13 @@ const DashboardLayout = () => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-    // 5 minutes = 300,000 ms
+    // 30 minutes = 1,800,000 ms
     timeoutRef.current = setTimeout(() => {
       handleLogout();
-    }, 300000);
+    }, 1800000);
   };
 
   useEffect(() => {
-    if (user.role === 'SUPER_ADMIN') return;
-
     // Setup initial timer
     resetTimer();
 

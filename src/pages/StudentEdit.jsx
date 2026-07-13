@@ -56,6 +56,19 @@ const StudentEdit = () => {
     pincode: '',
   });
 
+
+  const handleValidatedChange = (field, e, validationType, stateObj, setState) => {
+    let val = e.target.value;
+    if (validationType === 'letters') {
+      val = val.replace(/[^a-zA-Z\s]/g, '');
+    } else if (validationType === 'numbers') {
+      val = val.replace(/[^0-9]/g, '');
+    } else if (validationType === 'alphanumeric') {
+      val = val.replace(/[^a-zA-Z0-9\s\-\+]/g, '');
+    }
+    setState({ ...stateObj, [field]: val });
+  };
+
   const handleTopLengthChange = (val) => {
     if (val === '') {
       setTopLength('');
@@ -327,11 +340,11 @@ const StudentEdit = () => {
             <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Admission Number</Label>
-                <Input name="admissionNumber" value={formData.admissionNumber} onChange={handleInputChange} disabled />
+                <Input name="admissionNumber" value={formData.admissionNumber} onChange={(e) => handleValidatedChange('admissionNumber', e, 'alphanumeric', formData, setFormData)} disabled />
               </div>
               <div className="space-y-2">
                 <Label>Student Name *</Label>
-                <Input name="studentName" value={formData.studentName} onChange={handleInputChange} required />
+                <Input name="studentName" value={formData.studentName} onChange={(e) => handleValidatedChange('studentName', e, 'letters', formData, setFormData)} required />
               </div>
               <div className="space-y-2">
                 <Label>Date of Birth</Label>
@@ -348,23 +361,23 @@ const StudentEdit = () => {
               </div>
               <div className="space-y-2">
                 <Label>Blood Group</Label>
-                <Input name="bloodGroup" value={formData.bloodGroup} onChange={handleInputChange} placeholder="e.g. O+" />
+                <Input name="bloodGroup" value={formData.bloodGroup} onChange={(e) => handleValidatedChange('bloodGroup', e, 'alphanumeric', formData, setFormData)} placeholder="e.g. O+" />
               </div>
               <div className="space-y-2">
                 <Label>Aadhaar Number</Label>
-                <Input name="aadhaarNumber" value={formData.aadhaarNumber} onChange={handleInputChange} />
+                <Input name="aadhaarNumber" value={formData.aadhaarNumber} onChange={(e) => handleValidatedChange('aadhaarNumber', e, 'numbers', formData, setFormData)} />
               </div>
               <div className="space-y-2">
                 <Label>Religion</Label>
-                <Input name="religion" value={formData.religion} onChange={handleInputChange} />
+                <Input name="religion" value={formData.religion} onChange={(e) => handleValidatedChange('religion', e, 'letters', formData, setFormData)} />
               </div>
               <div className="space-y-2">
                 <Label>Community</Label>
-                <Input name="community" value={formData.community} onChange={handleInputChange} />
+                <Input name="community" value={formData.community} onChange={(e) => handleValidatedChange('community', e, 'letters', formData, setFormData)} />
               </div>
               <div className="space-y-2">
                 <Label>Nationality</Label>
-                <Input name="nationality" value={formData.nationality} onChange={handleInputChange} />
+                <Input name="nationality" value={formData.nationality} onChange={(e) => handleValidatedChange('nationality', e, 'letters', formData, setFormData)} />
               </div>
               <div className="space-y-2">
                 <Label>Email</Label>
@@ -441,27 +454,27 @@ const StudentEdit = () => {
             <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Father Name</Label>
-                <Input name="fatherName" value={formData.fatherName} onChange={handleInputChange} />
+                <Input name="fatherName" value={formData.fatherName} onChange={(e) => handleValidatedChange('fatherName', e, 'letters', formData, setFormData)} />
               </div>
               <div className="space-y-2">
                 <Label>Father Mobile</Label>
-                <Input name="fatherPhone" value={formData.fatherPhone} onChange={handleInputChange} />
+                <Input name="fatherPhone" value={formData.fatherPhone} onChange={(e) => handleValidatedChange('fatherPhone', e, 'numbers', formData, setFormData)} />
               </div>
               <div className="space-y-2">
                 <Label>Father Occupation</Label>
-                <Input name="fatherOccupation" value={formData.fatherOccupation} onChange={handleInputChange} />
+                <Input name="fatherOccupation" value={formData.fatherOccupation} onChange={(e) => handleValidatedChange('fatherOccupation', e, 'letters', formData, setFormData)} />
               </div>
               <div className="space-y-2">
                 <Label>Mother Name</Label>
-                <Input name="motherName" value={formData.motherName} onChange={handleInputChange} />
+                <Input name="motherName" value={formData.motherName} onChange={(e) => handleValidatedChange('motherName', e, 'letters', formData, setFormData)} />
               </div>
               <div className="space-y-2">
                 <Label>Mother Mobile</Label>
-                <Input name="motherPhone" value={formData.motherPhone} onChange={handleInputChange} />
+                <Input name="motherPhone" value={formData.motherPhone} onChange={(e) => handleValidatedChange('motherPhone', e, 'numbers', formData, setFormData)} />
               </div>
               <div className="space-y-2">
                 <Label>Mother Occupation</Label>
-                <Input name="motherOccupation" value={formData.motherOccupation} onChange={handleInputChange} />
+                <Input name="motherOccupation" value={formData.motherOccupation} onChange={(e) => handleValidatedChange('motherOccupation', e, 'letters', formData, setFormData)} />
               </div>
               <div className="space-y-2 md:col-span-2">
                 <Label>Address</Label>
@@ -469,15 +482,15 @@ const StudentEdit = () => {
               </div>
               <div className="space-y-2">
                 <Label>City</Label>
-                <Input name="city" value={formData.city} onChange={handleInputChange} />
+                <Input name="city" value={formData.city} onChange={(e) => handleValidatedChange('city', e, 'letters', formData, setFormData)} />
               </div>
               <div className="space-y-2">
                 <Label>State</Label>
-                <Input name="state" value={formData.state} onChange={handleInputChange} />
+                <Input name="state" value={formData.state} onChange={(e) => handleValidatedChange('state', e, 'letters', formData, setFormData)} />
               </div>
               <div className="space-y-2">
                 <Label>Pincode</Label>
-                <Input name="pincode" value={formData.pincode} onChange={handleInputChange} />
+                <Input name="pincode" value={formData.pincode} onChange={(e) => handleValidatedChange('pincode', e, 'numbers', formData, setFormData)} />
               </div>
             </CardContent>
           </Card>

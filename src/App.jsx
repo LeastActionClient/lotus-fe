@@ -19,7 +19,7 @@ import OldStudents from './pages/OldStudents';
 import PendingFees from './pages/PendingFees';
 
 const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem('token');
+  const token = sessionStorage.getItem('token');
   if (!token) {
     return <Navigate to="/" replace />;
   }

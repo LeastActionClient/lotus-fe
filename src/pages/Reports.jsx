@@ -36,7 +36,26 @@ const Reports = () => {
           api.get('/reports/pending-fees'),
           api.get('/fees/categories')
         ]);
-        setDaily(collectionRes.data.payments || []);
+        
+        const rawPayments = collectionRes.data.payments || [];
+        const processedPayments = [];
+        
+        rawPayments.forEach(p => {
+          if (p.feeAllocations && p.feeAllocations.length > 0) {
+            p.feeAllocations.forEach(alloc => {
+              processedPayments.push({
+                ...p,
+                amount: alloc.amount,
+                studentFeeId: alloc.studentFeeId,
+                isFlattened: true
+              });
+            });
+          } else {
+            processedPayments.push(p);
+          }
+        });
+
+        setDaily(processedPayments);
         setPending(pendingRes.data.pendingFees || []);
         setFeeCategories(categoriesRes.data || []);
       } catch (error) {
@@ -163,9 +182,17 @@ const Reports = () => {
           )}
 
           <CardContent className={timeframe === 'custom' ? "pt-4" : "pt-6"}>
-            <div className="flex justify-between items-center mb-4">
-              <span className="font-semibold text-gray-700">Total Collected:</span>
-              <span className="text-xl font-bold text-orange-600">₹{totalFilteredCollections.toFixed(2)}</span>
+            <div className="flex flex-col gap-2 mb-4 pb-3 border-b border-gray-100">
+              <div className="flex justify-between items-center">
+                <span className="font-semibold text-gray-700">Overall Total Collected:</span>
+                <span className="text-xl font-bold text-green-600">₹{daily.reduce((sum, item) => sum + (item.amount || 0), 0).toFixed(2)}</span>
+              </div>
+              {selectedCategory !== 'ALL' && (
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold text-gray-700">Filtered Category Total:</span>
+                  <span className="text-lg font-bold text-orange-600">₹{totalFilteredCollections.toFixed(2)}</span>
+                </div>
+              )}
             </div>
             {!filteredCollections || filteredCollections.length === 0 ? <p className="text-gray-500">No recent collections in this period.</p> : (
               <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
