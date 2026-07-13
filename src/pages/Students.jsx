@@ -34,6 +34,14 @@ const Students = () => {
   const [newClassName, setNewClassName] = useState('');
   const [newSectionName, setNewSectionName] = useState('');
 
+  const [isEditClassModalOpen, setIsEditClassModalOpen] = useState(false);
+  const [editingClass, setEditingClass] = useState(null);
+  const [editClassName, setEditClassName] = useState('');
+
+  const [isEditSectionModalOpen, setIsEditSectionModalOpen] = useState(false);
+  const [editingSection, setEditingSection] = useState(null);
+  const [editSectionName, setEditSectionName] = useState('');
+
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
 
@@ -93,6 +101,67 @@ const Students = () => {
       setSelectedClass(res.data.find((c) => c._id === selectedClass._id));
     } catch (error) {
       console.error("Error creating section", error);
+    }
+  };
+
+  const handleEditClass = async (e) => {
+    e.preventDefault();
+    if (!editingClass) return;
+    try {
+      await api.put(`/classes/${editingClass._id}`, { name: editClassName });
+      setEditClassName('');
+      setEditingClass(null);
+      setIsEditClassModalOpen(false);
+      const res = await api.get('/classes');
+      setClasses(res.data);
+      if (selectedClass?._id === editingClass._id) {
+        setSelectedClass(res.data.find((c) => c._id === editingClass._id));
+      }
+    } catch (error) {
+      alert(error.response?.data?.error || 'Error updating class');
+    }
+  };
+
+  const handleDeleteClass = async (cls) => {
+    if (!window.confirm(`Are you sure you want to delete Class ${cls.name}? All sections in this class will also be deleted.`)) return;
+    try {
+      await api.delete(`/classes/${cls._id}`);
+      if (selectedClass?._id === cls._id) {
+        setViewMode('CLASSES');
+        setSelectedClass(null);
+      }
+      fetchClasses();
+    } catch (error) {
+      alert(error.response?.data?.error || 'Error deleting class');
+    }
+  };
+
+  const handleEditSection = async (e) => {
+    e.preventDefault();
+    if (!editingSection || !selectedClass) return;
+    try {
+      await api.put(`/classes/${selectedClass._id}/sections/${editingSection._id}`, { name: editSectionName });
+      setEditSectionName('');
+      setEditingSection(null);
+      setIsEditSectionModalOpen(false);
+      const res = await api.get('/classes');
+      setClasses(res.data);
+      setSelectedClass(res.data.find((c) => c._id === selectedClass._id));
+    } catch (error) {
+      alert(error.response?.data?.error || 'Error updating section');
+    }
+  };
+
+  const handleDeleteSection = async (sec) => {
+    if (!selectedClass) return;
+    if (!window.confirm(`Are you sure you want to delete Section ${sec.name} from Class ${selectedClass.name}?`)) return;
+    try {
+      await api.delete(`/classes/${selectedClass._id}/sections/${sec._id}`);
+      const res = await api.get('/classes');
+      setClasses(res.data);
+      setSelectedClass(res.data.find((c) => c._id === selectedClass._id));
+    } catch (error) {
+      alert(error.response?.data?.error || 'Error deleting section');
     }
   };
 
@@ -185,10 +254,28 @@ const Students = () => {
               classes.map((cls) => (
                 <Card 
                   key={cls._id} 
-                  className="cursor-pointer hover:border-orange-600 hover:shadow-md transition-all group"
-                  onClick={() => { setSelectedClass(cls); setViewMode('SECTIONS'); }}
+                  className="cursor-pointer hover:border-orange-600 hover:shadow-md transition-all group relative"
                 >
-                  <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setEditingClass(cls); setEditClassName(cls.name); setIsEditClassModalOpen(true); }}
+                      className="p-1.5 rounded-md bg-white shadow-sm border border-gray-200 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                      title="Edit Class"
+                    >
+                      <Edit className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDeleteClass(cls); }}
+                      className="p-1.5 rounded-md bg-white shadow-sm border border-gray-200 hover:bg-red-50 hover:text-red-600 transition-colors"
+                      title="Delete Class"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <CardContent 
+                    className="p-6 flex flex-col items-center justify-center text-center space-y-3"
+                    onClick={() => { setSelectedClass(cls); setViewMode('SECTIONS'); }}
+                  >
                     <div className="p-3 bg-orange-50 rounded-full group-hover:bg-orange-600 transition-colors">
                       <Folder className="h-8 w-8 text-orange-600 group-hover:text-white transition-colors" />
                     </div>
@@ -224,10 +311,28 @@ const Students = () => {
               selectedClass.sections?.map((sec) => (
                 <Card 
                   key={sec._id} 
-                  className="cursor-pointer hover:border-orange-600 hover:shadow-md transition-all group"
-                  onClick={() => { setSelectedSection(sec); setViewMode('STUDENTS'); }}
+                  className="cursor-pointer hover:border-orange-600 hover:shadow-md transition-all group relative"
                 >
-                  <CardContent className="p-6 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setEditingSection(sec); setEditSectionName(sec.name); setIsEditSectionModalOpen(true); }}
+                      className="p-1.5 rounded-md bg-white shadow-sm border border-gray-200 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                      title="Edit Section"
+                    >
+                      <Edit className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDeleteSection(sec); }}
+                      className="p-1.5 rounded-md bg-white shadow-sm border border-gray-200 hover:bg-red-50 hover:text-red-600 transition-colors"
+                      title="Delete Section"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <CardContent 
+                    className="p-6 flex flex-col items-center justify-center text-center space-y-3"
+                    onClick={() => { setSelectedSection(sec); setViewMode('STUDENTS'); }}
+                  >
                     <div className="p-3 bg-orange-50 rounded-full group-hover:bg-orange-600 transition-colors">
                       <FolderOpen className="h-8 w-8 text-orange-600 group-hover:text-white transition-colors" />
                     </div>
@@ -389,6 +494,44 @@ const Students = () => {
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 ">
             <Button type="button" variant="ghost" onClick={() => setIsSectionModalOpen(false)}>Cancel</Button>
             <Button type="submit">Add Section</Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal isOpen={isEditClassModalOpen} onClose={() => { setIsEditClassModalOpen(false); setEditingClass(null); setEditClassName(''); }} title="Edit Class">
+        <form onSubmit={handleEditClass} className="space-y-4 pt-2">
+          <div className="space-y-2">
+            <Label htmlFor="editClassName">Class Name</Label>
+            <Input 
+              id="editClassName" 
+              value={editClassName} 
+              onChange={(e) => setEditClassName(e.target.value)} 
+              required 
+              placeholder="e.g. 10" 
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 ">
+            <Button type="button" variant="ghost" onClick={() => { setIsEditClassModalOpen(false); setEditingClass(null); setEditClassName(''); }}>Cancel</Button>
+            <Button type="submit">Save Changes</Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal isOpen={isEditSectionModalOpen} onClose={() => { setIsEditSectionModalOpen(false); setEditingSection(null); setEditSectionName(''); }} title="Edit Section">
+        <form onSubmit={handleEditSection} className="space-y-4 pt-2">
+          <div className="space-y-2">
+            <Label htmlFor="editSectionName">Section Name</Label>
+            <Input 
+              id="editSectionName" 
+              value={editSectionName} 
+              onChange={(e) => setEditSectionName(e.target.value)} 
+              required 
+              placeholder="e.g. A" 
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 ">
+            <Button type="button" variant="ghost" onClick={() => { setIsEditSectionModalOpen(false); setEditingSection(null); setEditSectionName(''); }}>Cancel</Button>
+            <Button type="submit">Save Changes</Button>
           </div>
         </form>
       </Modal>
