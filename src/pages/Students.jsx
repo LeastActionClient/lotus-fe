@@ -11,7 +11,7 @@ import Pagination from '../components/ui/Pagination';
 import { Link } from 'react-router-dom';
 import { getStudentCategoryLabel, isRTEStudent } from '../utils/studentCategory';
 import { PageLoader } from '../components/ui/Spinner';
-
+import ExportModal from '../components/ExportModal';
 
 
 const Students = () => {
@@ -36,6 +36,9 @@ const Students = () => {
 
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
+
+  const [selectedStudentIds, setSelectedStudentIds] = useState([]);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   const openViewModal = (student) => {
     setSelectedStudent(student);
@@ -96,6 +99,41 @@ const Students = () => {
     }
   };
 
+  const handleDeleteClass = async (e, classId) => {
+    e.stopPropagation();
+    if (!window.confirm('Are you sure you want to delete this class and all its sections?')) return;
+    try {
+      await api.delete(`/classes/${classId}`);
+      fetchClasses();
+      if (selectedClass?._id === classId) {
+        setSelectedClass(null);
+        setViewMode('CLASSES');
+      }
+    } catch (error) {
+      console.error("Error deleting class", error);
+      alert('Error deleting class');
+    }
+  };
+
+  const handleDeleteSection = async (e, classId, sectionId) => {
+    e.stopPropagation();
+    if (!window.confirm('Are you sure you want to delete this section?')) return;
+    try {
+      await api.delete(`/classes/${classId}/sections/${sectionId}`);
+      fetchClasses();
+      const res = await api.get('/classes');
+      setClasses(res.data);
+      setSelectedClass(res.data.find((c) => c._id === classId));
+      if (selectedSection?._id === sectionId) {
+        setSelectedSection(null);
+        setViewMode('SECTIONS');
+      }
+    } catch (error) {
+      console.error("Error deleting section", error);
+      alert('Error deleting section');
+    }
+  };
+
   const filteredStudents = students.filter(s => {
     if (s.studentStatus && s.studentStatus !== 'Active') return false;
     let match = false;
@@ -135,6 +173,20 @@ const Students = () => {
     setCurrentPage(1);
   }, [viewMode, selectedClass, selectedSection, searchQuery, feeFilter, studentGroupFilter]);
 
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedStudentIds(paginatedStudents.map(s => s._id));
+    } else {
+      setSelectedStudentIds([]);
+    }
+  };
+
+  const handleSelectStudent = (id) => {
+    setSelectedStudentIds(prev => 
+      prev.includes(id) ? prev.filter(sid => sid !== id) : [...prev, id]
+    );
+  };
+
   if (loading) return <PageLoader />;
 
   const handleSearch = (e) => {
@@ -158,6 +210,9 @@ const Students = () => {
           <p className="text-gray-500  mt-2">Manage all enrolled students</p>
         </div>
         <div className="flex items-center gap-3">
+          <Button onClick={() => setIsExportModalOpen(true)} className="bg-orange-600 hover:bg-orange-700 text-white">
+            <FolderOpen className="h-4 w-4 mr-2" /> Export Center
+          </Button>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input 
@@ -278,6 +333,14 @@ const Students = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10">
+                      <input 
+                        type="checkbox" 
+                        className="rounded border-gray-300 text-orange-600 focus:ring-orange-600 h-4 w-4 cursor-pointer"
+                        checked={paginatedStudents.length > 0 && selectedStudentIds.length === paginatedStudents.length}
+                        onChange={handleSelectAll}
+                      />
+                    </TableHead>
                     <TableHead>Admission No</TableHead>
                     <TableHead>Student Name</TableHead>
                     <TableHead>Class & Section</TableHead>
@@ -299,6 +362,14 @@ const Students = () => {
                   ) : (
                     paginatedStudents.map((student) => (
                       <TableRow key={student._id}>
+                        <TableCell>
+                          <input 
+                            type="checkbox" 
+                            className="rounded border-gray-300 text-orange-600 focus:ring-orange-600 h-4 w-4 cursor-pointer"
+                            checked={selectedStudentIds.includes(student._id)}
+                            onChange={() => handleSelectStudent(student._id)}
+                          />
+                        </TableCell>
                         <TableCell className="font-mono text-sm">{student.admissionNumber}</TableCell>
                         <TableCell className="font-medium text-orange-600">
                           {student.studentName}
@@ -445,6 +516,13 @@ const Students = () => {
           </div>
         )}
       </Modal>
+
+      <ExportModal 
+        isOpen={isExportModalOpen} 
+        onClose={() => setIsExportModalOpen(false)} 
+        selectedStudentIds={selectedStudentIds}
+        defaultScope={selectedStudentIds.length > 0 ? (selectedStudentIds.length === 1 ? 'SINGLE' : 'SELECTED') : 'CLASS'}
+      />
 
     </div>
   );

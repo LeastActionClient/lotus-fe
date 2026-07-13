@@ -22,7 +22,8 @@ const Applications = () => {
   const [pageLoading, setPageLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-  const [customIds, setCustomIds] = useState({ nextApplicationNo: '' });
+  const [customIds, setCustomIds] = useState({ nextApplicationNo: '', applicationFeeAmount: '' });
+  const [feeStatusFilter, setFeeStatusFilter] = useState('ALL');
   const [formData, setFormData] = useState({
     applicationNo: '',
     studentName: '',
@@ -79,7 +80,8 @@ const Applications = () => {
     try {
       const res = await api.get('/settings');
       setCustomIds({ 
-        nextApplicationNo: res.data.nextApplicationNo || '' 
+        nextApplicationNo: res.data.nextApplicationNo || '',
+        applicationFeeAmount: res.data.applicationFeeAmount || ''
       });
     } catch(e) { console.error(e); }
   };
@@ -153,8 +155,15 @@ const Applications = () => {
     }
   };
 
-  const totalPages = Math.max(1, Math.ceil(applications.length / itemsPerPage));
-  const paginatedApplications = applications.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const filteredApplications = applications.filter(app => {
+    if (feeStatusFilter === 'ALL') return true;
+    if (feeStatusFilter === 'PAID') return app.feePaid;
+    if (feeStatusFilter === 'UNPAID') return !app.feePaid;
+    return true;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filteredApplications.length / itemsPerPage));
+  const paginatedApplications = filteredApplications.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   if (pageLoading) return <PageLoader />;
 
@@ -168,9 +177,18 @@ const Applications = () => {
           </h1>
           <p className="text-gray-500  mt-2">Manage student enrollment applications</p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
+          <select
+            value={feeStatusFilter}
+            onChange={(e) => setFeeStatusFilter(e.target.value)}
+            className="h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+          >
+            <option value="ALL">All Fees</option>
+            <option value="PAID">Paid</option>
+            <option value="UNPAID">Not Paid</option>
+          </select>
           <Button variant="outline" onClick={() => setIsCustomizeModalOpen(true)}>
-            <Settings className="mr-2 h-4 w-4" /> Customize ID Formats
+            <Settings className="mr-2 h-4 w-4" /> Settings
           </Button>
           <Button onClick={handleNewApplication}>
             <Plus className="mr-2 h-4 w-4" /> New Application
@@ -316,12 +334,15 @@ const Applications = () => {
 
 
 
-      <Modal isOpen={isCustomizeModalOpen} onClose={() => setIsCustomizeModalOpen(false)} title="Customize ID Formats">
+      <Modal isOpen={isCustomizeModalOpen} onClose={() => setIsCustomizeModalOpen(false)} title="Settings">
         <form onSubmit={handleSaveCustomIds} className="space-y-4 pt-2">
-            <p className="text-sm text-gray-500 mb-4">Set the starting prefix or full number for the next application. The system will auto-increment from this value.</p>
           <div className="space-y-2">
             <Label htmlFor="nextApplicationNo">Next Application No.</Label>
             <Input id="nextApplicationNo" value={customIds.nextApplicationNo} onChange={(e) => setCustomIds({...customIds, nextApplicationNo: e.target.value})} placeholder="e.g. APP-2027-001" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="applicationFeeAmount">Application Fee Amount (₹)</Label>
+            <Input id="applicationFeeAmount" type="number" value={customIds.applicationFeeAmount} onChange={(e) => setCustomIds({...customIds, applicationFeeAmount: e.target.value})} placeholder="e.g. 500" />
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">

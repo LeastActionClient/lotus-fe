@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import api from '../services/api';
 import { Card, CardContent } from '../components/ui/Card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
-import { Users, Search, Filter, IndianRupee, GraduationCap, XCircle, UserMinus, Download } from 'lucide-react';
+import { Users, Search, Filter, IndianRupee, GraduationCap, XCircle, UserMinus, Download, FolderOpen } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
@@ -10,6 +10,7 @@ import Pagination from '../components/ui/Pagination';
 import { Link, useNavigate } from 'react-router-dom';
 import { getStudentCategoryLabel, isRTEStudent } from '../utils/studentCategory';
 import { PageLoader } from '../components/ui/Spinner';
+import ExportModal from '../components/ExportModal';
 
 const OldStudents = () => {
   const [students, setStudents] = useState([]);
@@ -28,6 +29,9 @@ const OldStudents = () => {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  const [selectedStudentIds, setSelectedStudentIds] = useState([]);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   useEffect(() => {
     fetchStudents();
@@ -199,6 +203,20 @@ const OldStudents = () => {
   const totalPages = Math.max(1, Math.ceil(filteredStudents.length / itemsPerPage));
   const paginatedStudents = filteredStudents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedStudentIds(paginatedStudents.map(s => s._id));
+    } else {
+      setSelectedStudentIds([]);
+    }
+  };
+
+  const handleSelectStudent = (id) => {
+    setSelectedStudentIds(prev => 
+      prev.includes(id) ? prev.filter(sid => sid !== id) : [...prev, id]
+    );
+  };
+
   if (loading) return <PageLoader />;
 
   return (
@@ -210,6 +228,11 @@ const OldStudents = () => {
             Old Students Archive
           </h1>
           <p className="text-gray-500 mt-2">Permanent archive of students who are no longer active in the school.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button onClick={() => setIsExportModalOpen(true)} className="bg-orange-600 hover:bg-orange-700 text-white">
+            <FolderOpen className="h-4 w-4 mr-2" /> Export Center
+          </Button>
         </div>
       </div>
 
@@ -404,6 +427,14 @@ const OldStudents = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    <input 
+                      type="checkbox" 
+                      className="rounded border-gray-300 text-orange-600 focus:ring-orange-600 h-4 w-4 cursor-pointer"
+                      checked={paginatedStudents.length > 0 && selectedStudentIds.length === paginatedStudents.length}
+                      onChange={handleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead>Admission No</TableHead>
                   <TableHead>Student Name</TableHead>
                   <TableHead>Exit Type</TableHead>
@@ -433,6 +464,14 @@ const OldStudents = () => {
                     
                     return (
                       <TableRow key={student._id}>
+                        <TableCell>
+                          <input 
+                            type="checkbox" 
+                            className="rounded border-gray-300 text-orange-600 focus:ring-orange-600 h-4 w-4 cursor-pointer"
+                            checked={selectedStudentIds.includes(student._id)}
+                            onChange={() => handleSelectStudent(student._id)}
+                          />
+                        </TableCell>
                         <TableCell className="font-medium text-gray-900">{student.admissionNumber}</TableCell>
                         <TableCell>
                           <Link to={`/dashboard/students/edit/${student._id}`} className="text-orange-600 hover:underline">
@@ -496,6 +535,14 @@ const OldStudents = () => {
           </div>
         </CardContent>
       </Card>
+
+      <ExportModal 
+        isOpen={isExportModalOpen} 
+        onClose={() => setIsExportModalOpen(false)} 
+        selectedStudentIds={selectedStudentIds}
+        defaultScope={selectedStudentIds.length > 0 ? (selectedStudentIds.length === 1 ? 'SINGLE' : 'SELECTED') : 'OLD_STUDENTS'}
+        isOldStudentsPage={true}
+      />
     </div>
   );
 };
