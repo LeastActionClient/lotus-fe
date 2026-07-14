@@ -206,6 +206,10 @@ const Payments = () => {
   ].filter((value, index, arr) => arr.indexOf(value) === index).sort();
 
   const getPaymentCategoryDescriptors = (payment) => {
+    if (payment.paymentType === 'APPLICATION') {
+      return [{ id: 'app_fee', name: 'Application Fee', title: 'Application Fee' }];
+    }
+
     const allocationDescriptors = (payment.feeAllocations || [])
       .map((alloc) => {
         const feeCategory = alloc.studentFeeId?.feeCategoryId;
@@ -256,14 +260,14 @@ const Payments = () => {
       return [
         p.invoice?.invoiceNumber || '-',
         new Date(p.paymentDate).toLocaleDateString(),
-        p.studentId?.studentName || '-',
-        p.studentId?.admissionNumber || '-',
-        p.studentId?.currentClass || '-',
-        p.studentId?.section || '-',
+        p.paymentType === 'APPLICATION' ? (p.application?.studentName || '-') : (p.student?.studentName || '-'),
+        p.paymentType === 'APPLICATION' ? `App: ${p.application?.applicationId || '-'}` : (p.student?.admissionNumber || '-'),
+        p.paymentType === 'APPLICATION' ? (p.application?.applyingClass || '-') : (p.student?.currentClass || '-'),
+        p.student?.section || '-',
         feeCategory,
         p.amount,
         p.paymentMethod,
-        p.recordedById?.username || '-'
+        p.recordedBy?.username || '-'
       ];
     });
     const csvContent = [
@@ -387,15 +391,27 @@ const Payments = () => {
                     <TableCell className="font-mono text-sm">{payment.invoice?.invoiceNumber || 'N/A'}</TableCell>
                     <TableCell>{new Date(payment.paymentDate).toLocaleDateString()}</TableCell>
                   <TableCell className="font-medium text-gray-900 ">
-                      {payment.student?.studentName}
-                      <span className="block text-xs text-gray-500">{payment.student?.admissionNumber}</span>
-                      <span className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                        getStudentCategoryLabel(payment.student) === 'RTE'
-                          ? 'bg-purple-100 text-purple-800'
-                          : 'bg-gray-100 text-gray-700'
-                      }`}>
-                        {getStudentCategoryLabel(payment.student)}
-                      </span>
+                      {payment.paymentType === 'APPLICATION' ? (
+                        <>
+                          {payment.application?.studentName || '-'}
+                          <span className="block text-xs text-gray-500">Application: {payment.application?.applicationId || '-'}</span>
+                          <span className="mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800">
+                            Applicant
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          {payment.student?.studentName || '-'}
+                          <span className="block text-xs text-gray-500">{payment.student?.admissionNumber || '-'}</span>
+                          <span className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                            getStudentCategoryLabel(payment.student) === 'RTE'
+                              ? 'bg-purple-100 text-purple-800'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}>
+                            {getStudentCategoryLabel(payment.student) || '-'}
+                          </span>
+                        </>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">

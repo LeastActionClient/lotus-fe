@@ -156,7 +156,7 @@ const Admins = () => {
                   const isOnline = hasActivity ? (new Date().getTime() - lastActiveDate.getTime()) < 300000 : false;
 
                   return (
-                  <TableRow key={admin.id}>
+                  <TableRow key={admin._id || admin.id}>
                     <TableCell className="font-medium">{admin.username}</TableCell>
                     <TableCell>
                       <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
@@ -200,19 +200,9 @@ const Admins = () => {
                         <Button 
                           variant={admin.isActive ? "danger" : "secondary"} 
                           size="sm"
-                          onClick={() => toggleStatus(admin.id, admin.isActive)}
+                          onClick={() => toggleStatus(admin._id || admin.id, admin.isActive)}
                         >
                           {admin.isActive ? <><ShieldOff className="h-4 w-4 mr-2"/> Disable</> : <><ShieldCheck className="h-4 w-4 mr-2"/> Enable</>}
-                        </Button>
-                      )}
-                      {currentUser.role === 'SUPER_ADMIN' && admin.id !== currentUser.id && (
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => deleteAdmin(admin.id)}
-                          title="Delete Admin"
-                        >
-                          <Trash2 className="h-4 w-4" />
                         </Button>
                       )}
                     </TableCell>
