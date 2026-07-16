@@ -94,13 +94,20 @@ const Payments = () => {
       api.get(`/students/${selectedStudentId}`).then(res => {
         const student = res.data;
         if (student && student.studentFees) {
-          const pendingFees = student.studentFees.filter((f) => f.remainingAmount > 0);
+          const getFeeRemainingDisplay = (f) => {
+            if (!f) return 0;
+            if (f.remainingAmount > 0) return f.remainingAmount;
+            if (f.paidAmount === 0) return f.totalAmount > 0 ? f.totalAmount : (f.feeCategory?.amount || 0);
+            return 0;
+          };
+          const pendingFees = student.studentFees.filter((f) => f.remainingAmount > 0 || (f.paidAmount === 0 && (f.totalAmount > 0 || f.feeCategory?.amount > 0)));
           setStudentFees(pendingFees);
           if (pendingFees.length === 1) {
+            const feeAmt = getFeeRemainingDisplay(pendingFees[0]);
             setPaymentData(prev => ({
               ...prev,
               studentFeeIds: [pendingFees[0]._id || pendingFees[0].id],
-              amount: pendingFees[0].remainingAmount.toString()
+              amount: feeAmt.toString()
             }));
           } else {
             setPaymentData(prev => ({...prev, studentFeeIds: [], amount: '0'}));
@@ -564,9 +571,16 @@ const Payments = () => {
                         newIds = paymentData.studentFeeIds.filter(id => id !== feeId);
                       }
                       
+                      const getFeeRemainingDisplay = (f) => {
+                        if (!f) return 0;
+                        if (f.remainingAmount > 0) return f.remainingAmount;
+                        if (f.paidAmount === 0) return f.totalAmount > 0 ? f.totalAmount : (f.feeCategory?.amount || 0);
+                        return 0;
+                      };
+
                       const newTotal = newIds.reduce((sum, id) => {
                         const fee = studentFees.find(sf => (sf._id || sf.id) === id);
-                        return sum + (fee ? fee.remainingAmount : 0);
+                        return sum + getFeeRemainingDisplay(fee);
                       }, 0);
 
                       setPaymentData({
@@ -577,7 +591,7 @@ const Payments = () => {
                     }}
                   />
                   <Label htmlFor={`fee-${feeId}`} className={`text-sm cursor-pointer ${isChecked ? 'font-medium text-orange-700' : 'text-gray-700'}`}>
-                    {classLabel} {f.feeCategory?.name || 'Fee'} - Rs. {f.remainingAmount} {isDisabled && !isChecked ? '(Clear previous dues first)' : ''}
+                    {classLabel} {f.feeCategory?.name || 'Fee'} - Rs. {f.remainingAmount > 0 ? f.remainingAmount : (f.totalAmount > 0 ? f.totalAmount : (f.feeCategory?.amount || 0))} {isDisabled && !isChecked ? '(Clear previous dues first)' : ''}
                   </Label>
                 </div>
               );
