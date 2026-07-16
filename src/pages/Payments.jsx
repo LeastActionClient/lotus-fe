@@ -130,6 +130,15 @@ const Payments = () => {
     }
   }, [selectedStudentId]);
 
+  const getFeeRemainingDisplay = (f) => {
+    if (!f) return 0;
+    if (f.remainingAmount > 0) return f.remainingAmount;
+    if (f.totalAmount > 0) return f.totalAmount;
+    const catAmt = Number(f.feeCategory?.amount || f.feeCategoryId?.amount || 0);
+    if (catAmt > 0) return catAmt;
+    return 100;
+  };
+
   const selectedStudent = students.find(s => (s._id || s.id) === selectedStudentId);
   const isPreviousYearFee = (f, student) => {
     if (!student) return false;
@@ -576,15 +585,6 @@ const Payments = () => {
                         newIds = paymentData.studentFeeIds.filter(id => id !== feeId);
                       }
                       
-                      const getFeeRemainingDisplay = (f) => {
-                        if (!f) return 0;
-                        if (f.remainingAmount > 0) return f.remainingAmount;
-                        if (f.totalAmount > 0) return f.totalAmount;
-                        const catAmt = Number(f.feeCategory?.amount || f.feeCategoryId?.amount || 0);
-                        if (catAmt > 0) return catAmt;
-                        return 100;
-                      };
-
                       const newTotal = newIds.reduce((sum, id) => {
                         const fee = studentFees.find(sf => (sf._id || sf.id) === id);
                         return sum + getFeeRemainingDisplay(fee);
