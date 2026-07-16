@@ -24,6 +24,7 @@ const StudentEdit = () => {
   const [bottomLength, setBottomLength] = useState('');
 
   // Form State
+  // Form State
   const [formData, setFormData] = useState({
     admissionNumber: '',
     studentName: '',
@@ -34,6 +35,9 @@ const StudentEdit = () => {
     aadhaarNumber: '',
     religion: '',
     community: '',
+    caste: '',
+    emisNo: '',
+    emisNumber: '',
     nationality: '',
     email: '',
     currentClass: '',
@@ -50,14 +54,15 @@ const StudentEdit = () => {
     motherPhone: '',
     motherOccupation: '',
     guardian: '',
+    guardianName: '',
+    whatsappNumber: '',
     address: '',
     city: '',
     state: '',
     pincode: '',
   });
 
-
-  const handleValidatedChange = (field, e, validationType, stateObj, setState) => {
+  const handleValidatedChange = (field, e, validationType, stateObj, setState, maxLen) => {
     let val = e.target.value;
     if (validationType === 'letters') {
       val = val.replace(/[^a-zA-Z\s]/g, '');
@@ -68,15 +73,13 @@ const StudentEdit = () => {
     } else if (validationType === 'bloodGroup') {
       val = val.replace(/[^a-zA-Z\s\-\+]/g, '');
     }
-    
-    if (field === 'aadhaarNumber' && val.length > 12) {
-      val = val.slice(0, 12);
+    const limit = maxLen ?? (field === 'aadhaarNumber' ? 12 : field === 'emisNumber' ? 10 : null);
+    if (limit && val.length > limit) {
+      val = val.slice(0, limit);
     }
-    if (field === 'emisNumber' && val.length > 20) {
-      val = val.slice(0, 20);
+    if (typeof setState === 'function') {
+      setState({ ...stateObj, [field]: val });
     }
-    
-    setState({ ...stateObj, [field]: val });
   };
 
   const handleTopLengthChange = (val) => {
@@ -149,6 +152,9 @@ const StudentEdit = () => {
         aadhaarNumber: student.aadhaarNumber || '',
         religion: student.religion || '',
         community: student.community || '',
+        caste: student.caste || '',
+        emisNo: student.emisNo || student.emisNumber || '',
+        emisNumber: student.emisNo || student.emisNumber || '',
         nationality: student.nationality || '',
         email: student.email || '',
         currentClass: student.currentClass || '',
@@ -164,7 +170,9 @@ const StudentEdit = () => {
         motherName: student.motherName || '',
         motherPhone: student.motherPhone || '',
         motherOccupation: student.motherOccupation || '',
-        guardian: student.guardian || '',
+        guardian: student.guardianName || student.guardian || '',
+        guardianName: student.guardianName || student.guardian || '',
+        whatsappNumber: student.whatsappNumber || '',
         address: student.address || '',
         city: student.city || '',
         state: student.state || '',
@@ -282,10 +290,43 @@ const StudentEdit = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    const caste = (formData.caste || '').trim();
+    if (caste && !/^[a-zA-Z\s]+$/.test(caste)) {
+      alert("Caste must contain only alphabets and spaces.");
+      return;
+    }
+    if (caste.length > 50) {
+      alert("Caste must not exceed 50 characters.");
+      return;
+    }
+
+    const emisNo = (formData.emisNo || formData.emisNumber || '').trim();
+    if (emisNo && !/^\d{10}$/.test(emisNo)) {
+      alert("EMIS No must be exactly 10 digits.");
+      return;
+    }
+
+    const guardianName = (formData.guardianName || formData.guardian || '').trim();
+    if (guardianName && !/^[a-zA-Z\s]+$/.test(guardianName)) {
+      alert("Guardian Name must contain only alphabets and spaces.");
+      return;
+    }
+    if (guardianName.length > 100) {
+      alert("Guardian Name must not exceed 100 characters.");
+      return;
+    }
+
+    const whatsappNumber = (formData.whatsappNumber || '').trim();
+    if (whatsappNumber && !/^\d{10}$/.test(whatsappNumber)) {
+      alert("WhatsApp Number must be exactly 10 digits.");
+      return;
+    }
+
     if (formData.bloodGroup && /\d/.test(formData.bloodGroup)) {
       alert("Blood Group should not contain numbers.");
       return;
     }
+
     if (formData.aadhaarNumber && !/^\d{12}$/.test(formData.aadhaarNumber.replace(/\s/g, ''))) {
       alert("Aadhaar Number must be exactly 12 digits.");
       return;
@@ -306,6 +347,12 @@ const StudentEdit = () => {
 
       const payload = {
         ...formData,
+        caste: caste,
+        emisNo: emisNo,
+        emisNumber: emisNo,
+        guardian: guardianName,
+        guardianName: guardianName,
+        whatsappNumber: whatsappNumber,
         RTE: formData.isRTE ? 'RTE' : 'General',
         baseFee: baseFeeAmount,
         grandTotal: grandTotal,
@@ -321,7 +368,7 @@ const StudentEdit = () => {
       navigate('/dashboard/students');
     } catch (error) {
       console.error("Error updating student", error);
-      alert("Error saving student data.");
+      alert(error.response?.data?.error || "Error saving student data.");
     }
   };
 
@@ -384,7 +431,7 @@ const StudentEdit = () => {
               </div>
               <div className="space-y-2">
                 <Label>Aadhaar Number</Label>
-                <Input name="aadhaarNumber" value={formData.aadhaarNumber} onChange={(e) => handleValidatedChange('aadhaarNumber', e, 'numbers', formData, setFormData)} />
+                <Input name="aadhaarNumber" value={formData.aadhaarNumber} maxLength={12} onChange={(e) => handleValidatedChange('aadhaarNumber', e, 'numbers', formData, setFormData, 12)} />
               </div>
               <div className="space-y-2">
                 <Label>Religion</Label>
@@ -393,6 +440,10 @@ const StudentEdit = () => {
               <div className="space-y-2">
                 <Label>Community</Label>
                 <Input name="community" value={formData.community} onChange={(e) => handleValidatedChange('community', e, 'letters', formData, setFormData)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Caste</Label>
+                <Input name="caste" value={formData.caste} maxLength={50} onChange={(e) => handleValidatedChange('caste', e, 'letters', formData, setFormData, 50)} placeholder="e.g. BC, MBC" />
               </div>
               <div className="space-y-2">
                 <Label>Nationality</Label>
@@ -424,6 +475,10 @@ const StudentEdit = () => {
               <div className="space-y-2">
                 <Label>Roll Number</Label>
                 <Input name="rollNumber" value={formData.rollNumber} onChange={handleInputChange} />
+              </div>
+              <div className="space-y-2">
+                <Label>EMIS No</Label>
+                <Input name="emisNo" value={formData.emisNo || formData.emisNumber} maxLength={10} onChange={(e) => handleValidatedChange('emisNo', e, 'numbers', formData, (obj) => setFormData({...obj, emisNumber: obj.emisNo}), 10)} placeholder="10 digits" />
               </div>
               <div className="space-y-2">
                 <Label>Admission Date</Label>
@@ -494,6 +549,14 @@ const StudentEdit = () => {
               <div className="space-y-2">
                 <Label>Mother Occupation</Label>
                 <Input name="motherOccupation" value={formData.motherOccupation} onChange={(e) => handleValidatedChange('motherOccupation', e, 'letters', formData, setFormData)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Guardian Name</Label>
+                <Input name="guardianName" value={formData.guardianName || formData.guardian} maxLength={100} onChange={(e) => handleValidatedChange('guardianName', e, 'letters', formData, (obj) => setFormData({...obj, guardian: obj.guardianName}), 100)} placeholder="Guardian name" />
+              </div>
+              <div className="space-y-2">
+                <Label>WhatsApp Number</Label>
+                <Input name="whatsappNumber" value={formData.whatsappNumber} maxLength={10} onChange={(e) => handleValidatedChange('whatsappNumber', e, 'numbers', formData, setFormData, 10)} placeholder="10 digits" />
               </div>
               <div className="space-y-2 md:col-span-2">
                 <Label>Address</Label>

@@ -61,7 +61,7 @@ const Admissions = () => {
   };
 
 
-  const handleValidatedChange = (field, e, validationType, stateObj, setState) => {
+  const handleValidatedChange = (field, e, validationType, stateObj, setState, maxLen) => {
     let val = e.target.value;
     if (validationType === 'letters') {
       val = val.replace(/[^a-zA-Z\s]/g, '');
@@ -72,14 +72,10 @@ const Admissions = () => {
     } else if (validationType === 'bloodGroup') {
       val = val.replace(/[^a-zA-Z\s\-\+]/g, '');
     }
-    
-    if (field === 'aadhaarNumber' && val.length > 12) {
-      val = val.slice(0, 12);
+    const limit = maxLen ?? (field === 'aadhaarNumber' ? 12 : field === 'emisNumber' ? 10 : null);
+    if (limit && val.length > limit) {
+      val = val.slice(0, limit);
     }
-    if (field === 'emisNumber' && val.length > 20) {
-      val = val.slice(0, 20);
-    }
-
     setState({ ...stateObj, [field]: val });
   };
 
@@ -139,6 +135,36 @@ const Admissions = () => {
     }
   };
 
+  const validateFields = (caste, emisNo, guardianName, whatsappNumber) => {
+    const c = (caste || '').trim();
+    if (c && !/^[a-zA-Z\s]+$/.test(c)) {
+      return "Caste must contain only alphabets and spaces.";
+    }
+    if (c.length > 50) {
+      return "Caste must not exceed 50 characters.";
+    }
+
+    const e = (emisNo || '').trim();
+    if (e && !/^\d{10}$/.test(e)) {
+      return "EMIS No must be exactly 10 digits.";
+    }
+
+    const g = (guardianName || '').trim();
+    if (g && !/^[a-zA-Z\s]+$/.test(g)) {
+      return "Guardian Name must contain only alphabets and spaces.";
+    }
+    if (g.length > 100) {
+      return "Guardian Name must not exceed 100 characters.";
+    }
+
+    const w = (whatsappNumber || '').trim();
+    if (w && !/^\d{10}$/.test(w)) {
+      return "WhatsApp Number must be exactly 10 digits.";
+    }
+
+    return null;
+  };
+
   const handleManualSubmit = async (e) => {
     e.preventDefault();
     if (!selectedClass) {
@@ -146,14 +172,17 @@ const Admissions = () => {
       return;
     }
 
+    const err = validateFields(manualForm.caste, manualForm.emisNumber || manualForm.emisNo, manualForm.guardian || manualForm.guardianName, manualForm.whatsappNumber);
+    if (err) {
+      alert(err);
+      return;
+    }
+
     if (manualForm.bloodGroup && /\d/.test(manualForm.bloodGroup)) {
       alert("Blood Group should not contain numbers.");
       return;
     }
-    if (manualForm.emisNumber && !/^\d+$/.test(manualForm.emisNumber)) {
-      alert("EMIS Number should contain only numbers.");
-      return;
-    }
+
     if (manualForm.aadhaarNumber && !/^\d{12}$/.test(manualForm.aadhaarNumber.replace(/\s/g, ''))) {
       alert("Aadhaar Number must be exactly 12 digits.");
       return;
@@ -162,6 +191,12 @@ const Admissions = () => {
     try {
       await api.post('/students/manual', { 
         ...manualForm, 
+        caste: (manualForm.caste || '').trim(),
+        emisNumber: (manualForm.emisNumber || manualForm.emisNo || '').trim(),
+        emisNo: (manualForm.emisNumber || manualForm.emisNo || '').trim(),
+        guardian: (manualForm.guardian || manualForm.guardianName || '').trim(),
+        guardianName: (manualForm.guardian || manualForm.guardianName || '').trim(),
+        whatsappNumber: (manualForm.whatsappNumber || '').trim(),
         RTE: manualForm.isRTE ? 'RTE' : 'General', 
         currentClass: selectedClass, 
         section: manualForm.section || selectedSection 
@@ -170,7 +205,7 @@ const Admissions = () => {
       setManualForm({ 
         studentName: '', fatherName: '', motherName: '', fatherPhone: '', motherPhone: '', address: '', admissionNumber: '',
         dateOfBirth: '', gender: '', bloodGroup: '', aadhaarNumber: '', religion: '', community: '', caste: '', RTE: '', nationality: '', 
-        fatherOccupation: '', motherOccupation: '', guardian: '', city: '', state: '', pincode: '', whatsappNumber: '', emisNumber: '',
+        fatherOccupation: '', motherOccupation: '', guardian: '', guardianName: '', city: '', state: '', pincode: '', whatsappNumber: '', emisNumber: '', emisNo: '',
         isRTE: false,
         section: '',
         applicationId: ''
@@ -229,7 +264,11 @@ const Admissions = () => {
         fatherName: data.fatherName || '',
         motherName: data.motherName || '',
         fatherPhone: data.fatherPhone || '',
-        motherPhone: data.motherPhone || ''
+        motherPhone: data.motherPhone || '',
+        caste: data.caste || '',
+        emisNumber: data.emisNumber || data.emisNo || '',
+        guardian: data.guardian || data.guardianName || '',
+        whatsappNumber: data.whatsappNumber || ''
       });
       setSelectedStudent(student);
       setIsEditing(true);
@@ -241,11 +280,27 @@ const Admissions = () => {
   };
 
   const handleEditChange = (e) => {
-    setEditForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    let val = value;
+    if (name === 'caste' || name === 'guardian') {
+      val = val.replace(/[^a-zA-Z\s]/g, '');
+      if (name === 'caste') val = val.slice(0, 50);
+      if (name === 'guardian') val = val.slice(0, 100);
+    } else if (name === 'emisNumber' || name === 'whatsappNumber') {
+      val = val.replace(/[^0-9]/g, '').slice(0, 10);
+    }
+    setEditForm(prev => ({ ...prev, [name]: val }));
   };
 
   const handleEditSave = async (e) => {
     e.preventDefault();
+
+    const err = validateFields(editForm.caste, editForm.emisNumber, editForm.guardian, editForm.whatsappNumber);
+    if (err) {
+      alert(err);
+      return;
+    }
+
     setEditLoading(true);
     try {
       const includedChargesIds = (fullStudentData.includedCharges || [])
@@ -264,6 +319,12 @@ const Admissions = () => {
         motherName: editForm.motherName,
         fatherPhone: editForm.fatherPhone,
         motherPhone: editForm.motherPhone,
+        caste: (editForm.caste || '').trim(),
+        emisNumber: (editForm.emisNumber || '').trim(),
+        emisNo: (editForm.emisNumber || '').trim(),
+        guardian: (editForm.guardian || '').trim(),
+        guardianName: (editForm.guardian || '').trim(),
+        whatsappNumber: (editForm.whatsappNumber || '').trim(),
         includedChargesIds,
         activitiesIds,
         dateOfBirth: fullStudentData.dateOfBirth ? fullStudentData.dateOfBirth.split('T')[0] : '',
@@ -603,6 +664,10 @@ const Admissions = () => {
                   <Input name="studentName" value={editForm.studentName} onChange={handleEditChange} required />
                 </div>
                 <div className="space-y-2">
+                  <Label>EMIS No</Label>
+                  <Input name="emisNumber" value={editForm.emisNumber} onChange={handleEditChange} maxLength={10} placeholder="10 digits" />
+                </div>
+                <div className="space-y-2">
                   <Label>Class</Label>
                   <select name="currentClass" value={editForm.currentClass} onChange={handleEditChange} className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600" required>
                     <option value="">Select Class</option>
@@ -616,6 +681,10 @@ const Admissions = () => {
                   <Input name="section" value={editForm.section} onChange={handleEditChange} placeholder="e.g., A" />
                 </div>
                 <div className="space-y-2">
+                  <Label>Caste</Label>
+                  <Input name="caste" value={editForm.caste} onChange={handleEditChange} maxLength={50} placeholder="e.g. BC, MBC" />
+                </div>
+                <div className="space-y-2">
                   <Label>Father Name</Label>
                   <Input name="fatherName" value={editForm.fatherName} onChange={handleEditChange} />
                 </div>
@@ -624,12 +693,20 @@ const Admissions = () => {
                   <Input name="motherName" value={editForm.motherName} onChange={handleEditChange} />
                 </div>
                 <div className="space-y-2">
+                  <Label>Guardian Name</Label>
+                  <Input name="guardian" value={editForm.guardian} onChange={handleEditChange} maxLength={100} placeholder="Guardian name" />
+                </div>
+                <div className="space-y-2">
                   <Label>Father Phone</Label>
                   <Input name="fatherPhone" value={editForm.fatherPhone} onChange={handleEditChange} />
                 </div>
                 <div className="space-y-2">
                   <Label>Mother Phone</Label>
                   <Input name="motherPhone" value={editForm.motherPhone} onChange={handleEditChange} />
+                </div>
+                <div className="space-y-2">
+                  <Label>WhatsApp Number</Label>
+                  <Input name="whatsappNumber" value={editForm.whatsappNumber} onChange={handleEditChange} maxLength={10} placeholder="10 digits" />
                 </div>
               </div>
             </div>
@@ -706,7 +783,7 @@ const Admissions = () => {
               </div>
               <div className="space-y-2">
                 <Label>EMIS No</Label>
-                <Input value={manualForm.emisNumber} onChange={(e) => handleValidatedChange('emisNumber', e, 'numbers', manualForm, setManualForm)} />
+                <Input value={manualForm.emisNumber} maxLength={10} placeholder="10 digits" onChange={(e) => handleValidatedChange('emisNumber', e, 'numbers', manualForm, setManualForm, 10)} />
               </div>
               <div className="space-y-2">
                 <Label>Student Name *</Label>
@@ -731,7 +808,7 @@ const Admissions = () => {
               </div>
               <div className="space-y-2">
                 <Label>Aadhaar No</Label>
-                <Input value={manualForm.aadhaarNumber} onChange={(e) => handleValidatedChange('aadhaarNumber', e, 'numbers', manualForm, setManualForm)} />
+                <Input value={manualForm.aadhaarNumber} maxLength={12} onChange={(e) => handleValidatedChange('aadhaarNumber', e, 'numbers', manualForm, setManualForm, 12)} />
               </div>
               <div className="space-y-2">
                 <Label>Religion</Label>
@@ -743,7 +820,7 @@ const Admissions = () => {
               </div>
               <div className="space-y-2">
                 <Label>Caste</Label>
-                <Input value={manualForm.caste} onChange={(e) => handleValidatedChange('caste', e, 'letters', manualForm, setManualForm)} />
+                <Input value={manualForm.caste} maxLength={50} placeholder="e.g. BC, MBC" onChange={(e) => handleValidatedChange('caste', e, 'letters', manualForm, setManualForm, 50)} />
               </div>
               <div className="space-y-2">
                 <Label>RTE</Label>
@@ -781,7 +858,7 @@ const Admissions = () => {
               </div>
               <div className="space-y-2">
                 <Label>Guardian Name</Label>
-                <Input value={manualForm.guardian} onChange={(e) => handleValidatedChange('guardian', e, 'letters', manualForm, setManualForm)} />
+                <Input value={manualForm.guardian} maxLength={100} placeholder="Guardian name" onChange={(e) => handleValidatedChange('guardian', e, 'letters', manualForm, setManualForm, 100)} />
               </div>
               <div className="space-y-2">
                 <Label>Father Phone</Label>
@@ -792,8 +869,8 @@ const Admissions = () => {
                 <Input value={manualForm.motherPhone} onChange={(e) => handleValidatedChange('motherPhone', e, 'numbers', manualForm, setManualForm)} />
               </div>
               <div className="space-y-2">
-                <Label>Whatsapp Number</Label>
-                <Input value={manualForm.whatsappNumber} onChange={(e) => handleValidatedChange('whatsappNumber', e, 'numbers', manualForm, setManualForm)} />
+                <Label>WhatsApp Number</Label>
+                <Input value={manualForm.whatsappNumber} maxLength={10} placeholder="10 digits" onChange={(e) => handleValidatedChange('whatsappNumber', e, 'numbers', manualForm, setManualForm, 10)} />
               </div>
               <div className="space-y-2">
                 <Label>Father Occupation</Label>

@@ -585,6 +585,14 @@ const Students = () => {
                 <p className="font-mono text-gray-900 ">{selectedStudent.admissionNumber}</p>
               </div>
               <div>
+                <p className="text-sm text-gray-500 ">EMIS No</p>
+                <p className="font-mono text-gray-900 ">{selectedStudent.emisNo || selectedStudent.emisNumber || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 ">Caste</p>
+                <p className="text-gray-900 ">{selectedStudent.caste || '-'}</p>
+              </div>
+              <div>
                 <p className="text-sm text-gray-500 ">Class & Section</p>
                 <p className="font-medium text-gray-900 ">{selectedStudent.currentClass} {selectedStudent.section && `- ${selectedStudent.section}`}</p>
               </div>
@@ -597,25 +605,33 @@ const Students = () => {
             <div className="border-t border-gray-200  pt-4 grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-500 ">Father Name</p>
-                <p className="text-gray-900 ">{selectedStudent.fatherName}</p>
+                <p className="text-gray-900 ">{selectedStudent.fatherName || '-'}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500 ">Mother Name</p>
-                <p className="text-gray-900 ">{selectedStudent.motherName}</p>
+                <p className="text-gray-900 ">{selectedStudent.motherName || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 ">Guardian Name</p>
+                <p className="text-gray-900 ">{selectedStudent.guardianName || selectedStudent.guardian || '-'}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500 ">Father Phone</p>
-                <p className="text-gray-900 ">{selectedStudent.fatherPhone}</p>
+                <p className="text-gray-900 ">{selectedStudent.fatherPhone || '-'}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500 ">Mother Phone</p>
-                <p className="text-gray-900 ">{selectedStudent.motherPhone}</p>
+                <p className="text-gray-900 ">{selectedStudent.motherPhone || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 ">WhatsApp Number</p>
+                <p className="text-gray-900 ">{selectedStudent.whatsappNumber || '-'}</p>
               </div>
             </div>
 
             <div className="border-t border-gray-200  pt-4">
               <p className="text-sm text-gray-500 ">Address</p>
-              <p className="text-gray-900 ">{selectedStudent.address}</p>
+              <p className="text-gray-900 ">{selectedStudent.address || '-'}</p>
             </div>
             
             <div className="pt-4 flex justify-end">
