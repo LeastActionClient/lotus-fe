@@ -91,28 +91,32 @@ const Payments = () => {
 
   useEffect(() => {
     if (selectedStudentId) {
-      const student = students.find(s => (s._id || s.id) === selectedStudentId);
-      if (student && student.studentFees) {
-        const pendingFees = student.studentFees.filter((f) => f.remainingAmount > 0);
-        setStudentFees(pendingFees);
-        if (pendingFees.length === 1) {
-          setPaymentData(prev => ({
-            ...prev,
-            studentFeeIds: [pendingFees[0]._id || pendingFees[0].id],
-            amount: pendingFees[0].remainingAmount.toString()
-          }));
+      api.get(`/students/${selectedStudentId}`).then(res => {
+        const student = res.data;
+        if (student && student.studentFees) {
+          const pendingFees = student.studentFees.filter((f) => f.remainingAmount > 0);
+          setStudentFees(pendingFees);
+          if (pendingFees.length === 1) {
+            setPaymentData(prev => ({
+              ...prev,
+              studentFeeIds: [pendingFees[0]._id || pendingFees[0].id],
+              amount: pendingFees[0].remainingAmount.toString()
+            }));
+          } else {
+            setPaymentData(prev => ({...prev, studentFeeIds: [], amount: '0'}));
+          }
         } else {
+          setStudentFees([]);
           setPaymentData(prev => ({...prev, studentFeeIds: [], amount: '0'}));
         }
-      } else {
-        setStudentFees([]);
-        setPaymentData(prev => ({...prev, studentFeeIds: [], amount: '0'}));
-      }
+      }).catch(err => {
+        console.error("Error fetching fresh student fees for payment modal:", err);
+      });
     } else {
       setStudentFees([]);
       setPaymentData(prev => ({...prev, studentFeeIds: [], amount: '0'}));
     }
-  }, [selectedStudentId, students]);
+  }, [selectedStudentId]);
 
   const selectedStudent = students.find(s => (s._id || s.id) === selectedStudentId);
   const isPreviousYearFee = (f, student) => {
