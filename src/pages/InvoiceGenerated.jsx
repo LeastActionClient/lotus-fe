@@ -124,15 +124,17 @@ const InvoiceGenerated = () => {
 
       <style>{`
         @page {
-          size: A4;
-          margin: 12mm;
+          size: A4 portrait;
+          margin: 5mm;
         }
 
         @media print {
+
           html, body {
             background: #ffffff !important;
             margin: 0 !important;
             padding: 0 !important;
+            height: auto !important;
           }
 
           .dashboard-sidebar,
@@ -159,6 +161,27 @@ const InvoiceGenerated = () => {
           .invoice-generated-page {
             margin: 0 !important;
             padding: 0 !important;
+          }
+
+          .receipt-page {
+            width: calc(210mm - 10mm) !important;
+            max-width: none !important;
+            min-height: calc(297mm - 10mm) !important;
+            margin: 0 auto !important;
+            border: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+          }
+
+          .receipt-copy {
+            height: 95mm !important;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+            overflow: hidden !important;
+          }
+
+          .receipt-copy + .receipt-copy {
+            border-top: 1px dashed #cbd5e1 !important;
           }
 
           .invoice-sheet {
