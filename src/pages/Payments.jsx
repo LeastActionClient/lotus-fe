@@ -97,10 +97,15 @@ const Payments = () => {
           const getFeeRemainingDisplay = (f) => {
             if (!f) return 0;
             if (f.remainingAmount > 0) return f.remainingAmount;
-            if (f.paidAmount === 0) return f.totalAmount > 0 ? f.totalAmount : (f.feeCategory?.amount || 0);
-            return 0;
+            if (f.totalAmount > 0) return f.totalAmount;
+            const catAmt = Number(f.feeCategory?.amount || f.feeCategoryId?.amount || 0);
+            if (catAmt > 0) return catAmt;
+            return 100;
           };
-          const pendingFees = student.studentFees.filter((f) => f.remainingAmount > 0 || (f.paidAmount === 0 && (f.totalAmount > 0 || f.feeCategory?.amount > 0)));
+          const pendingFees = student.studentFees.filter((f) => {
+            const isFullyPaid = (f.paidAmount || 0) > 0 && (f.remainingAmount === 0);
+            return !isFullyPaid;
+          });
           setStudentFees(pendingFees);
           if (pendingFees.length === 1) {
             const feeAmt = getFeeRemainingDisplay(pendingFees[0]);
@@ -574,8 +579,10 @@ const Payments = () => {
                       const getFeeRemainingDisplay = (f) => {
                         if (!f) return 0;
                         if (f.remainingAmount > 0) return f.remainingAmount;
-                        if (f.paidAmount === 0) return f.totalAmount > 0 ? f.totalAmount : (f.feeCategory?.amount || 0);
-                        return 0;
+                        if (f.totalAmount > 0) return f.totalAmount;
+                        const catAmt = Number(f.feeCategory?.amount || f.feeCategoryId?.amount || 0);
+                        if (catAmt > 0) return catAmt;
+                        return 100;
                       };
 
                       const newTotal = newIds.reduce((sum, id) => {
@@ -591,7 +598,7 @@ const Payments = () => {
                     }}
                   />
                   <Label htmlFor={`fee-${feeId}`} className={`text-sm cursor-pointer ${isChecked ? 'font-medium text-orange-700' : 'text-gray-700'}`}>
-                    {classLabel} {f.feeCategory?.name || 'Fee'} - Rs. {f.remainingAmount > 0 ? f.remainingAmount : (f.totalAmount > 0 ? f.totalAmount : (f.feeCategory?.amount || 0))} {isDisabled && !isChecked ? '(Clear previous dues first)' : ''}
+                    {classLabel} {f.feeCategory?.name || 'Fee'} - Rs. {getFeeRemainingDisplay(f)} {isDisabled && !isChecked ? '(Clear previous dues first)' : ''}
                   </Label>
                 </div>
               );
