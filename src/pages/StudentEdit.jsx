@@ -176,15 +176,13 @@ const StudentEdit = () => {
         pincode: student.pincode || '',
       });
 
-      // Find which optional categories student has in studentFees (excl. Base Fee default categories and Uniform)
-      const defaultFeeCatIds = new Set(Object.keys(defFees || {}).filter(catId => getFeeAmount(defFees[catId]) > 0));
-
+      // Find which optional categories student has in studentFees (excl. Uniform)
       const studentOptionalFeeCatIds = (student.studentFees || [])
         .filter(f => {
           const rawCatId = f.feeCategoryId?._id || f.feeCategoryId;
           const catId = rawCatId ? rawCatId.toString() : '';
           const cat = cats.find(c => c._id?.toString() === catId);
-          return cat && !cat.mandatory && !defaultFeeCatIds.has(catId) && cat.name.toLowerCase() !== 'uniform';
+          return cat && !cat.mandatory && cat.name.toLowerCase() !== 'uniform';
         })
         .map(f => (f.feeCategoryId?._id || f.feeCategoryId)?.toString())
         .filter(Boolean);
@@ -255,27 +253,14 @@ const StudentEdit = () => {
   };
 
   // Calculations
-  const defaultFeeCatIds = new Set(Object.keys(defaultFees || {}).filter(catId => getFeeAmount(defaultFees[catId]) > 0));
-
-  const baseFeeCats = categories.filter(cat => 
-    cat.isEnabled && 
-    cat.name.toLowerCase() !== 'uniform' && 
-    (cat.mandatory || defaultFeeCatIds.has(cat._id?.toString()))
-  );
-
-  const baseFeeAmount = baseFeeCats.reduce((sum, cat) => {
+  const mandatoryCats = categories.filter(cat => cat.isEnabled && cat.mandatory && cat.name.toLowerCase() !== 'uniform' && getFeeAmount(defaultFees[cat._id]) > 0);
+  const baseFeeAmount = mandatoryCats.reduce((sum, cat) => {
     return sum + getFeeAmount(defaultFees[cat._id]);
   }, 0);
 
-  const optionalCats = categories.filter(cat => 
-    cat.isEnabled && 
-    !cat.mandatory && 
-    !defaultFeeCatIds.has(cat._id?.toString()) && 
-    cat.name.toLowerCase() !== 'uniform'
-  );
-
+  const optionalCats = categories.filter(cat => cat.isEnabled && !cat.mandatory && cat.name.toLowerCase() !== 'uniform' && getFeeAmount(defaultFees[cat._id]) > 0);
   const chargesOptions = optionalCats.map(cat => {
-    const amt = getFeeAmount(defaultFees[cat._id]) || cat.amount || 0;
+    const amt = getFeeAmount(defaultFees[cat._id]);
     const isOutStock = cat.isStockItem && (cat.currentStock || 0) <= 0 && !selectedCharges.includes(cat._id?.toString());
     let labelText = `${cat.name} (₹${amt})`;
     if (cat.isStockItem) {
