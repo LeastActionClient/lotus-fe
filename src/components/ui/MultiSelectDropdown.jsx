@@ -27,6 +27,10 @@ export const MultiSelectDropdown = ({
   );
 
   const toggleOption = (value) => {
+    const option = options.find(o => o.value === value);
+    if (option?.disabled && !selected.includes(value)) {
+      return;
+    }
     const newSelected = selected.includes(value)
       ? selected.filter(item => item !== value)
       : [...selected, value];
@@ -42,7 +46,8 @@ export const MultiSelectDropdown = ({
     if (selected.length === options.length) {
       onChange([]);
     } else {
-      onChange(options.map(o => o.value));
+      const validSelectable = options.filter(o => !o.disabled || selected.includes(o.value)).map(o => o.value);
+      onChange(validSelectable);
     }
   };
 
@@ -120,13 +125,20 @@ export const MultiSelectDropdown = ({
             ) : (
               filteredOptions.map(option => {
                 const isSelected = selected.includes(option.value);
+                const isDisabled = option.disabled && !isSelected;
                 return (
                   <div
                     key={option.value}
                     onClick={() => toggleOption(option.value)}
-                    className={`flex items-center px-2 py-2 text-sm cursor-pointer rounded-sm hover:bg-orange-50 ${isSelected ? 'bg-orange-50/50' : ''}`}
+                    className={`flex items-center px-2 py-2 text-sm rounded-sm transition-colors ${
+                      isDisabled 
+                        ? 'opacity-50 cursor-not-allowed bg-gray-50 text-gray-400' 
+                        : `cursor-pointer hover:bg-orange-50 ${isSelected ? 'bg-orange-50/50' : ''}`
+                    }`}
                   >
-                    <div className={`w-4 h-4 rounded border mr-2 flex items-center justify-center ${isSelected ? 'bg-orange-600 border-orange-600 text-white' : 'border-gray-300'}`}>
+                    <div className={`w-4 h-4 rounded border mr-2 flex items-center justify-center ${
+                      isSelected ? 'bg-orange-600 border-orange-600 text-white' : (isDisabled ? 'border-gray-200 bg-gray-100' : 'border-gray-300')
+                    }`}>
                       {isSelected && <Check size={12} strokeWidth={3} />}
                     </div>
                     <span className="flex-1">{option.label}</span>

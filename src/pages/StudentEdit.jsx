@@ -176,21 +176,27 @@ const StudentEdit = () => {
         pincode: student.pincode || '',
       });
 
-      // Find which optional categories student has in studentFees (excl. Uniform)
+      // Find which optional categories student has in studentFees (excl. Base Fee default categories and Uniform)
+      const defaultFeeCatIds = new Set(Object.keys(defFees || {}).filter(catId => getFeeAmount(defFees[catId]) > 0));
+
       const studentOptionalFeeCatIds = (student.studentFees || [])
         .filter(f => {
-          const catId = f.feeCategoryId?._id || f.feeCategoryId;
-          const cat = cats.find(c => c._id === catId);
-          return cat && !cat.mandatory && cat.name.toLowerCase() !== 'uniform';
+          const rawCatId = f.feeCategoryId?._id || f.feeCategoryId;
+          const catId = rawCatId ? rawCatId.toString() : '';
+          const cat = cats.find(c => c._id?.toString() === catId);
+          return cat && !cat.mandatory && !defaultFeeCatIds.has(catId) && cat.name.toLowerCase() !== 'uniform';
         })
-        .map(f => f.feeCategoryId?._id || f.feeCategoryId);
+        .map(f => (f.feeCategoryId?._id || f.feeCategoryId)?.toString())
+        .filter(Boolean);
 
+      console.log("[RUNTIME DEBUG Step 1 - StudentEdit Load] Loaded studentOptionalFeeCatIds:", studentOptionalFeeCatIds);
       setSelectedCharges(studentOptionalFeeCatIds);
 
       // Load Uniform lengths
       const uniformFee = (student.studentFees || []).find(f => {
-        const catId = f.feeCategoryId?._id || f.feeCategoryId;
-        const cat = cats.find(c => c._id === catId);
+        const rawCatId = f.feeCategoryId?._id || f.feeCategoryId;
+        const catId = rawCatId ? rawCatId.toString() : '';
+        const cat = cats.find(c => c._id?.toString() === catId);
         return cat && cat.name.toLowerCase() === 'uniform';
       });
 
@@ -249,17 +255,40 @@ const StudentEdit = () => {
   };
 
   // Calculations
-  const mandatoryCats = categories.filter(cat => cat.isEnabled && cat.mandatory && cat.name.toLowerCase() !== 'uniform' && getFeeAmount(defaultFees[cat._id]) > 0);
-  const baseFeeAmount = mandatoryCats.reduce((sum, cat) => {
+  const defaultFeeCatIds = new Set(Object.keys(defaultFees || {}).filter(catId => getFeeAmount(defaultFees[catId]) > 0));
+
+  const baseFeeCats = categories.filter(cat => 
+    cat.isEnabled && 
+    cat.name.toLowerCase() !== 'uniform' && 
+    (cat.mandatory || defaultFeeCatIds.has(cat._id?.toString()))
+  );
+
+  const baseFeeAmount = baseFeeCats.reduce((sum, cat) => {
     return sum + getFeeAmount(defaultFees[cat._id]);
   }, 0);
 
-  const optionalCats = categories.filter(cat => cat.isEnabled && !cat.mandatory && cat.name.toLowerCase() !== 'uniform' && getFeeAmount(defaultFees[cat._id]) > 0);
+  const optionalCats = categories.filter(cat => 
+    cat.isEnabled && 
+    !cat.mandatory && 
+    !defaultFeeCatIds.has(cat._id?.toString()) && 
+    cat.name.toLowerCase() !== 'uniform'
+  );
+
   const chargesOptions = optionalCats.map(cat => {
-    const amt = getFeeAmount(defaultFees[cat._id]);
+    const amt = getFeeAmount(defaultFees[cat._id]) || cat.amount || 0;
+    const isOutStock = cat.isStockItem && (cat.currentStock || 0) <= 0 && !selectedCharges.includes(cat._id?.toString());
+    let labelText = `${cat.name} (₹${amt})`;
+    if (cat.isStockItem) {
+      if (isOutStock) {
+        labelText = `${cat.name} - Out of Stock`;
+      } else {
+        labelText = `${cat.name} (₹${amt} | Stock: ${cat.currentStock ?? 0})`;
+      }
+    }
     return {
-      value: cat._id,
-      label: `${cat.name} (₹${amt})`
+      value: cat._id?.toString(),
+      label: labelText,
+      disabled: isOutStock
     };
   });
 

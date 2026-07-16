@@ -24,6 +24,16 @@ const FeeCategories = () => {
   
   const [catName, setCatName] = useState('');
   const [catMandatory, setCatMandatory] = useState(false);
+  const [catIsStockItem, setCatIsStockItem] = useState(false);
+  const [catInitialStock, setCatInitialStock] = useState('0');
+
+  // For Edit Fee Category
+  const [isEditCatModalOpen, setIsEditCatModalOpen] = useState(false);
+  const [editingCat, setEditingCat] = useState(null);
+  const [editCatName, setEditCatName] = useState('');
+  const [editCatMandatory, setEditCatMandatory] = useState(false);
+  const [editCatIsStockItem, setEditCatIsStockItem] = useState(false);
+  const [editCatCurrentStock, setEditCatCurrentStock] = useState('0');
   
   // For Assign to Student (Special Fee)
   const [selectedStudentId, setSelectedStudentId] = useState('');
@@ -50,6 +60,7 @@ const FeeCategories = () => {
         api.get('/students'),
         api.get('/classes')
       ]);
+      console.log("[RUNTIME DEBUG Step 11 - FeeCategories UI] Refetched categories response from API:", catRes.data);
       setCategories(catRes.data);
       setStudents(stuRes.data);
       setClasses(classRes.data);
@@ -125,13 +136,50 @@ const FeeCategories = () => {
   const handleCreateCategory = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/fees/categories', { name: catName, mandatory: catMandatory });
+      await api.post('/fees/categories', { 
+        name: catName, 
+        mandatory: catMandatory,
+        isStockItem: catIsStockItem,
+        initialStock: catIsStockItem ? Math.max(0, parseInt(catInitialStock || '0', 10)) : 0
+      });
       setIsNewCatModalOpen(false);
       setCatName('');
       setCatMandatory(false);
+      setCatIsStockItem(false);
+      setCatInitialStock('0');
       fetchData();
     } catch (error) {
       console.error("Error creating category", error);
+      alert(error.response?.data?.error || "Error creating category");
+    }
+  };
+
+  const openEditCategoryModal = (category) => {
+    setEditingCat(category);
+    setEditCatName(category.name || '');
+    setEditCatMandatory(!!category.mandatory);
+    setEditCatIsStockItem(!!category.isStockItem);
+    setEditCatCurrentStock(String(category.currentStock ?? 0));
+    setIsEditCatModalOpen(true);
+  };
+
+  const handleUpdateCategory = async (e) => {
+    e.preventDefault();
+    if (!editingCat) return;
+    try {
+      await api.put(`/fees/categories/${editingCat._id}`, {
+        name: editCatName,
+        mandatory: editCatMandatory,
+        isEnabled: editingCat.isEnabled,
+        isStockItem: editCatIsStockItem,
+        updatedStock: editCatIsStockItem ? Math.max(0, parseInt(editCatCurrentStock || '0', 10)) : 0
+      });
+      setIsEditCatModalOpen(false);
+      setEditingCat(null);
+      fetchData();
+    } catch (error) {
+      console.error("Error updating category", error);
+      alert(error.response?.data?.error || "Error updating category");
     }
   };
 
@@ -298,6 +346,7 @@ const FeeCategories = () => {
               <TableRow>
                 <TableHead>Category Name</TableHead>
                 <TableHead>Type</TableHead>
+                <TableHead>Stock</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Created At</TableHead>
                 <TableHead className="text-right">Action</TableHead>
@@ -306,7 +355,7 @@ const FeeCategories = () => {
             <TableBody>
               {visibleCategories.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center h-32 text-gray-500">
+                  <TableCell colSpan={6} className="text-center h-32 text-gray-500">
                     No fee categories found.
                   </TableCell>
                 </TableRow>
@@ -322,6 +371,15 @@ const FeeCategories = () => {
                       </span>
                     </TableCell>
                     <TableCell>
+                      {cat.isStockItem ? (
+                        <span className="font-mono font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded text-sm">
+                          {cat.currentStock ?? 0}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 font-medium">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       <button 
                         onClick={() => handleToggleCategory(cat)}
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity ${
@@ -332,20 +390,31 @@ const FeeCategories = () => {
                     </TableCell>
                     <TableCell>{new Date(cat.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
-                      {currentUser.role === 'SUPER_ADMIN' && (
-                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={async () => {
-                          if(window.confirm('Are you sure you want to delete this category?')) {
-                            try {
-                              await api.delete(`/fees/categories/${cat._id}`);
-                              fetchData();
-                            } catch(e) { 
-                              alert(e.response?.data?.error || 'Error deleting category'); 
-                            }
-                          }
-                        }}>
-                          <Trash2 className="h-4 w-4" />
+                      <div className="flex items-center justify-end gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          onClick={() => openEditCategoryModal(cat)}
+                          title="Edit Category"
+                        >
+                          <Edit className="h-4 w-4" />
                         </Button>
-                      )}
+                        {currentUser.role === 'SUPER_ADMIN' && (
+                          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={async () => {
+                            if(window.confirm('Are you sure you want to delete this category?')) {
+                              try {
+                                await api.delete(`/fees/categories/${cat._id}`);
+                                fetchData();
+                              } catch(e) { 
+                                alert(e.response?.data?.error || 'Error deleting category'); 
+                              }
+                            }
+                          }}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -356,7 +425,8 @@ const FeeCategories = () => {
         </CardContent>
       </Card>
 
-      <Modal isOpen={isNewCatModalOpen} onClose={() => { setIsNewCatModalOpen(false); setCatName(''); setCatMandatory(false); }} title="Create Fee Category">
+      {/* Create Fee Category Modal */}
+      <Modal isOpen={isNewCatModalOpen} onClose={() => { setIsNewCatModalOpen(false); setCatName(''); setCatMandatory(false); setCatIsStockItem(false); setCatInitialStock('0'); }} title="Create Fee Category">
         <form onSubmit={handleCreateCategory} className="space-y-4 pt-2">
           <div className="space-y-2">
             <Label htmlFor="catName">Category Name</Label>
@@ -364,7 +434,7 @@ const FeeCategories = () => {
               id="catName" 
               value={catName} 
               onChange={(e) => setCatName(e.target.value)} 
-              placeholder="e.g., Tuition Fee, Transport Fee"
+              placeholder="e.g., Tuition Fee, Book, Uniform"
               required 
             />
           </div>
@@ -378,9 +448,100 @@ const FeeCategories = () => {
             />
             <Label htmlFor="catMandatory" className="cursor-pointer font-medium text-gray-700">Mandatory</Label>
           </div>
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200  mt-6">
-            <Button type="button" variant="ghost" onClick={() => { setIsNewCatModalOpen(false); setCatName(''); setCatMandatory(false); }}>Cancel</Button>
+          <div className="flex items-center space-x-2 pt-1">
+            <input 
+              type="checkbox"
+              id="catIsStockItem" 
+              checked={catIsStockItem} 
+              onChange={(e) => setCatIsStockItem(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
+            />
+            <Label htmlFor="catIsStockItem" className="cursor-pointer font-medium text-gray-700">Stock Item</Label>
+          </div>
+
+          {catIsStockItem && (
+            <div className="space-y-2 pt-2 animate-in fade-in duration-300">
+              <Label htmlFor="catInitialStock">Initial Stock</Label>
+              <Input 
+                id="catInitialStock" 
+                type="number" 
+                min="0"
+                step="1"
+                value={catInitialStock} 
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^0-9]/g, '');
+                  setCatInitialStock(val);
+                }} 
+                placeholder="e.g., 500"
+                required={catIsStockItem}
+              />
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">
+            <Button type="button" variant="ghost" onClick={() => { setIsNewCatModalOpen(false); setCatName(''); setCatMandatory(false); setCatIsStockItem(false); setCatInitialStock('0'); }}>Cancel</Button>
             <Button type="submit">Create Category</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit Fee Category Modal */}
+      <Modal isOpen={isEditCatModalOpen} onClose={() => { setIsEditCatModalOpen(false); setEditingCat(null); }} title="Edit Fee Category">
+        <form onSubmit={handleUpdateCategory} className="space-y-4 pt-2">
+          <div className="space-y-2">
+            <Label htmlFor="editCatName">Category Name</Label>
+            <Input 
+              id="editCatName" 
+              value={editCatName} 
+              onChange={(e) => setEditCatName(e.target.value)} 
+              placeholder="Category Name"
+              required 
+            />
+          </div>
+          <div className="flex items-center space-x-2 pt-2">
+            <input 
+              type="checkbox"
+              id="editCatMandatory" 
+              checked={editCatMandatory} 
+              onChange={(e) => setEditCatMandatory(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
+            />
+            <Label htmlFor="editCatMandatory" className="cursor-pointer font-medium text-gray-700">Mandatory</Label>
+          </div>
+          <div className="flex items-center space-x-2 pt-1">
+            <input 
+              type="checkbox"
+              id="editCatIsStockItem" 
+              checked={editCatIsStockItem} 
+              onChange={(e) => setEditCatIsStockItem(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
+            />
+            <Label htmlFor="editCatIsStockItem" className="cursor-pointer font-medium text-gray-700">Stock Item</Label>
+          </div>
+
+          {editCatIsStockItem && (
+            <div className="space-y-2 pt-2 animate-in fade-in duration-300">
+              <Label htmlFor="editCatCurrentStock">Current Stock</Label>
+              <Input 
+                id="editCatCurrentStock" 
+                type="number" 
+                min="0"
+                step="1"
+                value={editCatCurrentStock} 
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^0-9]/g, '');
+                  setEditCatCurrentStock(val);
+                }} 
+                placeholder="Current Stock Quantity"
+                required={editCatIsStockItem}
+              />
+              <p className="text-xs text-gray-500">Update value to adjust available inventory.</p>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">
+            <Button type="button" variant="ghost" onClick={() => { setIsEditCatModalOpen(false); setEditingCat(null); }}>Cancel</Button>
+            <Button type="submit">Save Changes</Button>
           </div>
         </form>
       </Modal>
