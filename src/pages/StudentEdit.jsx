@@ -65,7 +65,17 @@ const StudentEdit = () => {
       val = val.replace(/[^0-9]/g, '');
     } else if (validationType === 'alphanumeric') {
       val = val.replace(/[^a-zA-Z0-9\s\-\+]/g, '');
+    } else if (validationType === 'bloodGroup') {
+      val = val.replace(/[^a-zA-Z\s\-\+]/g, '');
     }
+    
+    if (field === 'aadhaarNumber' && val.length > 12) {
+      val = val.slice(0, 12);
+    }
+    if (field === 'emisNumber' && val.length > 20) {
+      val = val.slice(0, 20);
+    }
+    
     setState({ ...stateObj, [field]: val });
   };
 
@@ -272,6 +282,15 @@ const StudentEdit = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    if (formData.bloodGroup && /\d/.test(formData.bloodGroup)) {
+      alert("Blood Group should not contain numbers.");
+      return;
+    }
+    if (formData.aadhaarNumber && !/^\d{12}$/.test(formData.aadhaarNumber.replace(/\s/g, ''))) {
+      alert("Aadhaar Number must be exactly 12 digits.");
+      return;
+    }
+
     try {
       const mandatoryCatIds = categories
         .filter(cat => cat.isEnabled && cat.mandatory && cat.name.toLowerCase() !== 'uniform' && getFeeAmount(defaultFees[cat._id]) > 0)
@@ -361,7 +380,7 @@ const StudentEdit = () => {
               </div>
               <div className="space-y-2">
                 <Label>Blood Group</Label>
-                <Input name="bloodGroup" value={formData.bloodGroup} onChange={(e) => handleValidatedChange('bloodGroup', e, 'alphanumeric', formData, setFormData)} placeholder="e.g. O+" />
+                <Input name="bloodGroup" value={formData.bloodGroup} onChange={(e) => handleValidatedChange('bloodGroup', e, 'bloodGroup', formData, setFormData)} placeholder="e.g. O+" />
               </div>
               <div className="space-y-2">
                 <Label>Aadhaar Number</Label>

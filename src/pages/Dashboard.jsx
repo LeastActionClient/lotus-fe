@@ -218,16 +218,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-slate-50 to-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-700 ">General Students</CardTitle>
-            <Users className="h-4 w-4 text-slate-700 " />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-gray-900 ">{stats.generalStudents}</div>
-            <p className="text-xs text-gray-500 mt-1">Students marked as General</p>
-          </CardContent>
-        </Card>
+
       </div>
 
       {/* Bulk Promote Students Modal */}

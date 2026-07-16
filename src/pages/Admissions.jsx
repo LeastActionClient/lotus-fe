@@ -69,7 +69,17 @@ const Admissions = () => {
       val = val.replace(/[^0-9]/g, '');
     } else if (validationType === 'alphanumeric') {
       val = val.replace(/[^a-zA-Z0-9\s\-\+]/g, '');
+    } else if (validationType === 'bloodGroup') {
+      val = val.replace(/[^a-zA-Z\s\-\+]/g, '');
     }
+    
+    if (field === 'aadhaarNumber' && val.length > 12) {
+      val = val.slice(0, 12);
+    }
+    if (field === 'emisNumber' && val.length > 20) {
+      val = val.slice(0, 20);
+    }
+
     setState({ ...stateObj, [field]: val });
   };
 
@@ -135,6 +145,20 @@ const Admissions = () => {
       alert("Please select a class first in the main screen.");
       return;
     }
+
+    if (manualForm.bloodGroup && /\d/.test(manualForm.bloodGroup)) {
+      alert("Blood Group should not contain numbers.");
+      return;
+    }
+    if (manualForm.emisNumber && !/^\d+$/.test(manualForm.emisNumber)) {
+      alert("EMIS Number should contain only numbers.");
+      return;
+    }
+    if (manualForm.aadhaarNumber && !/^\d{12}$/.test(manualForm.aadhaarNumber.replace(/\s/g, ''))) {
+      alert("Aadhaar Number must be exactly 12 digits.");
+      return;
+    }
+
     try {
       await api.post('/students/manual', { 
         ...manualForm, 
@@ -703,7 +727,7 @@ const Admissions = () => {
               </div>
               <div className="space-y-2">
                 <Label>Blood Group</Label>
-                <Input value={manualForm.bloodGroup} onChange={(e) => handleValidatedChange('bloodGroup', e, 'alphanumeric', manualForm, setManualForm)} />
+                <Input value={manualForm.bloodGroup} onChange={(e) => handleValidatedChange('bloodGroup', e, 'bloodGroup', manualForm, setManualForm)} />
               </div>
               <div className="space-y-2">
                 <Label>Aadhaar No</Label>

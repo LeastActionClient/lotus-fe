@@ -74,8 +74,8 @@ const DashboardLayout = () => {
       )}
 
       {/* Sidebar */}
-      <aside className={`dashboard-sidebar fixed inset-y-0 left-0 z-30 w-64 bg-white shadow-md transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="p-6 relative">
+      <aside className={`dashboard-sidebar flex flex-col h-full fixed inset-y-0 left-0 z-30 w-64 bg-white shadow-md transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="p-6 relative shrink-0">
           <button 
             className="absolute top-4 right-4 md:hidden text-gray-500"
             onClick={() => setIsSidebarOpen(false)}
@@ -87,7 +87,7 @@ const DashboardLayout = () => {
           </div>
           <p className="text-sm text-gray-500 mt-1 text-center">Logged in as {user.username}</p>
         </div>
-        <nav className="mt-6">
+        <nav className="mt-2 flex-1 overflow-y-auto pb-6">
           {navItems.map((item) => {
             const isActive = item.path === '/dashboard'
               ? location.pathname === item.path
