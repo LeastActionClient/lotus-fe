@@ -9,9 +9,12 @@ import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import Pagination from '../components/ui/Pagination';
 import { Link } from 'react-router-dom';
+import { toastError } from '../services/toastService';
+import { useConfirm } from '../components/ui/ConfirmDialog';
 
 const Activities = () => {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const confirm = useConfirm();
   const [activities, setActivities] = useState([]);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -54,18 +57,27 @@ const Activities = () => {
       fetchActivities();
     } catch (error) {
       console.error("Error saving activity", error);
-      alert(error.response?.data?.error || "Error saving activity.");
+      toastError(error.response?.data?.error || "Error saving activity.");
     }
   };
 
   const handleDelete = async (id) => {
-    if(window.confirm('Are you sure you want to delete this Activity?')) {
-      try {
-        await api.delete(`/activities/${id}`);
-        fetchActivities();
-      } catch(error) {
-        alert(error.response?.data?.error || "Error deleting activity.");
-      }
+    const accepted = await confirm({
+      title: 'Delete Activity',
+      description: 'Are you sure you want to delete this activity?',
+      confirmText: 'Delete',
+      tone: 'danger'
+    });
+
+    if (!accepted) {
+      return;
+    }
+
+    try {
+      await api.delete(`/activities/${id}`);
+      fetchActivities();
+    } catch(error) {
+      toastError(error.response?.data?.error || "Error deleting activity.");
     }
   };
 

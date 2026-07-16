@@ -8,6 +8,8 @@ import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import { isRTEStudent } from '../utils/studentCategory';
 import { PageLoader } from '../components/ui/Spinner';
+import { toastError, toastSuccess, toastWarning } from '../services/toastService';
+import { useConfirm } from '../components/ui/ConfirmDialog';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -29,6 +31,7 @@ const Dashboard = () => {
   const [toYear, setToYear] = useState('');
   const [classMapping, setClassMapping] = useState({});
   const [isPromoting, setIsPromoting] = useState(false);
+  const confirm = useConfirm();
 
   const fetchDashboardData = async () => {
     try {
@@ -110,21 +113,28 @@ const Dashboard = () => {
   const handlePromoteSubmit = async (e) => {
     e.preventDefault();
     if (!fromYear || !toYear) {
-      alert("Please specify From and To academic years.");
+      toastWarning("Please specify From and To academic years.");
       return;
     }
 
     const yearRegex = /^\d{4}-\d{4}$/;
     if (!yearRegex.test(fromYear)) {
-      alert("From Academic Year must be in YYYY-YYYY format (e.g., 2026-2027).");
+      toastWarning("From Academic Year must be in YYYY-YYYY format (e.g., 2026-2027).");
       return;
     }
     if (!yearRegex.test(toYear)) {
-      alert("To Academic Year must be in YYYY-YYYY format (e.g., 2027-2028).");
+      toastWarning("To Academic Year must be in YYYY-YYYY format (e.g., 2027-2028).");
       return;
     }
     
-    if (!window.confirm(`Are you sure you want to promote students from ${fromYear} to ${toYear}? This will update their current class and academic year.`)) {
+    const accepted = await confirm({
+      title: 'Bulk Promote Students',
+      description: `Are you sure you want to promote students from ${fromYear} to ${toYear}? This will update their current class and academic year.`,
+      confirmText: 'Promote',
+      tone: 'primary'
+    });
+
+    if (!accepted) {
       return;
     }
 
@@ -135,12 +145,12 @@ const Dashboard = () => {
         toAcademicYear: toYear,
         classMapping: classMapping
       });
-      alert(res.data.message);
+      toastSuccess(res.data.message);
       setIsPromoteModalOpen(false);
       fetchDashboardData();
     } catch (error) {
       console.error("Error promoting students", error);
-      alert("Failed to promote students. Check console for details.");
+      toastError("Failed to promote students. Check console for details.");
     } finally {
       setIsPromoting(false);
     }

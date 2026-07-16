@@ -9,9 +9,12 @@ import { Label } from '../components/ui/Label';
 import Pagination from '../components/ui/Pagination';
 import { FileText, Plus, CheckCircle, Trash2, Settings } from 'lucide-react';
 import { PageLoader } from '../components/ui/Spinner';
+import { toastError, toastSuccess } from '../services/toastService';
+import { useConfirm } from '../components/ui/ConfirmDialog';
 
 const Applications = () => {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const confirm = useConfirm();
   const [applications, setApplications] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
@@ -91,9 +94,9 @@ const Applications = () => {
     try {
       await api.post('/settings', customIds);
       setIsCustomizeModalOpen(false);
-      alert('Custom ID Formats saved successfully!');
+      toastSuccess('Custom ID Formats saved successfully!');
     } catch(e) {
-      alert('Error saving custom IDs');
+      toastError('Error saving custom IDs');
     }
   };
 
@@ -128,8 +131,10 @@ const Applications = () => {
         adminNo: ''
       });
       fetchApplications();
+      toastSuccess('Application submitted successfully.');
     } catch (error) {
       console.error("Error creating application", error);
+      toastError(error.response?.data?.error || 'Error creating application');
     } finally {
       setLoading(false);
     }
@@ -148,8 +153,10 @@ const Applications = () => {
       await api.put(`/applications/${selectedAppId}/approve`, { section: assignSection });
       setIsApproveModalOpen(false);
       fetchApplications();
+      toastSuccess('Application approved successfully.');
     } catch (error) {
       console.error("Error approving application", error);
+      toastError(error.response?.data?.error || 'Error approving application');
     } finally {
       setLoading(false);
     }
@@ -256,12 +263,22 @@ const Applications = () => {
                       )}
                       {currentUser.role === 'SUPER_ADMIN' && (
                         <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={async () => {
-                          if(window.confirm('Are you sure you want to delete this application?')) {
-                            try {
-                              await api.delete(`/applications/${app._id || app.id}`);
-                              fetchApplications();
-                            } catch(e) { alert('Error deleting application'); }
+                          const accepted = await confirm({
+                            title: 'Delete Application',
+                            description: 'Are you sure you want to delete this application?',
+                            confirmText: 'Delete',
+                            tone: 'danger'
+                          });
+
+                          if (!accepted) {
+                            return;
                           }
+
+                          try {
+                            await api.delete(`/applications/${app._id || app.id}`);
+                            fetchApplications();
+                            toastSuccess('Application deleted successfully.');
+                          } catch(e) { toastError('Error deleting application'); }
                         }}>
                           <Trash2 className="h-4 w-4" />
                         </Button>

@@ -9,9 +9,12 @@ import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import Pagination from '../components/ui/Pagination';
 import { Link } from 'react-router-dom';
+import { toastError } from '../services/toastService';
+import { useConfirm } from '../components/ui/ConfirmDialog';
 
 const IncludedCharges = () => {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const confirm = useConfirm();
   const [charges, setCharges] = useState([]);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -65,7 +68,7 @@ const IncludedCharges = () => {
       setStockHistoryOpen(true);
     } catch (error) {
       console.error('Error fetching stock history', error);
-      alert('Failed to load stock history');
+      toastError('Failed to load stock history');
     }
   };
 
@@ -91,18 +94,27 @@ const IncludedCharges = () => {
       fetchCharges();
     } catch (error) {
       console.error("Error saving charge", error);
-      alert(error.response?.data?.error || "Error saving included charge.");
+      toastError(error.response?.data?.error || "Error saving included charge.");
     }
   };
 
   const handleDelete = async (id) => {
-    if(window.confirm('Are you sure you want to delete this Included Charge?')) {
-      try {
-        await api.delete(`/included-charges/${id}`);
-        fetchCharges();
-      } catch(error) {
-        alert(error.response?.data?.error || "Error deleting charge.");
-      }
+    const accepted = await confirm({
+      title: 'Delete Included Charge',
+      description: 'Are you sure you want to delete this included charge?',
+      confirmText: 'Delete',
+      tone: 'danger'
+    });
+
+    if (!accepted) {
+      return;
+    }
+
+    try {
+      await api.delete(`/included-charges/${id}`);
+      fetchCharges();
+    } catch(error) {
+      toastError(error.response?.data?.error || "Error deleting charge.");
     }
   };
 
@@ -143,7 +155,7 @@ const IncludedCharges = () => {
       fetchCharges();
     } catch (error) {
       console.error('Error adjusting stock', error);
-      alert(error.response?.data?.error || 'Failed to adjust stock');
+      toastError(error.response?.data?.error || 'Failed to adjust stock');
     }
   };
 

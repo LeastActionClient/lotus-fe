@@ -12,10 +12,13 @@ import { Link } from 'react-router-dom';
 import { getStudentCategoryLabel, isRTEStudent } from '../utils/studentCategory';
 import { PageLoader } from '../components/ui/Spinner';
 import ExportModal from '../components/ExportModal';
+import { toastError } from '../services/toastService';
+import { useConfirm } from '../components/ui/ConfirmDialog';
 
 
 const Students = () => {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const confirm = useConfirm();
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
   
@@ -121,12 +124,20 @@ const Students = () => {
         setSelectedClass(res.data.find((c) => c._id === editingClass._id));
       }
     } catch (error) {
-      alert(error.response?.data?.error || 'Error updating class');
+      toastError(error.response?.data?.error || 'Error updating class');
     }
   };
 
   const handleDeleteClass = async (cls) => {
-    if (!window.confirm(`Are you sure you want to delete Class ${cls.name}? All sections in this class will also be deleted.`)) return;
+    const accepted = await confirm({
+      title: 'Delete Class',
+      description: `Are you sure you want to delete Class ${cls.name}? All sections in this class will also be deleted.`,
+      confirmText: 'Delete',
+      tone: 'danger'
+    });
+
+    if (!accepted) return;
+
     try {
       await api.delete(`/classes/${cls._id}`);
       if (selectedClass?._id === cls._id) {
@@ -135,7 +146,7 @@ const Students = () => {
       }
       fetchClasses();
     } catch (error) {
-      alert(error.response?.data?.error || 'Error deleting class');
+      toastError(error.response?.data?.error || 'Error deleting class');
     }
   };
 
@@ -151,20 +162,28 @@ const Students = () => {
       setClasses(res.data);
       setSelectedClass(res.data.find((c) => c._id === selectedClass._id));
     } catch (error) {
-      alert(error.response?.data?.error || 'Error updating section');
+      toastError(error.response?.data?.error || 'Error updating section');
     }
   };
 
   const handleDeleteSection = async (sec) => {
     if (!selectedClass) return;
-    if (!window.confirm(`Are you sure you want to delete Section ${sec.name} from Class ${selectedClass.name}?`)) return;
+    const accepted = await confirm({
+      title: 'Delete Section',
+      description: `Are you sure you want to delete Section ${sec.name} from Class ${selectedClass.name}?`,
+      confirmText: 'Delete',
+      tone: 'danger'
+    });
+
+    if (!accepted) return;
+
     try {
       await api.delete(`/classes/${selectedClass._id}/sections/${sec._id}`);
       const res = await api.get('/classes');
       setClasses(res.data);
       setSelectedClass(res.data.find((c) => c._id === selectedClass._id));
     } catch (error) {
-      alert(error.response?.data?.error || 'Error deleting section');
+      toastError(error.response?.data?.error || 'Error deleting section');
     }
   };
 
@@ -472,13 +491,22 @@ const Students = () => {
                           </Link>
                           {currentUser.role === 'SUPER_ADMIN' && (
                             <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={async () => {
-                              if(window.confirm('Are you sure you want to delete this student?')) {
-                                try {
-                                  await api.delete(`/students/${student._id}`);
-                                  fetchStudents();
-                                } catch(e) { 
-                              alert(e.response?.data?.error || 'Error deleting student'); 
-                            }
+                              const accepted = await confirm({
+                                title: 'Delete Student',
+                                description: 'Are you sure you want to delete this student?',
+                                confirmText: 'Delete',
+                                tone: 'danger'
+                              });
+
+                              if (!accepted) {
+                                return;
+                              }
+
+                              try {
+                                await api.delete(`/students/${student._id}`);
+                                fetchStudents();
+                              } catch(e) { 
+                                toastError(e.response?.data?.error || 'Error deleting student'); 
                               }
                             }}>
                               <Trash2 className="h-4 w-4" />

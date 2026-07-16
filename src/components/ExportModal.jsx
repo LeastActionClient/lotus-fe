@@ -5,6 +5,7 @@ import { Label } from './ui/Label';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Download, FileText, Loader2 } from 'lucide-react';
+import { toastWarning } from '../services/toastService';
 
 const ExportModal = ({ isOpen, onClose, selectedStudentIds = [], defaultScope = 'CLASS', isOldStudentsPage = false }) => {
   const [exportScope, setExportScope] = useState(defaultScope);
@@ -102,7 +103,7 @@ const ExportModal = ({ isOpen, onClose, selectedStudentIds = [], defaultScope = 
           // ignore parsing error
         }
       }
-      alert(errorMessage);
+      toastWarning(errorMessage);
     } finally {
       setLoading(false);
       setProgressText('');

@@ -9,6 +9,8 @@ import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import Pagination from '../components/ui/Pagination';
 import { PageLoader } from '../components/ui/Spinner';
+import { toastError } from '../services/toastService';
+import { useConfirm } from '../components/ui/ConfirmDialog';
 
 const Admins = () => {
   const [admins, setAdmins] = useState([]);
@@ -28,6 +30,7 @@ const Admins = () => {
   });
 
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const confirm = useConfirm();
 
   const fetchAdmins = async () => {
     try {
@@ -81,7 +84,7 @@ const Admins = () => {
       fetchAdmins();
     } catch (error) {
       console.error("Error creating admin", error);
-      alert(error.response?.data?.error || "Error creating admin");
+      toastError(error.response?.data?.error || "Error creating admin");
     } finally {
       setLoading(false);
     }
@@ -97,14 +100,23 @@ const Admins = () => {
   };
 
   const deleteAdmin = async (id) => {
-    if (window.confirm("Are you sure you want to delete this admin? This action cannot be undone.")) {
-      try {
-        await api.delete(`/users/${id}`);
-        fetchAdmins();
-      } catch (error) {
-        console.error("Error deleting admin", error);
-        alert(error.response?.data?.error || "Error deleting admin");
-      }
+    const accepted = await confirm({
+      title: 'Delete Admin',
+      description: 'Are you sure you want to delete this admin? This action cannot be undone.',
+      confirmText: 'Delete',
+      tone: 'danger'
+    });
+
+    if (!accepted) {
+      return;
+    }
+
+    try {
+      await api.delete(`/users/${id}`);
+      fetchAdmins();
+    } catch (error) {
+      console.error("Error deleting admin", error);
+      toastError(error.response?.data?.error || "Error deleting admin");
     }
   };
 

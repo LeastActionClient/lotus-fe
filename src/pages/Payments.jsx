@@ -12,9 +12,12 @@ import Select from 'react-select';
 import { getStudentCategoryLabel } from '../utils/studentCategory';
 import { PageLoader } from '../components/ui/Spinner';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { toastError, toastSuccess, toastWarning } from '../services/toastService';
+import { useConfirm } from '../components/ui/ConfirmDialog';
 
 const Payments = () => {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const confirm = useConfirm();
   const location = useLocation();
   const navigate = useNavigate();
   const incomingStudentId = useRef(location.state?.studentId);
@@ -125,7 +128,7 @@ const Payments = () => {
   const handlePayment = async (e) => {
     e.preventDefault();
     if (paymentData.studentFeeIds.length === 0) {
-      alert("Please select at least one fee to pay.");
+      toastWarning("Please select at least one fee to pay.");
       return;
     }
 
@@ -137,7 +140,7 @@ const Payments = () => {
       const totalPreviousYearPending = studentFees.filter(f => isPreviousYearFee(f, selectedStudent) && f.remainingAmount > 0).length;
       
       if (selectedPreviousYearFees.length < totalPreviousYearPending) {
-        alert("STRICT RULE: Please select all previous year pending fees before proceeding with current year payments.");
+        toastWarning("STRICT RULE: Please select all previous year pending fees before proceeding with current year payments.");
         return;
       }
     }
@@ -162,9 +165,10 @@ const Payments = () => {
         remarks: ''
       });
       fetchData();
+      toastSuccess('Payment recorded successfully.');
     } catch (error) {
       console.error("Error creating payment", error);
-      alert(error.response?.data?.error || "Error recording payment");
+      toastError(error.response?.data?.error || "Error recording payment");
     } finally {
       setLoading(false);
     }
@@ -184,7 +188,7 @@ const Payments = () => {
       link.remove();
     } catch (error) {
       console.error("Error downloading invoice", error);
-      alert("Failed to download invoice");
+      toastError("Failed to download invoice");
     }
   };
 
@@ -442,12 +446,22 @@ const Payments = () => {
                       )}
                       {currentUser.role === 'SUPER_ADMIN' && (
                         <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={async () => {
-                          if(window.confirm('Are you sure you want to delete this payment?')) {
-                            try {
-                              await api.delete(`/payments/${payment._id || payment.id}`);
-                              fetchData();
-                            } catch(e) { alert('Error deleting payment'); }
+                          const accepted = await confirm({
+                            title: 'Delete Payment',
+                            description: 'Are you sure you want to delete this payment?',
+                            confirmText: 'Delete',
+                            tone: 'danger'
+                          });
+
+                          if (!accepted) {
+                            return;
                           }
+
+                          try {
+                            await api.delete(`/payments/${payment._id || payment.id}`);
+                            fetchData();
+                            toastSuccess('Payment deleted successfully.');
+                          } catch(e) { toastError('Error deleting payment'); }
                         }}>
                           <Trash2 className="h-4 w-4" />
                         </Button>

@@ -10,6 +10,7 @@ import { Label } from '../components/ui/Label';
 import Pagination from '../components/ui/Pagination';
 import { isRTEStudent } from '../utils/studentCategory';
 import { PageLoader } from '../components/ui/Spinner';
+import { toastError, toastSuccess, toastWarning } from '../services/toastService';
 
 const Admissions = () => {
   const [students, setStudents] = useState([]);
@@ -35,7 +36,7 @@ const Admissions = () => {
   const [pageLoading, setPageLoading] = useState(true);
   
   const [manualForm, setManualForm] = useState({
-    studentName: '', fatherName: '', motherName: '', fatherPhone: '', motherPhone: '', address: '', admissionNumber: '',
+    studentName: '', fatherName: '', motherName: '', fatherPhone: '', motherPhone: '', address: '',
     dateOfBirth: '', gender: '', bloodGroup: '', aadhaarNumber: '', religion: '', community: '', caste: '', RTE: '', nationality: '', 
     fatherOccupation: '', motherOccupation: '', guardian: '', city: '', state: '', pincode: '', whatsappNumber: '', emisNumber: '',
     isRTE: false
@@ -98,8 +99,7 @@ const Admissions = () => {
         guardian: app.parentName || app.guardian || '',
         fatherPhone: app.fatherPhone || '',
         motherPhone: app.motherPhone || '',
-        address: app.address || '',
-        admissionNumber: app.adminNo || ''
+        address: app.address || ''
       }));
       
       setIsManualModalOpen(true);
@@ -109,7 +109,7 @@ const Admissions = () => {
       window.history.replaceState({}, document.title, newUrl);
     } catch (error) {
       console.error("Error fetching application details", error);
-      alert("Failed to load application details.");
+      toastError("Failed to load application details.");
     }
   };
 
@@ -168,28 +168,28 @@ const Admissions = () => {
   const handleManualSubmit = async (e) => {
     e.preventDefault();
     if (!selectedClass) {
-      alert("Please select a class first in the main screen.");
+      toastWarning("Please select a class first in the main screen.");
       return;
     }
 
     const err = validateFields(manualForm.caste, manualForm.emisNumber || manualForm.emisNo, manualForm.guardian || manualForm.guardianName, manualForm.whatsappNumber);
     if (err) {
-      alert(err);
+      toastWarning(err);
       return;
     }
 
     if (manualForm.bloodGroup && /\d/.test(manualForm.bloodGroup)) {
-      alert("Blood Group should not contain numbers.");
+      toastWarning("Blood Group should not contain numbers.");
       return;
     }
 
     if (manualForm.aadhaarNumber && !/^\d{12}$/.test(manualForm.aadhaarNumber.replace(/\s/g, ''))) {
-      alert("Aadhaar Number must be exactly 12 digits.");
+      toastWarning("Aadhaar Number must be exactly 12 digits.");
       return;
     }
 
     try {
-      await api.post('/students/manual', { 
+      const res = await api.post('/students/manual', { 
         ...manualForm, 
         caste: (manualForm.caste || '').trim(),
         emisNumber: (manualForm.emisNumber || manualForm.emisNo || '').trim(),
@@ -203,7 +203,7 @@ const Admissions = () => {
       });
       setIsManualModalOpen(false);
       setManualForm({ 
-        studentName: '', fatherName: '', motherName: '', fatherPhone: '', motherPhone: '', address: '', admissionNumber: '',
+        studentName: '', fatherName: '', motherName: '', fatherPhone: '', motherPhone: '', address: '',
         dateOfBirth: '', gender: '', bloodGroup: '', aadhaarNumber: '', religion: '', community: '', caste: '', RTE: '', nationality: '', 
         fatherOccupation: '', motherOccupation: '', guardian: '', guardianName: '', city: '', state: '', pincode: '', whatsappNumber: '', emisNumber: '', emisNo: '',
         isRTE: false,
@@ -211,16 +211,19 @@ const Admissions = () => {
         applicationId: ''
       });
       fetchStudents();
-      alert(manualForm.applicationId ? "Student added successfully and application approved." : "Student added successfully!");
+      const createdAdmissionNumber = res.data?.admissionNumber || res.data?.data?.admissionNumber;
+      toastSuccess(createdAdmissionNumber
+        ? `Student added successfully. Admission No: ${createdAdmissionNumber}`
+        : (manualForm.applicationId ? "Student added successfully and application approved." : "Student added successfully!"));
     } catch (error) {
-      alert(error.response?.data?.error || "Error adding student.");
+      toastError(error.response?.data?.error || "Error adding student.");
     }
   };
 
   const handleImportSubmit = async (e) => {
     e.preventDefault();
     if (!selectedClass || !file) {
-      alert("Please select a class and an Excel file.");
+      toastWarning("Please select a class and an Excel file.");
       return;
     }
     const formData = new FormData();
@@ -237,12 +240,12 @@ const Admissions = () => {
       fetchStudents();
       
       if (res.data.errors) {
-        alert(res.data.message + "\n\nErrors:\n" + res.data.errors.join("\n"));
+        toastWarning(res.data.message + "\n\nErrors:\n" + res.data.errors.join("\n"));
       } else {
-        alert(res.data.message);
+        toastSuccess(res.data.message);
       }
     } catch (error) {
-      alert(error.response?.data?.error || "Error importing students.");
+      toastError(error.response?.data?.error || "Error importing students.");
     }
   };
 
@@ -275,7 +278,7 @@ const Admissions = () => {
       setIsViewModalOpen(true);
     } catch (error) {
       console.error("Error loading student for edit", error);
-      alert("Failed to load student details for editing.");
+      toastError("Failed to load student details for editing.");
     }
   };
 
@@ -297,7 +300,7 @@ const Admissions = () => {
 
     const err = validateFields(editForm.caste, editForm.emisNumber, editForm.guardian, editForm.whatsappNumber);
     if (err) {
-      alert(err);
+      toastWarning(err);
       return;
     }
 
@@ -346,10 +349,10 @@ const Admissions = () => {
       setIsEditing(false);
       setIsViewModalOpen(false);
       fetchStudents();
-      alert("Student updated successfully!");
+      toastSuccess("Student updated successfully!");
     } catch (error) {
       console.error("Error updating student", error);
-      alert(error.response?.data?.error || "Error updating student.");
+      toastError(error.response?.data?.error || "Error updating student.");
     } finally {
       setEditLoading(false);
     }
@@ -435,13 +438,13 @@ const Admissions = () => {
                 </select>
               </div>
               <Button onClick={() => {
-                if (!selectedClass) { alert("Please select a class first"); return; }
+                if (!selectedClass) { toastWarning("Please select a class first"); return; }
                 setIsImportModalOpen(true);
               }} className="flex items-center bg-orange-100 text-orange-700 hover:bg-orange-200" type="button">
                 <Upload className="h-4 w-4 mr-2" /> Bulk Import
               </Button>
               <Button onClick={() => {
-                if (!selectedClass) { alert("Please select a class first"); return; }
+                if (!selectedClass) { toastWarning("Please select a class first"); return; }
                 setIsManualModalOpen(true);
               }} className="flex items-center">
                 <Plus className="h-4 w-4 mr-2" /> Add Student
@@ -777,10 +780,6 @@ const Admissions = () => {
           <div>
             <h3 className="text-lg font-medium text-gray-900 mb-3 border-b pb-2">Personal Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>Admission Number *</Label>
-                <Input required value={manualForm.admissionNumber} onChange={(e) => handleValidatedChange('admissionNumber', e, 'alphanumeric', manualForm, setManualForm)} placeholder="Enter admission number" />
-              </div>
               <div className="space-y-2">
                 <Label>EMIS No</Label>
                 <Input value={manualForm.emisNumber} maxLength={10} placeholder="10 digits" onChange={(e) => handleValidatedChange('emisNumber', e, 'numbers', manualForm, setManualForm, 10)} />

@@ -5,6 +5,7 @@ import { PageLoader } from '../components/ui/Spinner';
 import { Button } from '../components/ui/Button';
 import { ArrowLeft, Download, Printer } from 'lucide-react';
 import InvoiceTemplate from '../components/invoice/InvoiceTemplate';
+import { toastError } from '../services/toastService';
 
 const InvoiceGenerated = () => {
   const { id } = useParams();
@@ -81,7 +82,7 @@ const InvoiceGenerated = () => {
       window.URL.revokeObjectURL(url);
     } catch (downloadError) {
       console.error('Error downloading invoice', downloadError);
-      alert('Failed to download invoice');
+      toastError('Failed to download invoice');
     }
   };
 

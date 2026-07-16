@@ -8,6 +8,7 @@ import { Label } from '../components/ui/Label';
 import { ArrowLeft, User, BookOpen, Users, DollarSign, Save } from 'lucide-react';
 import { MultiSelectDropdown } from '../components/ui/MultiSelectDropdown';
 import { isRTEStudent } from '../utils/studentCategory';
+import { toastError, toastSuccess, toastWarning } from '../services/toastService';
 
 const StudentEdit = () => {
   const { id } = useParams();
@@ -207,7 +208,7 @@ const StudentEdit = () => {
 
     } catch (error) {
       console.error("Error fetching student details", error);
-      alert("Error loading student data.");
+      toastError("Error loading student data.");
     } finally {
       setLoading(false);
     }
@@ -292,43 +293,43 @@ const StudentEdit = () => {
     e.preventDefault();
     const caste = (formData.caste || '').trim();
     if (caste && !/^[a-zA-Z\s]+$/.test(caste)) {
-      alert("Caste must contain only alphabets and spaces.");
+      toastWarning("Caste must contain only alphabets and spaces.");
       return;
     }
     if (caste.length > 50) {
-      alert("Caste must not exceed 50 characters.");
+      toastWarning("Caste must not exceed 50 characters.");
       return;
     }
 
     const emisNo = (formData.emisNo || formData.emisNumber || '').trim();
     if (emisNo && !/^\d{10}$/.test(emisNo)) {
-      alert("EMIS No must be exactly 10 digits.");
+      toastWarning("EMIS No must be exactly 10 digits.");
       return;
     }
 
     const guardianName = (formData.guardianName || formData.guardian || '').trim();
     if (guardianName && !/^[a-zA-Z\s]+$/.test(guardianName)) {
-      alert("Guardian Name must contain only alphabets and spaces.");
+      toastWarning("Guardian Name must contain only alphabets and spaces.");
       return;
     }
     if (guardianName.length > 100) {
-      alert("Guardian Name must not exceed 100 characters.");
+      toastWarning("Guardian Name must not exceed 100 characters.");
       return;
     }
 
     const whatsappNumber = (formData.whatsappNumber || '').trim();
     if (whatsappNumber && !/^\d{10}$/.test(whatsappNumber)) {
-      alert("WhatsApp Number must be exactly 10 digits.");
+      toastWarning("WhatsApp Number must be exactly 10 digits.");
       return;
     }
 
     if (formData.bloodGroup && /\d/.test(formData.bloodGroup)) {
-      alert("Blood Group should not contain numbers.");
+      toastWarning("Blood Group should not contain numbers.");
       return;
     }
 
     if (formData.aadhaarNumber && !/^\d{12}$/.test(formData.aadhaarNumber.replace(/\s/g, ''))) {
-      alert("Aadhaar Number must be exactly 12 digits.");
+      toastWarning("Aadhaar Number must be exactly 12 digits.");
       return;
     }
 
@@ -364,11 +365,11 @@ const StudentEdit = () => {
       };
 
       await api.put(`/students/${id}`, payload);
-      alert("Student updated successfully!");
+      toastSuccess("Student updated successfully!");
       navigate('/dashboard/students');
     } catch (error) {
       console.error("Error updating student", error);
-      alert(error.response?.data?.error || "Error saving student data.");
+      toastError(error.response?.data?.error || "Error saving student data.");
     }
   };
 

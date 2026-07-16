@@ -11,9 +11,12 @@ import Pagination from '../components/ui/Pagination';
 import Select from 'react-select';
 import { Link, useLocation } from 'react-router-dom';
 import { PageLoader } from '../components/ui/Spinner';
+import { toastError, toastSuccess, toastWarning } from '../services/toastService';
+import { useConfirm } from '../components/ui/ConfirmDialog';
 
 const FeeCategories = () => {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const confirm = useConfirm();
   const [categories, setCategories] = useState([]);
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
@@ -145,7 +148,7 @@ const FeeCategories = () => {
       fetchData();
     } catch (error) {
       console.error("Error toggling category", error);
-      alert(error.response?.data?.error || 'Error updating category');
+      toastError(error.response?.data?.error || 'Error updating category');
     }
   };
 
@@ -153,7 +156,7 @@ const FeeCategories = () => {
     e.preventDefault();
     try {
       if (!selectedStudentId) {
-        alert("Please select a student.");
+        toastWarning("Please select a student.");
         return;
       }
 
@@ -174,7 +177,7 @@ const FeeCategories = () => {
       });
 
       if (promises.length === 0) {
-        alert("No fee categories available to assign.");
+        toastWarning("No fee categories available to assign.");
         return;
       }
 
@@ -186,10 +189,10 @@ const FeeCategories = () => {
       setSelectedClassForStudent('');
       setSelectedSectionForStudent('');
       fetchData();
-      alert("Special fees assigned successfully!");
+      toastSuccess("Special fees assigned successfully!");
     } catch (error) {
       console.error("Error assigning fee", error);
-      alert("Error assigning fee. Please check details.");
+      toastError("Error assigning fee. Please check details.");
     }
   };
 
@@ -222,7 +225,7 @@ const FeeCategories = () => {
       });
 
       if (hasInvalidAmount) {
-        alert("Please enter a valid rate/amount greater than 0 for all checked categories.");
+        toastWarning("Please enter a valid rate/amount greater than 0 for all checked categories.");
         return;
       }
 
@@ -237,10 +240,10 @@ const FeeCategories = () => {
       setSelectedBulkCats({});
       setIsEditingBulkFees(true);
       fetchData();
-      alert(res.data.message);
+      toastSuccess(res.data.message);
     } catch (error) {
       console.error("Error bulk assigning fee", error);
-      alert(error.response?.data?.error || "Error assigning fees. Please check details.");
+      toastError(error.response?.data?.error || "Error assigning fees. Please check details.");
     }
   };
 
@@ -334,13 +337,22 @@ const FeeCategories = () => {
                     <TableCell className="text-right">
                       {currentUser.role === 'SUPER_ADMIN' && (
                         <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={async () => {
-                          if(window.confirm('Are you sure you want to delete this category?')) {
-                            try {
-                              await api.delete(`/fees/categories/${cat._id}`);
-                              fetchData();
-                            } catch(e) { 
-                              alert(e.response?.data?.error || 'Error deleting category'); 
-                            }
+                          const accepted = await confirm({
+                            title: 'Delete Category',
+                            description: 'Are you sure you want to delete this category?',
+                            confirmText: 'Delete',
+                            tone: 'danger'
+                          });
+
+                          if (!accepted) {
+                            return;
+                          }
+
+                          try {
+                            await api.delete(`/fees/categories/${cat._id}`);
+                            fetchData();
+                          } catch(e) { 
+                            toastError(e.response?.data?.error || 'Error deleting category'); 
                           }
                         }}>
                           <Trash2 className="h-4 w-4" />

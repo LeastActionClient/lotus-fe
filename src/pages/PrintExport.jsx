@@ -8,6 +8,7 @@ import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import Pagination from '../components/ui/Pagination';
 import { PageLoader } from '../components/ui/Spinner';
+import { toastWarning } from '../services/toastService';
 
 const AVAILABLE_FIELDS = [
   { id: 'admissionNumber', label: 'Admission No' },
@@ -119,7 +120,7 @@ const PrintExport = () => {
     const fieldsToExport = AVAILABLE_FIELDS.filter(f => selectedFields[f.id]);
     
     if (fieldsToExport.length === 0) {
-      alert("Please select at least one field to export.");
+      toastWarning("Please select at least one field to export.");
       return;
     }
 
