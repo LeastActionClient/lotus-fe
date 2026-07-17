@@ -97,29 +97,19 @@ const Payments = () => {
       api.get(`/students/${selectedStudentId}`).then(res => {
         const student = res.data;
         if (student && student.studentFees) {
-          const getFeeRemainingDisplay = (f) => {
-            if (!f) return 0;
-            if (f.remainingAmount > 0) return f.remainingAmount;
-            if (f.totalAmount > 0) return f.totalAmount;
-            const catAmt = Number(f.feeCategory?.amount || f.feeCategoryId?.amount || 0);
-            if (catAmt > 0) return catAmt;
-            return 100;
-          };
+          const getFeeRemainingDisplay = (f) => (f ? (f.remainingAmount ?? 0) : 0);
           const pendingFees = student.studentFees.filter((f) => {
             const isFullyPaid = (f.paidAmount || 0) > 0 && (f.remainingAmount === 0);
             return !isFullyPaid;
           });
           setStudentFees(pendingFees);
-          if (pendingFees.length === 1) {
-            const feeAmt = getFeeRemainingDisplay(pendingFees[0]);
-            setPaymentData(prev => ({
-              ...prev,
-              studentFeeIds: [pendingFees[0]._id || pendingFees[0].id],
-              amount: feeAmt.toString()
-            }));
-          } else {
-            setPaymentData(prev => ({...prev, studentFeeIds: [], amount: '0'}));
-          }
+          const allPendingIds = pendingFees.map(f => f._id || f.id);
+          const totalAmt = pendingFees.reduce((sum, f) => sum + (f.remainingAmount ?? 0), 0);
+          setPaymentData(prev => ({
+            ...prev,
+            studentFeeIds: allPendingIds,
+            amount: totalAmt.toString()
+          }));
         } else {
           setStudentFees([]);
           setPaymentData(prev => ({...prev, studentFeeIds: [], amount: '0'}));
@@ -133,14 +123,7 @@ const Payments = () => {
     }
   }, [selectedStudentId]);
 
-  const getFeeRemainingDisplay = (f) => {
-    if (!f) return 0;
-    if (f.remainingAmount > 0) return f.remainingAmount;
-    if (f.totalAmount > 0) return f.totalAmount;
-    const catAmt = Number(f.feeCategory?.amount || f.feeCategoryId?.amount || 0);
-    if (catAmt > 0) return catAmt;
-    return 100;
-  };
+  const getFeeRemainingDisplay = (f) => (f ? (f.remainingAmount ?? 0) : 0);
 
   const selectedStudent = students.find(s => (s._id || s.id) === selectedStudentId);
   const isPreviousYearFee = (f, student) => {
