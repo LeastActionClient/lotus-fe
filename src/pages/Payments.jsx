@@ -94,28 +94,53 @@ const Payments = () => {
 
   useEffect(() => {
     if (selectedStudentId) {
-      const student = students.find(s => (s._id || s.id) === selectedStudentId);
-      if (student && student.studentFees) {
-        const pendingFees = student.studentFees.filter((f) => f.remainingAmount > 0);
-        setStudentFees(pendingFees);
-        if (pendingFees.length === 1) {
-          setPaymentData(prev => ({
-            ...prev,
-            studentFeeIds: [pendingFees[0]._id || pendingFees[0].id],
-            amount: pendingFees[0].remainingAmount.toString()
-          }));
+      api.get(`/students/${selectedStudentId}`).then(res => {
+        const student = res.data;
+        if (student && student.studentFees) {
+          const getFeeRemainingDisplay = (f) => {
+            if (!f) return 0;
+            if (f.remainingAmount > 0) return f.remainingAmount;
+            if (f.totalAmount > 0) return f.totalAmount;
+            const catAmt = Number(f.feeCategory?.amount || f.feeCategoryId?.amount || 0);
+            if (catAmt > 0) return catAmt;
+            return 100;
+          };
+          const pendingFees = student.studentFees.filter((f) => {
+            const isFullyPaid = (f.paidAmount || 0) > 0 && (f.remainingAmount === 0);
+            return !isFullyPaid;
+          });
+          setStudentFees(pendingFees);
+          if (pendingFees.length === 1) {
+            const feeAmt = getFeeRemainingDisplay(pendingFees[0]);
+            setPaymentData(prev => ({
+              ...prev,
+              studentFeeIds: [pendingFees[0]._id || pendingFees[0].id],
+              amount: feeAmt.toString()
+            }));
+          } else {
+            setPaymentData(prev => ({...prev, studentFeeIds: [], amount: '0'}));
+          }
         } else {
+          setStudentFees([]);
           setPaymentData(prev => ({...prev, studentFeeIds: [], amount: '0'}));
         }
-      } else {
-        setStudentFees([]);
-        setPaymentData(prev => ({...prev, studentFeeIds: [], amount: '0'}));
-      }
+      }).catch(err => {
+        console.error("Error fetching fresh student fees for payment modal:", err);
+      });
     } else {
       setStudentFees([]);
       setPaymentData(prev => ({...prev, studentFeeIds: [], amount: '0'}));
     }
-  }, [selectedStudentId, students]);
+  }, [selectedStudentId]);
+
+  const getFeeRemainingDisplay = (f) => {
+    if (!f) return 0;
+    if (f.remainingAmount > 0) return f.remainingAmount;
+    if (f.totalAmount > 0) return f.totalAmount;
+    const catAmt = Number(f.feeCategory?.amount || f.feeCategoryId?.amount || 0);
+    if (catAmt > 0) return catAmt;
+    return 100;
+  };
 
   const selectedStudent = students.find(s => (s._id || s.id) === selectedStudentId);
   const isPreviousYearFee = (f, student) => {
@@ -576,7 +601,7 @@ const Payments = () => {
                       
                       const newTotal = newIds.reduce((sum, id) => {
                         const fee = studentFees.find(sf => (sf._id || sf.id) === id);
-                        return sum + (fee ? fee.remainingAmount : 0);
+                        return sum + getFeeRemainingDisplay(fee);
                       }, 0);
 
                       setPaymentData({
@@ -587,7 +612,7 @@ const Payments = () => {
                     }}
                   />
                   <Label htmlFor={`fee-${feeId}`} className={`text-sm cursor-pointer ${isChecked ? 'font-medium text-orange-700' : 'text-gray-700'}`}>
-                    {classLabel} {f.feeCategory?.name || 'Fee'} - Rs. {f.remainingAmount} {isDisabled && !isChecked ? '(Clear previous dues first)' : ''}
+                    {classLabel} {f.feeCategory?.name || 'Fee'} - Rs. {getFeeRemainingDisplay(f)} {isDisabled && !isChecked ? '(Clear previous dues first)' : ''}
                   </Label>
                 </div>
               );

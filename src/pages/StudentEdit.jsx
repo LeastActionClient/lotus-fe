@@ -183,18 +183,22 @@ const StudentEdit = () => {
       // Find which optional categories student has in studentFees (excl. Uniform)
       const studentOptionalFeeCatIds = (student.studentFees || [])
         .filter(f => {
-          const catId = f.feeCategoryId?._id || f.feeCategoryId;
-          const cat = cats.find(c => c._id === catId);
+          const rawCatId = f.feeCategoryId?._id || f.feeCategoryId;
+          const catId = rawCatId ? rawCatId.toString() : '';
+          const cat = cats.find(c => c._id?.toString() === catId);
           return cat && !cat.mandatory && cat.name.toLowerCase() !== 'uniform';
         })
-        .map(f => f.feeCategoryId?._id || f.feeCategoryId);
+        .map(f => (f.feeCategoryId?._id || f.feeCategoryId)?.toString())
+        .filter(Boolean);
 
+      console.log("[RUNTIME DEBUG Step 1 - StudentEdit Load] Loaded studentOptionalFeeCatIds:", studentOptionalFeeCatIds);
       setSelectedCharges(studentOptionalFeeCatIds);
 
       // Load Uniform lengths
       const uniformFee = (student.studentFees || []).find(f => {
-        const catId = f.feeCategoryId?._id || f.feeCategoryId;
-        const cat = cats.find(c => c._id === catId);
+        const rawCatId = f.feeCategoryId?._id || f.feeCategoryId;
+        const catId = rawCatId ? rawCatId.toString() : '';
+        const cat = cats.find(c => c._id?.toString() === catId);
         return cat && cat.name.toLowerCase() === 'uniform';
       });
 
@@ -261,9 +265,19 @@ const StudentEdit = () => {
   const optionalCats = categories.filter(cat => cat.isEnabled && !cat.mandatory && cat.name.toLowerCase() !== 'uniform' && getFeeAmount(defaultFees[cat._id]) > 0);
   const chargesOptions = optionalCats.map(cat => {
     const amt = getFeeAmount(defaultFees[cat._id]);
+    const isOutStock = cat.isStockItem && (cat.currentStock || 0) <= 0 && !selectedCharges.includes(cat._id?.toString());
+    let labelText = `${cat.name} (₹${amt})`;
+    if (cat.isStockItem) {
+      if (isOutStock) {
+        labelText = `${cat.name} - Out of Stock`;
+      } else {
+        labelText = `${cat.name} (₹${amt} | Stock: ${cat.currentStock ?? 0})`;
+      }
+    }
     return {
-      value: cat._id,
-      label: `${cat.name} (₹${amt})`
+      value: cat._id?.toString(),
+      label: labelText,
+      disabled: isOutStock
     };
   });
 
