@@ -157,11 +157,6 @@ const Admissions = () => {
       return "Guardian Name must not exceed 100 characters.";
     }
 
-    const w = (whatsappNumber || '').trim();
-    if (w && !/^\d{10}$/.test(w)) {
-      return "WhatsApp Number must be exactly 10 digits.";
-    }
-
     return null;
   };
 
@@ -239,10 +234,27 @@ const Admissions = () => {
       setFile(null);
       fetchStudents();
       
-      if (res.data.errors) {
-        toastWarning(res.data.message + "\n\nErrors:\n" + res.data.errors.join("\n"));
+      const {
+        message,
+        successCount,
+        duplicateCount,
+        validationErrorsCount,
+        dbErrorsCount,
+        errors
+      } = res.data;
+
+      let summary = `${message}\n\nSuccessfully Imported : ${successCount}\nDuplicate Records : ${duplicateCount}\nValidation Errors : ${validationErrorsCount}\nDatabase Errors : ${dbErrorsCount}\n`;
+
+      if (errors && errors.length > 0) {
+        // Show only the first 20 errors to prevent huge toasts, with a summary of the rest
+        let errorDisplay = errors.slice(0, 20).join('\n');
+        if (errors.length > 20) {
+           errorDisplay += `\n...and ${errors.length - 20} more errors`;
+        }
+        summary += `\nErrors:\n${errorDisplay}`;
+        toastWarning(summary);
       } else {
-        toastSuccess(res.data.message);
+        toastSuccess(summary);
       }
     } catch (error) {
       toastError(error.response?.data?.error || "Error importing students.");
@@ -289,7 +301,7 @@ const Admissions = () => {
       val = val.replace(/[^a-zA-Z\s]/g, '');
       if (name === 'caste') val = val.slice(0, 50);
       if (name === 'guardian') val = val.slice(0, 100);
-    } else if (name === 'emisNumber' || name === 'whatsappNumber') {
+    } else if (name === 'emisNumber') {
       val = val.replace(/[^0-9]/g, '').slice(0, 10);
     }
     setEditForm(prev => ({ ...prev, [name]: val }));
@@ -709,7 +721,7 @@ const Admissions = () => {
                 </div>
                 <div className="space-y-2">
                   <Label>WhatsApp Number</Label>
-                  <Input name="whatsappNumber" value={editForm.whatsappNumber} onChange={handleEditChange} maxLength={10} placeholder="10 digits" />
+                  <Input name="whatsappNumber" value={editForm.whatsappNumber} onChange={handleEditChange} placeholder="WhatsApp Number" />
                 </div>
               </div>
             </div>
@@ -869,7 +881,7 @@ const Admissions = () => {
               </div>
               <div className="space-y-2">
                 <Label>WhatsApp Number</Label>
-                <Input value={manualForm.whatsappNumber} maxLength={10} placeholder="10 digits" onChange={(e) => handleValidatedChange('whatsappNumber', e, 'numbers', manualForm, setManualForm, 10)} />
+                <Input value={manualForm.whatsappNumber} placeholder="WhatsApp Number" onChange={(e) => setManualForm({...manualForm, whatsappNumber: e.target.value})} />
               </div>
               <div className="space-y-2">
                 <Label>Father Occupation</Label>

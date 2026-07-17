@@ -86,7 +86,7 @@ export function ToastViewport() {
                   <p className="text-sm font-semibold leading-5">{toast.title}</p>
                 )}
                 {toast.message && (
-                  <p className="mt-0.5 text-sm leading-5 text-inherit/90 break-words">{toast.message}</p>
+                  <p className="mt-0.5 text-sm leading-5 text-inherit/90 break-words whitespace-pre-wrap">{toast.message}</p>
                 )}
               </div>
               <button
