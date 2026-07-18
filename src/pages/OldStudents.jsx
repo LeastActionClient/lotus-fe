@@ -162,43 +162,49 @@ const OldStudents = () => {
     return cls?.sections || [];
   }, [classFilter, classes]);
 
-  const filteredStudents = students.filter(s => {
-    const totalPending = getStudentTotalPending(s);
-
-    // Quick filter
-    if (quickFeeFilter === 'PENDING' && totalPending <= 0) return false;
-
-    // Search query
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      if (!s.studentName?.toLowerCase().includes(q) && !s.admissionNumber?.toLowerCase().includes(q)) {
-        return false;
+  const cohortStudents = useMemo(() => {
+    return students.filter(s => {
+      // Academic Year Filter
+      if (academicYearFilter !== 'All' && s.academicYear !== academicYearFilter) return false;
+      // Class Filter
+      if (classFilter !== 'All' && s.currentClass !== classFilter) return false;
+      // Section Filter
+      if (sectionFilter !== 'All' && s.section !== sectionFilter) return false;
+      // Student Group Filter
+      if (studentGroupFilter === 'RTE' && !isRTEStudent(s)) return false;
+      if (studentGroupFilter === 'General' && isRTEStudent(s)) return false;
+      // Search query
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        if (!s.studentName?.toLowerCase().includes(q) && !s.admissionNumber?.toLowerCase().includes(q)) {
+          return false;
+        }
       }
-    }
+      return true;
+    });
+  }, [students, academicYearFilter, classFilter, sectionFilter, studentGroupFilter, searchQuery]);
 
-    // Advanced filters
-    if (exitTypeFilter !== 'All' && s.studentStatus !== exitTypeFilter) return false;
-    
-    if (feeStatusFilter === 'Pending' && totalPending <= 0) return false;
-    if (feeStatusFilter === 'Paid' && totalPending > 0) return false;
+  const filteredStudents = useMemo(() => {
+    return cohortStudents.filter(s => {
+      const totalPending = getStudentTotalPending(s);
+      // Quick filter
+      if (quickFeeFilter === 'PENDING' && totalPending <= 0) return false;
+      // Advanced filters (Exit Type & Fee Status)
+      if (exitTypeFilter !== 'All' && s.studentStatus !== exitTypeFilter) return false;
+      if (feeStatusFilter === 'Pending' && totalPending <= 0) return false;
+      if (feeStatusFilter === 'Paid' && totalPending > 0) return false;
+      return true;
+    });
+  }, [cohortStudents, quickFeeFilter, exitTypeFilter, feeStatusFilter]);
 
-    if (classFilter !== 'All' && s.currentClass !== classFilter) return false;
-    if (sectionFilter !== 'All' && s.section !== sectionFilter) return false;
-    if (academicYearFilter !== 'All' && s.academicYear !== academicYearFilter) return false;
-    if (studentGroupFilter === 'RTE' && !isRTEStudent(s)) return false;
-    if (studentGroupFilter === 'General' && isRTEStudent(s)) return false;
-
-    return true;
-  });
-
-  // Stats
+  // Stats computed from cohort (reflects academic year and other sub-cohort filters)
   const stats = {
-    total: students.length,
-    graduated: students.filter(s => s.studentStatus === 'Graduated').length,
-    transferred: students.filter(s => s.studentStatus === 'Transferred').length,
-    discontinued: students.filter(s => s.studentStatus === 'Discontinued').length,
-    leftSchool: students.filter(s => s.studentStatus === 'Left School').length,
-    pendingFees: students.filter(s => getStudentTotalPending(s) > 0).length,
+    total: cohortStudents.length,
+    graduated: cohortStudents.filter(s => s.studentStatus === 'Graduated').length,
+    transferred: cohortStudents.filter(s => s.studentStatus === 'Transferred').length,
+    discontinued: cohortStudents.filter(s => s.studentStatus === 'Discontinued').length,
+    leftSchool: cohortStudents.filter(s => s.studentStatus === 'Left School').length,
+    pendingFees: cohortStudents.filter(s => getStudentTotalPending(s) > 0).length,
   };
   const totalPages = Math.max(1, Math.ceil(filteredStudents.length / itemsPerPage));
   const paginatedStudents = filteredStudents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);

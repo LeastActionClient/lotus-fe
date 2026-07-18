@@ -8,7 +8,7 @@ import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import Pagination from '../components/ui/Pagination';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { getStudentCategoryLabel, isRTEStudent } from '../utils/studentCategory';
 import { PageLoader } from '../components/ui/Spinner';
 import ExportModal from '../components/ExportModal';
@@ -19,6 +19,7 @@ import { useConfirm } from '../components/ui/ConfirmDialog';
 const Students = () => {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const confirm = useConfirm();
+  const location = useLocation();
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
   
@@ -47,13 +48,25 @@ const Students = () => {
 
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [academicHistory, setAcademicHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   const [selectedStudentIds, setSelectedStudentIds] = useState([]);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
-  const openViewModal = (student) => {
+  const openViewModal = async (student) => {
     setSelectedStudent(student);
     setIsViewModalOpen(true);
+    setHistoryLoading(true);
+    try {
+      const res = await api.get(`/academic-years/students/${student._id}/history`);
+      setAcademicHistory(res.data || []);
+    } catch (e) {
+      console.error("Error fetching student history:", e);
+      setAcademicHistory([]);
+    } finally {
+      setHistoryLoading(false);
+    }
   };
 
   const fetchStudents = async () => {
@@ -80,6 +93,35 @@ const Students = () => {
     fetchStudents();
     fetchClasses();
   }, []);
+
+  useEffect(() => {
+    if (classes.length > 0 && location.state) {
+      const { fromClassId, fromSectionId, feeFilter, studentGroupFilter, searchQuery } = location.state;
+      if (fromClassId) {
+        const clsObj = classes.find(c => c._id === fromClassId);
+        if (clsObj) {
+          setSelectedClass(clsObj);
+          if (fromSectionId) {
+            const secObj = clsObj.sections?.find(s => s._id === fromSectionId);
+            if (secObj) {
+              setSelectedSection(secObj);
+              setViewMode('STUDENTS');
+            } else {
+              setViewMode('SECTIONS');
+            }
+          } else {
+            setViewMode('SECTIONS');
+          }
+        }
+      }
+      if (feeFilter) setFeeFilter(feeFilter);
+      if (studentGroupFilter) setStudentGroupFilter(studentGroupFilter);
+      if (searchQuery) {
+        setSearchQuery(searchQuery);
+        setViewMode('SEARCH_RESULTS');
+      }
+    }
+  }, [classes, location.state]);
 
   const handleCreateClass = async (e) => {
     e.preventDefault();
@@ -484,7 +526,7 @@ const Students = () => {
                           <Button variant="ghost" size="sm" onClick={() => openViewModal(student)}>
                             <Eye className="h-4 w-4 mr-2" /> View
                           </Button>
-                          <Link to={`/dashboard/students/edit/${student._id}`}>
+                          <Link to={`/dashboard/students/edit/${student._id}`} state={{ fromClassId: selectedClass?._id, fromSectionId: selectedSection?._id, feeFilter, studentGroupFilter, searchQuery }}>
                             <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
                               <Edit className="h-4 w-4 mr-2" /> Edit
                             </Button>
@@ -550,7 +592,7 @@ const Students = () => {
             <Input 
               id="newSectionName" 
               value={newSectionName} 
-              onChange={(e) => setNewSectionName(e.target.value)} 
+              onChange={(e) => setNewSectionName(e.target.value.replace(/[^a-zA-Z]/g, ''))} 
               required 
               placeholder="e.g. A" 
             />
@@ -588,7 +630,7 @@ const Students = () => {
             <Input 
               id="editSectionName" 
               value={editSectionName} 
-              onChange={(e) => setEditSectionName(e.target.value)} 
+              onChange={(e) => setEditSectionName(e.target.value.replace(/[^a-zA-Z]/g, ''))} 
               required 
               placeholder="e.g. A" 
             />
@@ -660,6 +702,27 @@ const Students = () => {
             <div className="border-t border-gray-200  pt-4">
               <p className="text-sm text-gray-500 ">Address</p>
               <p className="text-gray-900 ">{selectedStudent.address || '-'}</p>
+            </div>
+
+            <div className="border-t border-gray-200 pt-4">
+              <p className="text-sm font-semibold text-gray-700 mb-3">Academic Journey History</p>
+              {historyLoading ? (
+                <p className="text-xs text-gray-500">Loading academic history...</p>
+              ) : academicHistory.length === 0 ? (
+                <p className="text-xs text-gray-500">No promotion history found.</p>
+              ) : (
+                <div className="relative border-l-2 border-orange-200 ml-2 pl-4 space-y-4 py-1">
+                  {academicHistory.map((h, idx) => (
+                    <div key={h._id || idx} className="relative">
+                      <div className="absolute -left-[23px] top-1.5 w-3 h-3 rounded-full bg-orange-500 border-2 border-white shadow-sm" />
+                      <p className="text-xs font-bold text-gray-800 tracking-wider uppercase">{h.academicYear}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Class {h.className} {h.sectionName && `(Section ${h.sectionName})`} &bull; Status: <span className="font-semibold text-orange-600">{h.status}</span>
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             
             <div className="pt-4 flex justify-end">

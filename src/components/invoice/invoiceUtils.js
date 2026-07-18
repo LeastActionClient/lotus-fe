@@ -60,6 +60,19 @@ const buildFeeEntry = (source, fallbackAmount = 0) => {
 };
 
 export const groupFeeAllocations = (payment) => {
+  if (payment?.paymentType === 'APPLICATION') {
+    return [{
+      name: 'Application Fee',
+      displayName: 'Application Fee',
+      terms: [],
+      totalAmount: payment.amount,
+      discountAmount: 0,
+      paidAmount: payment.amount,
+      balanceAmount: 0,
+      rows: []
+    }];
+  }
+
   const feeAllocations = Array.isArray(payment?.feeAllocations) ? payment.feeAllocations : [];
   const studentFee = payment?.studentFee || payment?.studentFeeId || null;
 

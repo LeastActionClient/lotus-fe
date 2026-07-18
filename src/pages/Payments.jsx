@@ -442,13 +442,13 @@ const Payments = () => {
                     <TableCell>{payment.paymentMethod}</TableCell>
                     <TableCell>{payment.recordedBy?.username}</TableCell>
                     <TableCell className="text-right flex justify-end gap-2">
-                      {payment.invoice && (
+                      {(payment.invoice || payment.paymentType === 'APPLICATION') && (
                         <Button variant="outline" size="sm" onClick={() => openInvoicePreview(payment)}>
                           <Printer className="h-4 w-4 mr-2" /> Print
                         </Button>
                       )}
-                      {payment.invoice && (
-                        <Button variant="outline" size="sm" onClick={() => downloadInvoice(payment._id || payment.id, payment.invoice.invoiceNumber)}>
+                      {(payment.invoice || payment.paymentType === 'APPLICATION') && (
+                        <Button variant="outline" size="sm" onClick={() => downloadInvoice(payment._id || payment.id, payment.invoice?.invoiceNumber || `invoice_${payment.application?.applicationId || payment._id}`)}>
                           <Download className="h-4 w-4 mr-2" /> PDF
                         </Button>
                       )}

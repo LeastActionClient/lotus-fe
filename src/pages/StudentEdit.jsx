@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -13,6 +13,7 @@ import { toastError, toastSuccess, toastWarning } from '../services/toastService
 const StudentEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
   const [loading, setLoading] = useState(true);
@@ -67,6 +68,10 @@ const StudentEdit = () => {
     let val = e.target.value;
     if (validationType === 'letters') {
       val = val.replace(/[^a-zA-Z\s]/g, '');
+    } else if (validationType === 'parentName') {
+      val = val.replace(/[^a-zA-Z\s.]/g, '');
+    } else if (validationType === 'admissionNumber') {
+      val = val.replace(/[^a-zA-Z0-9\-\/]/g, '');
     } else if (validationType === 'numbers') {
       val = val.replace(/[^0-9]/g, '');
     } else if (validationType === 'alphanumeric') {
@@ -74,7 +79,7 @@ const StudentEdit = () => {
     } else if (validationType === 'bloodGroup') {
       val = val.replace(/[^a-zA-Z\s\-\+]/g, '');
     }
-    const limit = maxLen ?? (field === 'aadhaarNumber' ? 12 : field === 'emisNumber' ? 10 : null);
+    const limit = maxLen ?? (field === 'aadhaarNumber' ? 12 : (field === 'emisNumber' || field === 'emisNo') ? 10 : (field === 'fatherPhone' || field === 'motherPhone' || field === 'whatsappNumber') ? 10 : null);
     if (limit && val.length > limit) {
       val = val.slice(0, limit);
     }
@@ -220,7 +225,11 @@ const StudentEdit = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    let processedValue = value;
+    if (name === 'section') {
+      processedValue = value.replace(/[^a-zA-Z]/g, '');
+    }
+    setFormData(prev => ({ ...prev, [name]: processedValue }));
   };
 
   const handleRTEToggleChange = (e) => {
@@ -305,6 +314,20 @@ const StudentEdit = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    const admissionNumber = (formData.admissionNumber || '').trim();
+    if (!admissionNumber) {
+      toastWarning("Admission Number is required.");
+      return;
+    }
+    if (admissionNumber.length < 3 || admissionNumber.length > 30) {
+      toastWarning("Admission Number must be between 3 and 30 characters.");
+      return;
+    }
+    if (!/^[a-zA-Z0-9\-/]+$/.test(admissionNumber)) {
+      toastWarning("Admission Number must contain only letters, numbers, hyphens (-), and forward slashes (/).");
+      return;
+    }
+
     const caste = (formData.caste || '').trim();
     if (caste && !/^[a-zA-Z\s]+$/.test(caste)) {
       toastWarning("Caste must contain only alphabets and spaces.");
@@ -321,20 +344,96 @@ const StudentEdit = () => {
       return;
     }
 
-    const guardianName = (formData.guardianName || formData.guardian || '').trim();
-    if (guardianName && !/^[a-zA-Z\s]+$/.test(guardianName)) {
-      toastWarning("Guardian Name must contain only alphabets and spaces.");
-      return;
-    }
-    if (guardianName.length > 100) {
-      toastWarning("Guardian Name must not exceed 100 characters.");
-      return;
+    // Father Name validation (Optional)
+    const fatherName = (formData.fatherName || '').trim();
+    if (fatherName) {
+      if (!/^[a-zA-Z\s.]+$/.test(fatherName)) {
+        toastWarning("Father Name must contain only alphabets, spaces, and dots.");
+        return;
+      }
+      if (fatherName.length < 3 || fatherName.length > 100) {
+        toastWarning("Father Name must be between 3 and 100 characters.");
+        return;
+      }
     }
 
+    // Mother Name validation (Optional)
+    const motherName = (formData.motherName || '').trim();
+    if (motherName) {
+      if (!/^[a-zA-Z\s.]+$/.test(motherName)) {
+        toastWarning("Mother Name must contain only alphabets, spaces, and dots.");
+        return;
+      }
+      if (motherName.length < 3 || motherName.length > 100) {
+        toastWarning("Mother Name must be between 3 and 100 characters.");
+        return;
+      }
+    }
+
+    // Guardian Name validation (Optional)
+    const guardianName = (formData.guardianName || formData.guardian || '').trim();
+    if (guardianName) {
+      if (!/^[a-zA-Z\s.]+$/.test(guardianName)) {
+        toastWarning("Guardian Name must contain only alphabets, spaces, and dots.");
+        return;
+      }
+      if (guardianName.length < 3 || guardianName.length > 100) {
+        toastWarning("Guardian Name must be between 3 and 100 characters.");
+        return;
+      }
+    }
+
+    // Father Phone validation (Optional)
+    const fatherPhone = (formData.fatherPhone || '').trim();
+    if (fatherPhone) {
+      if (!/^[5-9]\d{9}$/.test(fatherPhone)) {
+        toastWarning("Father Phone must be exactly 10 digits and start with 5, 6, 7, 8, or 9.");
+        return;
+      }
+    }
+
+    // Mother Phone validation (Optional)
+    const motherPhone = (formData.motherPhone || '').trim();
+    if (motherPhone) {
+      if (!/^[5-9]\d{9}$/.test(motherPhone)) {
+        toastWarning("Mother Phone must be exactly 10 digits and start with 5, 6, 7, 8, or 9.");
+        return;
+      }
+    }
+
+    // WhatsApp Number validation (Optional)
     const whatsappNumber = (formData.whatsappNumber || '').trim();
-    if (whatsappNumber && !/^\d{10}$/.test(whatsappNumber)) {
-      toastWarning("WhatsApp Number must be exactly 10 digits.");
-      return;
+    if (whatsappNumber) {
+      if (!/^[5-9]\d{9}$/.test(whatsappNumber)) {
+        toastWarning("WhatsApp Number must be exactly 10 digits and start with 5, 6, 7, 8, or 9.");
+        return;
+      }
+    }
+
+    // Father Occupation validation (Optional)
+    const fatherOccupation = (formData.fatherOccupation || '').trim();
+    if (fatherOccupation) {
+      if (!/^[a-zA-Z\s]+$/.test(fatherOccupation)) {
+        toastWarning("Father Occupation must contain only alphabets and spaces.");
+        return;
+      }
+      if (fatherOccupation.length > 100) {
+        toastWarning("Father Occupation must not exceed 100 characters.");
+        return;
+      }
+    }
+
+    // Mother Occupation validation (Optional)
+    const motherOccupation = (formData.motherOccupation || '').trim();
+    if (motherOccupation) {
+      if (!/^[a-zA-Z\s]+$/.test(motherOccupation)) {
+        toastWarning("Mother Occupation must contain only alphabets and spaces.");
+        return;
+      }
+      if (motherOccupation.length > 100) {
+        toastWarning("Mother Occupation must not exceed 100 characters.");
+        return;
+      }
     }
 
     if (formData.bloodGroup && /\d/.test(formData.bloodGroup)) {
@@ -342,7 +441,7 @@ const StudentEdit = () => {
       return;
     }
 
-    if (formData.aadhaarNumber && !/^\d{12}$/.test(formData.aadhaarNumber.replace(/\s/g, ''))) {
+    if (formData.aadhaarNumber && !/^(\d{12}|[xX]{8}\d{4})$/.test(formData.aadhaarNumber.replace(/\s/g, ''))) {
       toastWarning("Aadhaar Number must be exactly 12 digits.");
       return;
     }
@@ -380,7 +479,11 @@ const StudentEdit = () => {
 
       await api.put(`/students/${id}`, payload);
       toastSuccess("Student updated successfully!");
-      navigate('/dashboard/students');
+      if (location.state) {
+        navigate('/dashboard/students', { state: location.state });
+      } else {
+        navigate('/dashboard/students');
+      }
     } catch (error) {
       console.error("Error updating student", error);
       toastError(error.response?.data?.error || "Error saving student data.");
@@ -393,7 +496,13 @@ const StudentEdit = () => {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => navigate('/dashboard/students')} className="p-2">
+          <Button variant="ghost" onClick={() => {
+            if (location.state) {
+              navigate('/dashboard/students', { state: location.state });
+            } else {
+              navigate('/dashboard/students');
+            }
+          }} className="p-2">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
@@ -418,10 +527,10 @@ const StudentEdit = () => {
                 <User className="mr-2 h-5 w-5 text-orange-600" /> Personal Details
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+             <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Admission Number</Label>
-                <Input name="admissionNumber" value={formData.admissionNumber} onChange={(e) => handleValidatedChange('admissionNumber', e, 'alphanumeric', formData, setFormData)} disabled />
+                <Label>Admission Number *</Label>
+                <Input name="admissionNumber" value={formData.admissionNumber} onChange={(e) => handleValidatedChange('admissionNumber', e, 'admissionNumber', formData, setFormData, 30)} required />
               </div>
               <div className="space-y-2">
                 <Label>Student Name *</Label>
@@ -501,7 +610,7 @@ const StudentEdit = () => {
               </div>
               <div className="space-y-2">
                 <Label>Academic Year</Label>
-                <Input name="academicYear" value={formData.academicYear} onChange={handleInputChange} placeholder="2023-2024" />
+                <Input name="academicYear" value={formData.academicYear} readOnly className="bg-gray-100 cursor-not-allowed font-medium text-gray-800" />
               </div>
               <div className="space-y-2">
                 <Label>Student Status</Label>
@@ -543,31 +652,31 @@ const StudentEdit = () => {
             <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Father Name</Label>
-                <Input name="fatherName" value={formData.fatherName} onChange={(e) => handleValidatedChange('fatherName', e, 'letters', formData, setFormData)} />
+                <Input name="fatherName" value={formData.fatherName} onChange={(e) => handleValidatedChange('fatherName', e, 'parentName', formData, setFormData, 100)} />
               </div>
               <div className="space-y-2">
                 <Label>Father Mobile</Label>
-                <Input name="fatherPhone" value={formData.fatherPhone} onChange={(e) => handleValidatedChange('fatherPhone', e, 'numbers', formData, setFormData)} />
+                <Input name="fatherPhone" value={formData.fatherPhone} onChange={(e) => handleValidatedChange('fatherPhone', e, 'numbers', formData, setFormData, 10)} />
               </div>
               <div className="space-y-2">
                 <Label>Father Occupation</Label>
-                <Input name="fatherOccupation" value={formData.fatherOccupation} onChange={(e) => handleValidatedChange('fatherOccupation', e, 'letters', formData, setFormData)} />
+                <Input name="fatherOccupation" value={formData.fatherOccupation} onChange={(e) => handleValidatedChange('fatherOccupation', e, 'letters', formData, setFormData, 100)} />
               </div>
               <div className="space-y-2">
                 <Label>Mother Name</Label>
-                <Input name="motherName" value={formData.motherName} onChange={(e) => handleValidatedChange('motherName', e, 'letters', formData, setFormData)} />
+                <Input name="motherName" value={formData.motherName} onChange={(e) => handleValidatedChange('motherName', e, 'parentName', formData, setFormData, 100)} />
               </div>
               <div className="space-y-2">
                 <Label>Mother Mobile</Label>
-                <Input name="motherPhone" value={formData.motherPhone} onChange={(e) => handleValidatedChange('motherPhone', e, 'numbers', formData, setFormData)} />
+                <Input name="motherPhone" value={formData.motherPhone} onChange={(e) => handleValidatedChange('motherPhone', e, 'numbers', formData, setFormData, 10)} />
               </div>
               <div className="space-y-2">
                 <Label>Mother Occupation</Label>
-                <Input name="motherOccupation" value={formData.motherOccupation} onChange={(e) => handleValidatedChange('motherOccupation', e, 'letters', formData, setFormData)} />
+                <Input name="motherOccupation" value={formData.motherOccupation} onChange={(e) => handleValidatedChange('motherOccupation', e, 'letters', formData, setFormData, 100)} />
               </div>
               <div className="space-y-2">
                 <Label>Guardian Name</Label>
-                <Input name="guardianName" value={formData.guardianName || formData.guardian} maxLength={100} onChange={(e) => handleValidatedChange('guardianName', e, 'letters', formData, (obj) => setFormData({...obj, guardian: obj.guardianName}), 100)} placeholder="Guardian name" />
+                <Input name="guardianName" value={formData.guardianName || formData.guardian} maxLength={100} onChange={(e) => handleValidatedChange('guardianName', e, 'parentName', formData, (obj) => setFormData({...obj, guardian: obj.guardianName}), 100)} placeholder="Guardian name" />
               </div>
               <div className="space-y-2">
                 <Label>WhatsApp Number</Label>

@@ -3,7 +3,9 @@ import logo from '../../assets/logo.png';
 import { calculateReceiptTotals, formatCurrency, formatReceiptDate, groupFeeAllocations } from './invoiceUtils';
 
 const ReceiptCopy = ({ payment }) => {
+  const isApplication = payment?.paymentType === 'APPLICATION';
   const student = payment?.studentId || payment?.student || {};
+  const application = payment?.applicationId || payment?.application || {};
   const groupedRows = groupFeeAllocations(payment);
   const totals = calculateReceiptTotals(groupedRows);
   const invoiceNumber = payment?.invoice?.invoiceNumber || payment?._id || payment?.id || '-';
@@ -35,29 +37,58 @@ const ReceiptCopy = ({ payment }) => {
       </div>
 
       <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1 text-[8.5px] leading-tight text-slate-900">
-        <div className="space-y-0.5">
-          <p>
-            <span className="font-semibold">Admission No:</span> {student.admissionNumber || '-'}
-          </p>
-          <p>
-            <span className="font-semibold">Receipt No:</span> {invoiceNumber}
-          </p>
-          <p>
-            <span className="font-semibold">Student Name:</span> {student.studentName || '-'}
-          </p>
-        </div>
-        <div className="space-y-0.5 text-right">
-          <p>
-            <span className="font-semibold">Class &amp; Section:</span>{' '}
-            {student.currentClass || '-'} {student.section || ''}
-          </p>
-          <p>
-            <span className="font-semibold">Date:</span> {receiptDate}
-          </p>
-          <p>
-            <span className="font-semibold">Payment Mode:</span> {payment?.paymentMethod || '-'}
-          </p>
-        </div>
+        {isApplication ? (
+          <>
+            <div className="space-y-0.5">
+              <p>
+                <span className="font-semibold">Application No:</span> {application.applicationId || '-'}
+              </p>
+              <p>
+                <span className="font-semibold">Receipt No:</span> {invoiceNumber}
+              </p>
+              <p>
+                <span className="font-semibold">Applicant Name:</span> {application.studentName || '-'}
+              </p>
+            </div>
+            <div className="space-y-0.5 text-right">
+              <p>
+                <span className="font-semibold">Applying Class:</span> {application.applyingClass || '-'}
+              </p>
+              <p>
+                <span className="font-semibold">Date:</span> {receiptDate}
+              </p>
+              <p>
+                <span className="font-semibold">Payment Mode:</span> {payment?.paymentMethod || '-'}
+              </p>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="space-y-0.5">
+              <p>
+                <span className="font-semibold">Admission No:</span> {student.admissionNumber || '-'}
+              </p>
+              <p>
+                <span className="font-semibold">Receipt No:</span> {invoiceNumber}
+              </p>
+              <p>
+                <span className="font-semibold">Student Name:</span> {student.studentName || '-'}
+              </p>
+            </div>
+            <div className="space-y-0.5 text-right">
+              <p>
+                <span className="font-semibold">Class &amp; Section:</span>{' '}
+                {student.currentClass || '-'} {student.section || ''}
+              </p>
+              <p>
+                <span className="font-semibold">Date:</span> {receiptDate}
+              </p>
+              <p>
+                <span className="font-semibold">Payment Mode:</span> {payment?.paymentMethod || '-'}
+              </p>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="mt-1 rounded-[2px] border border-slate-300">

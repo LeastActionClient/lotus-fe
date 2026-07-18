@@ -17,6 +17,7 @@ import Activities from './pages/Activities';
 import StudentEdit from './pages/StudentEdit';
 import OldStudents from './pages/OldStudents';
 import PendingFees from './pages/PendingFees';
+import AcademicYearPage from './pages/AcademicYear';
 
 const ProtectedRoute = ({ children }) => {
   const token = sessionStorage.getItem('token');
@@ -42,6 +43,7 @@ const App = () => {
         <Route path="applications" element={<Applications />} />
         <Route path="admissions" element={<Admissions />} />
         <Route path="students" element={<Students />} />
+        <Route path="academic-year" element={<AcademicYearPage />} />
         <Route path="old-students" element={<OldStudents />} />
         <Route path="pending-fees" element={<PendingFees />} />
         <Route path="students/edit/:id" element={<StudentEdit />} />

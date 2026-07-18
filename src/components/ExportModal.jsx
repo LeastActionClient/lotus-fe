@@ -24,26 +24,76 @@ const ExportModal = ({ isOpen, onClose, selectedStudentIds = [], defaultScope = 
   const [loading, setLoading] = useState(false);
   const [progressText, setProgressText] = useState('');
 
+  const handleScopeChange = (newScope) => {
+    setExportScope(newScope);
+    if (newScope === 'CLASS') {
+      if (classes.length > 0) {
+        setClassFilter(classes[0].name);
+      }
+    } else if (newScope === 'SECTION') {
+      if (classes.length > 0) {
+        setClassFilter(classes[0].name);
+        if (classes[0].sections && classes[0].sections.length > 0) {
+          setSectionFilter(classes[0].sections[0].name);
+        } else {
+          setSectionFilter('');
+        }
+      }
+    } else if (newScope === 'ACADEMIC_YEAR') {
+      if (academicYears.length > 0) {
+        setAcademicYear(academicYears[0]);
+      }
+    } else if (newScope === 'OLD_STUDENTS') {
+      setClassFilter('All');
+      setSectionFilter('All');
+      setAcademicYear('All');
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
+      let targetScope = defaultScope;
       if (selectedStudentIds.length === 1) {
-        setExportScope('SINGLE');
+        targetScope = 'SINGLE';
       } else if (selectedStudentIds.length > 1) {
-        setExportScope('SELECTED');
-      } else {
-        setExportScope(defaultScope);
+        targetScope = 'SELECTED';
       }
+      setExportScope(targetScope);
       
       const fetchFilters = async () => {
         try {
-          const [clsRes, stuRes] = await Promise.all([
+          const [clsRes, stuRes, ayRes] = await Promise.all([
             api.get('/classes'),
-            api.get('/students') // Just to extract unique academic years
+            api.get('/students'),
+            api.get('/academic-years').catch(() => ({ data: [] }))
           ]);
           setClasses(clsRes.data);
           
-          const years = [...new Set(stuRes.data.map(s => s.academicYear).filter(Boolean))].sort((a, b) => b.localeCompare(a));
+          let years = ayRes.data.map(y => y.year);
+          if (years.length === 0) {
+            years = [...new Set(stuRes.data.map(s => s.academicYear).filter(Boolean))].sort((a, b) => b.localeCompare(a));
+          }
           setAcademicYears(years);
+
+          // Populate initial defaults based on resolved scope
+          if (targetScope === 'CLASS') {
+            if (clsRes.data.length > 0) setClassFilter(clsRes.data[0].name);
+          } else if (targetScope === 'SECTION') {
+            if (clsRes.data.length > 0) {
+              setClassFilter(clsRes.data[0].name);
+              if (clsRes.data[0].sections?.length > 0) {
+                setSectionFilter(clsRes.data[0].sections[0].name);
+              } else {
+                setSectionFilter('');
+              }
+            }
+          } else if (targetScope === 'ACADEMIC_YEAR') {
+            if (years.length > 0) setAcademicYear(years[0]);
+          } else if (targetScope === 'OLD_STUDENTS') {
+            setClassFilter('All');
+            setSectionFilter('All');
+            setAcademicYear('All');
+          }
         } catch (error) {
           console.error("Error fetching filters", error);
         }
@@ -118,31 +168,31 @@ const ExportModal = ({ isOpen, onClose, selectedStudentIds = [], defaultScope = 
           <Label className="text-base font-semibold">Choose Export Scope</Label>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <label className={`flex items-center space-x-2 border p-3 rounded-md transition-colors ${selectedStudentIds.length <= 1 ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'cursor-pointer hover:bg-orange-50'}`}>
-              <input type="radio" name="scope" value="SELECTED" checked={exportScope === 'SELECTED'} onChange={(e) => setExportScope(e.target.value)} disabled={selectedStudentIds.length <= 1} className="text-orange-600 focus:ring-orange-600" />
+              <input type="radio" name="scope" value="SELECTED" checked={exportScope === 'SELECTED'} onChange={(e) => handleScopeChange(e.target.value)} disabled={selectedStudentIds.length <= 1} className="text-orange-600 focus:ring-orange-600" />
               <span className="text-sm">Selected Students ({selectedStudentIds.length})</span>
             </label>
             <label className={`flex items-center space-x-2 border p-3 rounded-md transition-colors ${selectedStudentIds.length !== 1 ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'cursor-pointer hover:bg-orange-50'}`}>
-              <input type="radio" name="scope" value="SINGLE" checked={exportScope === 'SINGLE'} onChange={(e) => setExportScope(e.target.value)} disabled={selectedStudentIds.length !== 1} className="text-orange-600 focus:ring-orange-600" />
+              <input type="radio" name="scope" value="SINGLE" checked={exportScope === 'SINGLE'} onChange={(e) => handleScopeChange(e.target.value)} disabled={selectedStudentIds.length !== 1} className="text-orange-600 focus:ring-orange-600" />
               <span className="text-sm">Single Student</span>
             </label>
             {!isOldStudentsPage && (
               <>
                 <label className="flex items-center space-x-2 border p-3 rounded-md cursor-pointer hover:bg-orange-50 transition-colors">
-                  <input type="radio" name="scope" value="CLASS" checked={exportScope === 'CLASS'} onChange={(e) => setExportScope(e.target.value)} className="text-orange-600 focus:ring-orange-600" />
+                  <input type="radio" name="scope" value="CLASS" checked={exportScope === 'CLASS'} onChange={(e) => handleScopeChange(e.target.value)} className="text-orange-600 focus:ring-orange-600" />
                   <span className="text-sm">Entire Class</span>
                 </label>
                 <label className="flex items-center space-x-2 border p-3 rounded-md cursor-pointer hover:bg-orange-50 transition-colors">
-                  <input type="radio" name="scope" value="SECTION" checked={exportScope === 'SECTION'} onChange={(e) => setExportScope(e.target.value)} className="text-orange-600 focus:ring-orange-600" />
+                  <input type="radio" name="scope" value="SECTION" checked={exportScope === 'SECTION'} onChange={(e) => handleScopeChange(e.target.value)} className="text-orange-600 focus:ring-orange-600" />
                   <span className="text-sm">Entire Section</span>
                 </label>
                 <label className="flex items-center space-x-2 border p-3 rounded-md cursor-pointer hover:bg-orange-50 transition-colors">
-                  <input type="radio" name="scope" value="ACADEMIC_YEAR" checked={exportScope === 'ACADEMIC_YEAR'} onChange={(e) => setExportScope(e.target.value)} className="text-orange-600 focus:ring-orange-600" />
+                  <input type="radio" name="scope" value="ACADEMIC_YEAR" checked={exportScope === 'ACADEMIC_YEAR'} onChange={(e) => handleScopeChange(e.target.value)} className="text-orange-600 focus:ring-orange-600" />
                   <span className="text-sm">Entire Academic Year</span>
                 </label>
               </>
             )}
             <label className="flex items-center space-x-2 border p-3 rounded-md cursor-pointer hover:bg-orange-50 transition-colors">
-              <input type="radio" name="scope" value="OLD_STUDENTS" checked={exportScope === 'OLD_STUDENTS'} onChange={(e) => setExportScope(e.target.value)} className="text-orange-600 focus:ring-orange-600" />
+              <input type="radio" name="scope" value="OLD_STUDENTS" checked={exportScope === 'OLD_STUDENTS'} onChange={(e) => handleScopeChange(e.target.value)} className="text-orange-600 focus:ring-orange-600" />
               <span className="text-sm">Entire Old Students</span>
             </label>
           </div>
@@ -167,7 +217,16 @@ const ExportModal = ({ isOpen, onClose, selectedStudentIds = [], defaultScope = 
               {(exportScope === 'CLASS' || exportScope === 'SECTION' || exportScope === 'OLD_STUDENTS') && (
                 <div className="space-y-1">
                   <Label>Class</Label>
-                  <select className="flex h-10 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600" value={classFilter} onChange={(e) => { setClassFilter(e.target.value); setSectionFilter('All'); }}>
+                  <select className="flex h-10 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600" value={classFilter} onChange={(e) => {
+                    const newClass = e.target.value;
+                    setClassFilter(newClass);
+                    const clsObj = classes.find(c => c.name === newClass);
+                    if (clsObj && clsObj.sections && clsObj.sections.length > 0) {
+                      setSectionFilter(clsObj.sections[0].name);
+                    } else {
+                      setSectionFilter('');
+                    }
+                  }}>
                     {exportScope === 'OLD_STUDENTS' && <option value="All">All Classes</option>}
                     {classes.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
                   </select>

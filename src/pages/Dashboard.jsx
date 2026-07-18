@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import api from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
-import { Users, FileText, DollarSign, TrendingUp, ArrowUpCircle } from 'lucide-react';
+import { Users, FileText, DollarSign, TrendingUp, ArrowUpCircle, Calendar } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
@@ -27,11 +27,18 @@ const Dashboard = () => {
   const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
   const [classes, setClasses] = useState([]);
   const [academicYears, setAcademicYears] = useState([]);
+  const [allAcademicYears, setAllAcademicYears] = useState([]);
   const [fromYear, setFromYear] = useState('');
   const [toYear, setToYear] = useState('');
+  const [activeYear, setActiveYear] = useState(null);
   const [classMapping, setClassMapping] = useState({});
   const [isPromoting, setIsPromoting] = useState(false);
   const confirm = useConfirm();
+
+  const toYearExists = useMemo(() => {
+    if (!toYear) return false;
+    return allAcademicYears.some(y => y.year === toYear);
+  }, [toYear, allAcademicYears]);
 
   const fetchDashboardData = async () => {
     try {
@@ -64,11 +71,21 @@ const Dashboard = () => {
 
       // Prepare data for promotion modal
       setClasses(classesRes.data);
-      const years = new Set(studentsRes.data.map(s => s.academicYear).filter(Boolean));
-      const sortedYears = Array.from(years).sort().reverse();
-      setAcademicYears(sortedYears);
-      if (sortedYears.length > 0) {
-        setFromYear(sortedYears[0]);
+      
+      const activeYearRes = await api.get('/academic-years/active').catch(() => null);
+      if (activeYearRes && activeYearRes.data) {
+        setActiveYear(activeYearRes.data);
+        const currentYearStr = activeYearRes.data.year;
+        setFromYear(currentYearStr);
+        const parts = currentYearStr.split(/[–-]/);
+        if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+          setToYear(`${parseInt(parts[0]) + 1}–${parseInt(parts[1]) + 1}`);
+        }
+      }
+
+      const allYearsRes = await api.get('/academic-years').catch(() => null);
+      if (allYearsRes && allYearsRes.data) {
+        setAllAcademicYears(allYearsRes.data);
       }
       
       // Default class mapping: Shift each class to the next in the array, last class graduates
@@ -93,15 +110,7 @@ const Dashboard = () => {
     fetchDashboardData();
   }, []);
 
-  // Try to intelligently guess the next academic year based on 'fromYear'
-  useEffect(() => {
-    if (fromYear) {
-      const parts = fromYear.split('-');
-      if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-        setToYear(`${parseInt(parts[0]) + 1}-${parseInt(parts[1]) + 1}`);
-      }
-    }
-  }, [fromYear]);
+  // Auto-set To academic year logic removed or customized in fetchDashboardData
 
   const handleClassMapChange = (currentClass, nextClass) => {
     setClassMapping(prev => ({
@@ -228,6 +237,22 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
+        <Card className="bg-gradient-to-br from-amber-50 to-white">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-amber-700">Academic Year</CardTitle>
+            <Calendar className="h-4 w-4 text-amber-700" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-900">{activeYear?.year || 'None'}</div>
+            <p className="text-xs text-gray-500 mt-1 flex items-center">
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+                activeYear?.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+              }`}>
+                {activeYear?.status || 'Inactive'}
+              </span>
+            </p>
+          </CardContent>
+        </Card>
 
       </div>
 
@@ -239,21 +264,25 @@ const Dashboard = () => {
               <Label>From Academic Year</Label>
               <Input 
                 value={fromYear} 
-                onChange={e => setFromYear(e.target.value)} 
-                placeholder="e.g. 2026-2027" 
-                required 
+                readOnly
+                className="bg-gray-100 cursor-not-allowed font-medium text-gray-800"
               />
             </div>
             <div>
               <Label>To Academic Year</Label>
               <Input 
                 value={toYear} 
-                onChange={e => setToYear(e.target.value)} 
-                placeholder="e.g. 2024-2025" 
-                required 
+                readOnly
+                className="bg-gray-100 cursor-not-allowed font-medium text-gray-800"
               />
             </div>
           </div>
+
+          {!toYearExists && toYear && (
+            <div className="bg-red-50 text-red-700 p-3 rounded-md border border-red-200 text-sm font-medium">
+              Please create Academic Year {toYear} before promoting students.
+            </div>
+          )}
 
           <div className="border rounded-lg overflow-hidden">
             <div className="bg-gray-100 px-4 py-2 font-medium text-sm text-gray-700 border-b flex justify-between">
@@ -285,7 +314,7 @@ const Dashboard = () => {
 
           <div className="flex justify-end gap-3 pt-4 border-t">
             <Button type="button" variant="outline" onClick={() => setIsPromoteModalOpen(false)}>Cancel</Button>
-            <Button type="submit" className="bg-orange-600 hover:bg-orange-700 text-white" disabled={isPromoting}>
+            <Button type="submit" className="bg-orange-600 hover:bg-orange-700 text-white" disabled={isPromoting || !toYearExists}>
               {isPromoting ? 'Promoting...' : 'Confirm Promotion'}
             </Button>
           </div>

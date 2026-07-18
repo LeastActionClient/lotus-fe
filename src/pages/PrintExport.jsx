@@ -11,28 +11,26 @@ import { PageLoader } from '../components/ui/Spinner';
 import { toastWarning } from '../services/toastService';
 
 const AVAILABLE_FIELDS = [
-  { id: 'admissionNumber', label: 'Admission No' },
-  { id: 'emisNumber', label: 'EMIS Number' },
   { id: 'studentName', label: 'Student Name' },
-  { id: 'currentClass', label: 'Class' },
-  { id: 'section', label: 'Section' },
-  { id: 'dateOfBirth', label: 'Date of Birth', format: (val) => val ? new Date(val).toLocaleDateString() : '' },
-  { id: 'gender', label: 'Gender' },
+  { id: 'admissionNumber', label: 'Admission No' },
+  { id: 'emisNo', label: 'EMIS No' },
+  { id: 'dateOfBirth', label: 'DOB', format: (val) => val ? new Date(val).toISOString().split('T')[0] : '' },
+  { id: 'gender', label: 'Gender / Sex' },
   { id: 'bloodGroup', label: 'Blood Group' },
-  { id: 'aadhaarNumber', label: 'Aadhaar No' },
+  { id: 'aadhaarNumber', label: 'Aadhar No' },
   { id: 'religion', label: 'Religion' },
   { id: 'community', label: 'Community' },
   { id: 'caste', label: 'Caste' },
   { id: 'RTE', label: 'RTE' },
   { id: 'nationality', label: 'Nationality' },
   { id: 'fatherName', label: 'Father Name' },
-  { id: 'motherName', label: 'Mother Name' },
-  { id: 'guardian', label: 'Guardian Name' },
   { id: 'fatherPhone', label: 'Father Phone' },
-  { id: 'motherPhone', label: 'Mother Phone' },
-  { id: 'whatsappNumber', label: 'Whatsapp Number' },
   { id: 'fatherOccupation', label: 'Father Occupation' },
+  { id: 'motherName', label: 'Mother Name' },
+  { id: 'motherPhone', label: 'Mother Phone' },
   { id: 'motherOccupation', label: 'Mother Occupation' },
+  { id: 'guardian', label: 'Guardian Name' },
+  { id: 'whatsappNumber', label: 'Whatsapp Number' },
   { id: 'address', label: 'Address' },
   { id: 'city', label: 'City' },
   { id: 'state', label: 'State' },
@@ -128,7 +126,12 @@ const PrintExport = () => {
     
     const rows = filteredStudents.map(student => {
       return fieldsToExport.map(field => {
-        const value = student[field.id];
+        let value = student[field.id];
+        if (field.id === 'emisNo') {
+          value = student.emisNo || student.emisNumber || '';
+        } else if (field.id === 'guardian') {
+          value = student.guardianName || student.guardian || '';
+        }
         let displayValue = field.format ? field.format(value) : (value || '');
         if (typeof displayValue === 'string') {
           if (/^\d{8,}$/.test(displayValue)) {

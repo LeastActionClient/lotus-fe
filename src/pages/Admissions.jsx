@@ -36,12 +36,14 @@ const Admissions = () => {
   const [pageLoading, setPageLoading] = useState(true);
   
   const [manualForm, setManualForm] = useState({
+    admissionNumber: '',
     studentName: '', fatherName: '', motherName: '', fatherPhone: '', motherPhone: '', address: '',
     dateOfBirth: '', gender: '', bloodGroup: '', aadhaarNumber: '', religion: '', community: '', caste: '', RTE: '', nationality: '', 
     fatherOccupation: '', motherOccupation: '', guardian: '', city: '', state: '', pincode: '', whatsappNumber: '', emisNumber: '',
     isRTE: false
   });
   const [file, setFile] = useState(null);
+  const [activeYear, setActiveYear] = useState('');
 
   useEffect(() => {
     fetchStudents();
@@ -52,6 +54,12 @@ const Admissions = () => {
         handleApplicationAdmission(appId, fetchedClasses);
       }
     });
+
+    api.get('/academic-years/active')
+      .then(res => {
+        if (res.data) setActiveYear(res.data.year);
+      })
+      .catch(err => console.error("Error fetching active academic year", err));
   }, []);
 
   const getMatchedClass = (className, classList) => {
@@ -66,6 +74,10 @@ const Admissions = () => {
     let val = e.target.value;
     if (validationType === 'letters') {
       val = val.replace(/[^a-zA-Z\s]/g, '');
+    } else if (validationType === 'parentName') {
+      val = val.replace(/[^a-zA-Z\s.]/g, '');
+    } else if (validationType === 'admissionNumber') {
+      val = val.replace(/[^a-zA-Z0-9\-\/]/g, '');
     } else if (validationType === 'numbers') {
       val = val.replace(/[^0-9]/g, '');
     } else if (validationType === 'alphanumeric') {
@@ -73,7 +85,7 @@ const Admissions = () => {
     } else if (validationType === 'bloodGroup') {
       val = val.replace(/[^a-zA-Z\s\-\+]/g, '');
     }
-    const limit = maxLen ?? (field === 'aadhaarNumber' ? 12 : field === 'emisNumber' ? 10 : null);
+    const limit = maxLen ?? (field === 'aadhaarNumber' ? 12 : (field === 'emisNumber' || field === 'emisNo') ? 10 : (field === 'fatherPhone' || field === 'motherPhone' || field === 'whatsappNumber') ? 10 : null);
     if (limit && val.length > limit) {
       val = val.slice(0, limit);
     }
@@ -135,27 +147,76 @@ const Admissions = () => {
     }
   };
 
-  const validateFields = (caste, emisNo, guardianName, whatsappNumber) => {
-    const c = (caste || '').trim();
-    if (c && !/^[a-zA-Z\s]+$/.test(c)) {
-      return "Caste must contain only alphabets and spaces.";
-    }
-    if (c.length > 50) {
-      return "Caste must not exceed 50 characters.";
+  const validateFields = (form) => {
+    // Admission Number validation
+    const admissionNumber = (form.admissionNumber || '').trim();
+    if (!admissionNumber) return "Admission Number is required.";
+    if (admissionNumber.length < 3 || admissionNumber.length > 30) return "Admission Number must be between 3 and 30 characters.";
+    if (!/^[a-zA-Z0-9\-/]+$/.test(admissionNumber)) return "Admission Number must contain only letters, numbers, hyphens (-), and forward slashes (/).";
+
+    // Father Name validation (Optional)
+    const fatherName = (form.fatherName || '').trim();
+    if (fatherName) {
+      if (!/^[a-zA-Z\s.]+$/.test(fatherName)) return "Father Name must contain only alphabets, spaces, and dots.";
+      if (fatherName.length < 3 || fatherName.length > 100) return "Father Name must be between 3 and 100 characters.";
     }
 
-    const e = (emisNo || '').trim();
-    if (e && !/^\d{10}$/.test(e)) {
-      return "EMIS No must be exactly 10 digits.";
+    // Mother Name validation (Optional)
+    const motherName = (form.motherName || '').trim();
+    if (motherName) {
+      if (!/^[a-zA-Z\s.]+$/.test(motherName)) return "Mother Name must contain only alphabets, spaces, and dots.";
+      if (motherName.length < 3 || motherName.length > 100) return "Mother Name must be between 3 and 100 characters.";
     }
 
-    const g = (guardianName || '').trim();
-    if (g && !/^[a-zA-Z\s]+$/.test(g)) {
-      return "Guardian Name must contain only alphabets and spaces.";
+    // Guardian Name validation (Optional)
+    const guardian = (form.guardian || form.guardianName || '').trim();
+    if (guardian) {
+      if (!/^[a-zA-Z\s.]+$/.test(guardian)) return "Guardian Name must contain only alphabets, spaces, and dots.";
+      if (guardian.length < 3 || guardian.length > 100) return "Guardian Name must be between 3 and 100 characters.";
     }
-    if (g.length > 100) {
-      return "Guardian Name must not exceed 100 characters.";
+
+    // Father Phone validation (Optional)
+    const fatherPhone = (form.fatherPhone || '').trim();
+    if (fatherPhone) {
+      if (!/^[5-9]\d{9}$/.test(fatherPhone)) return "Father Phone must be exactly 10 digits and start with 5, 6, 7, 8, or 9.";
     }
+
+    // Mother Phone validation (Optional)
+    const motherPhone = (form.motherPhone || '').trim();
+    if (motherPhone) {
+      if (!/^[5-9]\d{9}$/.test(motherPhone)) return "Mother Phone must be exactly 10 digits and start with 5, 6, 7, 8, or 9.";
+    }
+
+    // WhatsApp Number validation (Optional)
+    const whatsappNumber = (form.whatsappNumber || '').trim();
+    if (whatsappNumber) {
+      if (!/^[5-9]\d{9}$/.test(whatsappNumber)) return "WhatsApp Number must be exactly 10 digits and start with 5, 6, 7, 8, or 9.";
+    }
+
+    // Father Occupation validation (Optional)
+    const fatherOccupation = (form.fatherOccupation || '').trim();
+    if (fatherOccupation) {
+      if (!/^[a-zA-Z\s]+$/.test(fatherOccupation)) return "Father Occupation must contain only alphabets and spaces.";
+      if (fatherOccupation.length > 100) return "Father Occupation must not exceed 100 characters.";
+    }
+
+    // Mother Occupation validation (Optional)
+    const motherOccupation = (form.motherOccupation || '').trim();
+    if (motherOccupation) {
+      if (!/^[a-zA-Z\s]+$/.test(motherOccupation)) return "Mother Occupation must contain only alphabets and spaces.";
+      if (motherOccupation.length > 100) return "Mother Occupation must not exceed 100 characters.";
+    }
+
+    // Caste validation (Optional)
+    const caste = (form.caste || '').trim();
+    if (caste) {
+      if (!/^[a-zA-Z\s]+$/.test(caste)) return "Caste must contain only alphabets and spaces.";
+      if (caste.length > 50) return "Caste must not exceed 50 characters.";
+    }
+
+    // EMIS No validation (Optional)
+    const emisNo = (form.emisNumber || form.emisNo || '').trim();
+    if (emisNo && !/^\d{10}$/.test(emisNo)) return "EMIS No must be exactly 10 digits.";
 
     return null;
   };
@@ -167,7 +228,7 @@ const Admissions = () => {
       return;
     }
 
-    const err = validateFields(manualForm.caste, manualForm.emisNumber || manualForm.emisNo, manualForm.guardian || manualForm.guardianName, manualForm.whatsappNumber);
+    const err = validateFields(manualForm);
     if (err) {
       toastWarning(err);
       return;
@@ -178,7 +239,7 @@ const Admissions = () => {
       return;
     }
 
-    if (manualForm.aadhaarNumber && !/^\d{12}$/.test(manualForm.aadhaarNumber.replace(/\s/g, ''))) {
+    if (manualForm.aadhaarNumber && !/^(\d{12}|[xX]{8}\d{4})$/.test(manualForm.aadhaarNumber.replace(/\s/g, ''))) {
       toastWarning("Aadhaar Number must be exactly 12 digits.");
       return;
     }
@@ -198,6 +259,7 @@ const Admissions = () => {
       });
       setIsManualModalOpen(false);
       setManualForm({ 
+        admissionNumber: '',
         studentName: '', fatherName: '', motherName: '', fatherPhone: '', motherPhone: '', address: '',
         dateOfBirth: '', gender: '', bloodGroup: '', aadhaarNumber: '', religion: '', community: '', caste: '', RTE: '', nationality: '', 
         fatherOccupation: '', motherOccupation: '', guardian: '', guardianName: '', city: '', state: '', pincode: '', whatsappNumber: '', emisNumber: '', emisNo: '',
@@ -273,6 +335,7 @@ const Admissions = () => {
       const data = res.data;
       setFullStudentData(data);
       setEditForm({
+        admissionNumber: data.admissionNumber || '',
         studentName: data.studentName || '',
         currentClass: data.currentClass || '',
         section: data.section || '',
@@ -283,7 +346,22 @@ const Admissions = () => {
         caste: data.caste || '',
         emisNumber: data.emisNumber || data.emisNo || '',
         guardian: data.guardian || data.guardianName || '',
-        whatsappNumber: data.whatsappNumber || ''
+        whatsappNumber: data.whatsappNumber || '',
+        dateOfBirth: data.dateOfBirth ? data.dateOfBirth.split('T')[0] : '',
+        gender: data.gender || '',
+        bloodGroup: data.bloodGroup || '',
+        aadhaarNumber: data.aadhaarNumber || '',
+        religion: data.religion || '',
+        community: data.community || '',
+        RTE: data.RTE || 'General',
+        isRTE: data.RTE === 'RTE',
+        nationality: data.nationality || '',
+        fatherOccupation: data.fatherOccupation || '',
+        motherOccupation: data.motherOccupation || '',
+        address: data.address || '',
+        city: data.city || '',
+        state: data.state || '',
+        pincode: data.pincode || ''
       });
       setSelectedStudent(student);
       setIsEditing(true);
@@ -297,12 +375,24 @@ const Admissions = () => {
   const handleEditChange = (e) => {
     const { name, value } = e.target;
     let val = value;
-    if (name === 'caste' || name === 'guardian') {
-      val = val.replace(/[^a-zA-Z\s]/g, '');
-      if (name === 'caste') val = val.slice(0, 50);
-      if (name === 'guardian') val = val.slice(0, 100);
-    } else if (name === 'emisNumber') {
+    if (name === 'section') {
+      val = val.replace(/[^a-zA-Z]/g, '');
+    } else if (name === 'admissionNumber') {
+      val = val.replace(/[^a-zA-Z0-9\-\/]/g, '').slice(0, 30);
+    } else if (name === 'fatherName' || name === 'motherName' || name === 'guardian' || name === 'guardianName') {
+      val = val.replace(/[^a-zA-Z\s.]/g, '').slice(0, 100);
+    } else if (name === 'fatherPhone' || name === 'motherPhone' || name === 'whatsappNumber') {
       val = val.replace(/[^0-9]/g, '').slice(0, 10);
+    } else if (name === 'fatherOccupation' || name === 'motherOccupation') {
+      val = val.replace(/[^a-zA-Z\s]/g, '').slice(0, 100);
+    } else if (name === 'caste') {
+      val = val.replace(/[^a-zA-Z\s]/g, '').slice(0, 50);
+    } else if (name === 'emisNumber' || name === 'emisNo') {
+      val = val.replace(/[^0-9]/g, '').slice(0, 10);
+    } else if (name === 'aadhaarNumber') {
+      val = val.replace(/[^0-9]/g, '').slice(0, 12);
+    } else if (name === 'bloodGroup') {
+      val = val.replace(/[^a-zA-Z\s\-\+]/g, '');
     }
     setEditForm(prev => ({ ...prev, [name]: val }));
   };
@@ -310,7 +400,7 @@ const Admissions = () => {
   const handleEditSave = async (e) => {
     e.preventDefault();
 
-    const err = validateFields(editForm.caste, editForm.emisNumber, editForm.guardian, editForm.whatsappNumber);
+    const err = validateFields(editForm);
     if (err) {
       toastWarning(err);
       return;
@@ -327,6 +417,7 @@ const Admissions = () => {
 
       const payload = {
         ...fullStudentData,
+        admissionNumber: editForm.admissionNumber,
         studentName: editForm.studentName,
         currentClass: editForm.currentClass,
         section: editForm.section || '',
@@ -340,9 +431,22 @@ const Admissions = () => {
         guardian: (editForm.guardian || '').trim(),
         guardianName: (editForm.guardian || '').trim(),
         whatsappNumber: (editForm.whatsappNumber || '').trim(),
+        dateOfBirth: editForm.dateOfBirth || null,
+        gender: editForm.gender || '',
+        bloodGroup: editForm.bloodGroup || '',
+        aadhaarNumber: editForm.aadhaarNumber || '',
+        religion: editForm.religion || '',
+        community: editForm.community || '',
+        RTE: editForm.isRTE ? 'RTE' : 'General',
+        nationality: editForm.nationality || '',
+        fatherOccupation: editForm.fatherOccupation || '',
+        motherOccupation: editForm.motherOccupation || '',
+        address: editForm.address || '',
+        city: editForm.city || '',
+        state: editForm.state || '',
+        pincode: editForm.pincode || '',
         includedChargesIds,
         activitiesIds,
-        dateOfBirth: fullStudentData.dateOfBirth ? fullStudentData.dateOfBirth.split('T')[0] : '',
         admissionDate: fullStudentData.admissionDate ? fullStudentData.admissionDate.split('T')[0] : ''
       };
       delete payload._id;
@@ -393,12 +497,26 @@ const Admissions = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center">
-          <UserPlus className="mr-3 text-orange-600" size={32} />
-          Admissions
-        </h1>
-        <p className="text-gray-500 mt-2">Manage student admissions and enrollments</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center">
+            <UserPlus className="mr-3 text-orange-600" size={32} />
+            Admissions
+          </h1>
+          <p className="text-gray-500 mt-2">Manage student admissions and enrollments</p>
+        </div>
+        <div className="space-y-1 min-w-44 w-full sm:w-auto">
+          <Label>Student Group</Label>
+          <select
+            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+            value={studentGroupFilter}
+            onChange={(e) => setStudentGroupFilter(e.target.value)}
+          >
+            <option value="All">All Students</option>
+            <option value="RTE">RTE Students</option>
+            <option value="General">General Students</option>
+          </select>
+        </div>
       </div>
 
       <Card className="bg-orange-50 border-orange-100">
@@ -437,18 +555,6 @@ const Admissions = () => {
               </div>
             </div>
             <div className="flex gap-2 w-full md:w-auto">
-              <div className="space-y-1 min-w-44">
-                <Label>Student Group</Label>
-                <select
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
-                  value={studentGroupFilter}
-                  onChange={(e) => setStudentGroupFilter(e.target.value)}
-                >
-                  <option value="All">All Students</option>
-                  <option value="RTE">RTE Students</option>
-                  <option value="General">General Students</option>
-                </select>
-              </div>
               <Button onClick={() => {
                 if (!selectedClass) { toastWarning("Please select a class first"); return; }
                 setIsImportModalOpen(true);
@@ -672,18 +778,63 @@ const Admissions = () => {
             </div>
 
             <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-3 border-b pb-2">Editable Fields</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <h3 className="text-lg font-medium text-gray-900 mb-3 border-b pb-2">Personal Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label>Student Name *</Label>
-                  <Input name="studentName" value={editForm.studentName} onChange={handleEditChange} required />
+                  <Label>Admission Number *</Label>
+                  <Input name="admissionNumber" value={editForm.admissionNumber || ''} onChange={handleEditChange} required />
+                </div>
+                <div className="space-y-2">
+                  <Label>Academic Year</Label>
+                  <Input name="academicYear" value={editForm.academicYear || ''} readOnly className="bg-gray-100 cursor-not-allowed font-medium text-gray-800" />
                 </div>
                 <div className="space-y-2">
                   <Label>EMIS No</Label>
                   <Input name="emisNumber" value={editForm.emisNumber} onChange={handleEditChange} maxLength={10} placeholder="10 digits" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Class</Label>
+                  <Label>Student Name *</Label>
+                  <Input name="studentName" value={editForm.studentName} onChange={handleEditChange} required />
+                </div>
+                <div className="space-y-2">
+                  <Label>Date of Birth</Label>
+                  <Input type="date" name="dateOfBirth" value={editForm.dateOfBirth} onChange={handleEditChange} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Gender</Label>
+                  <select name="gender" value={editForm.gender} onChange={handleEditChange} className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600">
+                    <option value="">Select</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Blood Group</Label>
+                  <Input name="bloodGroup" value={editForm.bloodGroup} onChange={handleEditChange} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Aadhaar No</Label>
+                  <Input name="aadhaarNumber" value={editForm.aadhaarNumber} maxLength={12} onChange={handleEditChange} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Religion</Label>
+                  <Input name="religion" value={editForm.religion} onChange={handleEditChange} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Community</Label>
+                  <Input name="community" value={editForm.community} onChange={handleEditChange} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Caste</Label>
+                  <Input name="caste" value={editForm.caste} onChange={handleEditChange} maxLength={50} placeholder="e.g. BC, MBC" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Nationality</Label>
+                  <Input name="nationality" value={editForm.nationality} onChange={handleEditChange} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Class *</Label>
                   <select name="currentClass" value={editForm.currentClass} onChange={handleEditChange} className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600" required>
                     <option value="">Select Class</option>
                     {classes.map(c => (
@@ -695,10 +846,24 @@ const Admissions = () => {
                   <Label>Section</Label>
                   <Input name="section" value={editForm.section} onChange={handleEditChange} placeholder="e.g., A" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Caste</Label>
-                  <Input name="caste" value={editForm.caste} onChange={handleEditChange} maxLength={50} placeholder="e.g. BC, MBC" />
+                <div className="space-y-2 md:col-span-3">
+                  <Label className="font-bold text-gray-900">Student Group</Label>
+                  <label className="flex items-center gap-3 rounded-md border-2 border-purple-300 bg-purple-50/30 px-3 py-2 text-sm font-semibold text-gray-800">
+                    <input
+                      type="checkbox"
+                      checked={editForm.isRTE || false}
+                      onChange={(e) => setEditForm({ ...editForm, isRTE: e.target.checked })}
+                      className="h-4 w-4 rounded border-purple-400 text-purple-600 focus:ring-purple-600"
+                    />
+                    <span>{editForm.isRTE ? 'RTE Course Student' : 'General (Non-RTE) Student'}</span>
+                  </label>
                 </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-3 border-b pb-2">Parent & Guardian Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>Father Name</Label>
                   <Input name="fatherName" value={editForm.fatherName} onChange={handleEditChange} />
@@ -722,6 +887,38 @@ const Admissions = () => {
                 <div className="space-y-2">
                   <Label>WhatsApp Number</Label>
                   <Input name="whatsappNumber" value={editForm.whatsappNumber} onChange={handleEditChange} placeholder="WhatsApp Number" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Father Occupation</Label>
+                  <Input name="fatherOccupation" value={editForm.fatherOccupation} onChange={handleEditChange} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Mother Occupation</Label>
+                  <Input name="motherOccupation" value={editForm.motherOccupation} onChange={handleEditChange} />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-3 border-b pb-2">Address Information</h3>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Street Address</Label>
+                  <Input name="address" value={editForm.address} onChange={handleEditChange} />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>City</Label>
+                    <Input name="city" value={editForm.city} onChange={handleEditChange} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>State</Label>
+                    <Input name="state" value={editForm.state} onChange={handleEditChange} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Pincode</Label>
+                    <Input name="pincode" value={editForm.pincode} onChange={handleEditChange} />
+                  </div>
                 </div>
               </div>
             </div>
@@ -793,6 +990,14 @@ const Admissions = () => {
             <h3 className="text-lg font-medium text-gray-900 mb-3 border-b pb-2">Personal Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
+                <Label>Admission Number *</Label>
+                <Input value={manualForm.admissionNumber || ''} placeholder="e.g. ADM-001" onChange={(e) => handleValidatedChange('admissionNumber', e, 'admissionNumber', manualForm, setManualForm, 30)} required />
+              </div>
+              <div className="space-y-2">
+                <Label>Academic Year</Label>
+                <Input value={activeYear || 'Loading...'} readOnly className="bg-gray-100 cursor-not-allowed font-medium text-gray-800" />
+              </div>
+              <div className="space-y-2">
                 <Label>EMIS No</Label>
                 <Input value={manualForm.emisNumber} maxLength={10} placeholder="10 digits" onChange={(e) => handleValidatedChange('emisNumber', e, 'numbers', manualForm, setManualForm, 10)} />
               </div>
@@ -834,10 +1039,6 @@ const Admissions = () => {
                 <Input value={manualForm.caste} maxLength={50} placeholder="e.g. BC, MBC" onChange={(e) => handleValidatedChange('caste', e, 'letters', manualForm, setManualForm, 50)} />
               </div>
               <div className="space-y-2">
-                <Label>RTE</Label>
-                <Input value={manualForm.RTE} onChange={(e) => handleValidatedChange('RTE', e, 'letters', manualForm, setManualForm)} />
-              </div>
-              <div className="space-y-2">
                 <Label>Nationality</Label>
                 <Input value={manualForm.nationality} onChange={(e) => handleValidatedChange('nationality', e, 'letters', manualForm, setManualForm)} />
               </div>
@@ -861,27 +1062,27 @@ const Admissions = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Father Name</Label>
-                <Input value={manualForm.fatherName} onChange={(e) => handleValidatedChange('fatherName', e, 'letters', manualForm, setManualForm)} />
+                <Input value={manualForm.fatherName} onChange={(e) => handleValidatedChange('fatherName', e, 'parentName', manualForm, setManualForm, 100)} />
               </div>
               <div className="space-y-2">
                 <Label>Mother Name</Label>
-                <Input value={manualForm.motherName} onChange={(e) => handleValidatedChange('motherName', e, 'letters', manualForm, setManualForm)} />
+                <Input value={manualForm.motherName} onChange={(e) => handleValidatedChange('motherName', e, 'parentName', manualForm, setManualForm, 100)} />
               </div>
               <div className="space-y-2">
                 <Label>Guardian Name</Label>
-                <Input value={manualForm.guardian} maxLength={100} placeholder="Guardian name" onChange={(e) => handleValidatedChange('guardian', e, 'letters', manualForm, setManualForm, 100)} />
+                <Input value={manualForm.guardian} maxLength={100} placeholder="Guardian name" onChange={(e) => handleValidatedChange('guardian', e, 'parentName', manualForm, setManualForm, 100)} />
               </div>
               <div className="space-y-2">
                 <Label>Father Phone</Label>
-                <Input value={manualForm.fatherPhone} onChange={(e) => handleValidatedChange('fatherPhone', e, 'numbers', manualForm, setManualForm)} />
+                <Input value={manualForm.fatherPhone} onChange={(e) => handleValidatedChange('fatherPhone', e, 'numbers', manualForm, setManualForm, 10)} />
               </div>
               <div className="space-y-2">
                 <Label>Mother Phone</Label>
-                <Input value={manualForm.motherPhone} onChange={(e) => handleValidatedChange('motherPhone', e, 'numbers', manualForm, setManualForm)} />
+                <Input value={manualForm.motherPhone} onChange={(e) => handleValidatedChange('motherPhone', e, 'numbers', manualForm, setManualForm, 10)} />
               </div>
               <div className="space-y-2">
                 <Label>WhatsApp Number</Label>
-                <Input value={manualForm.whatsappNumber} placeholder="WhatsApp Number" onChange={(e) => setManualForm({...manualForm, whatsappNumber: e.target.value})} />
+                <Input value={manualForm.whatsappNumber} placeholder="WhatsApp Number" onChange={(e) => handleValidatedChange('whatsappNumber', e, 'numbers', manualForm, setManualForm, 10)} />
               </div>
               <div className="space-y-2">
                 <Label>Father Occupation</Label>
