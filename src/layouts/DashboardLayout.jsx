@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Users, FileText, UserPlus, DollarSign, FileCheck, PieChart, LogOut, Printer, Menu, X, Calendar } from 'lucide-react';
+import { Home, Users, FileText, UserPlus, DollarSign, FileCheck, PieChart, LogOut, Printer, Menu, X, Calendar, Percent } from 'lucide-react';
+
 import logo from '../assets/logo.png';
 
 const DashboardLayout = () => {
@@ -61,8 +62,10 @@ const DashboardLayout = () => {
   ];
 
   if (user.role === 'SUPER_ADMIN') {
+    navItems.push({ name: 'Fee Concessions', path: '/dashboard/concessions', icon: <Percent size={20} /> });
     navItems.push({ name: 'Manage Admins', path: '/dashboard/admins', icon: <Users size={20} /> });
   }
+
 
   return (
     <div className="dashboard-shell flex h-auto bg-gray-100 ">

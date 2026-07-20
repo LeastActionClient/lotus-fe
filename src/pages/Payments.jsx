@@ -44,6 +44,7 @@ const Payments = () => {
     referenceNumber: '',
     remarks: ''
   });
+  const [payingAmounts, setPayingAmounts] = useState({});
 
   const fetchData = async () => {
     try {
@@ -97,14 +98,32 @@ const Payments = () => {
       api.get(`/students/${selectedStudentId}`).then(res => {
         const student = res.data;
         if (student && student.studentFees) {
-          const getFeeRemainingDisplay = (f) => (f ? (f.remainingAmount ?? 0) : 0);
           const pendingFees = student.studentFees.filter((f) => {
             const isFullyPaid = (f.paidAmount || 0) > 0 && (f.remainingAmount === 0);
             return !isFullyPaid;
+          }).map(f => {
+            return {
+              ...f,
+              lessAmount: f.lessAmount || 0,
+              concessionStatus: f.concessionStatus || 'None'
+            };
           });
+
           setStudentFees(pendingFees);
           const allPendingIds = pendingFees.map(f => f._id || f.id);
-          const totalAmt = pendingFees.reduce((sum, f) => sum + (f.remainingAmount ?? 0), 0);
+          
+          const initialAmounts = {};
+          pendingFees.forEach(f => {
+            const dynamicRemaining = Math.max(0, f.totalAmount - (f.concessionStatus === 'Active' ? f.lessAmount : 0) - (f.paidAmount || 0));
+            initialAmounts[f._id || f.id] = dynamicRemaining.toString();
+          });
+          setPayingAmounts(initialAmounts);
+
+          const totalAmt = pendingFees.reduce((sum, f) => {
+            const dynamicRemaining = Math.max(0, f.totalAmount - (f.concessionStatus === 'Active' ? f.lessAmount : 0) - (f.paidAmount || 0));
+            return sum + dynamicRemaining;
+          }, 0);
+
           setPaymentData(prev => ({
             ...prev,
             studentFeeIds: allPendingIds,
@@ -112,6 +131,7 @@ const Payments = () => {
           }));
         } else {
           setStudentFees([]);
+          setPayingAmounts({});
           setPaymentData(prev => ({...prev, studentFeeIds: [], amount: '0'}));
         }
       }).catch(err => {
@@ -119,11 +139,32 @@ const Payments = () => {
       });
     } else {
       setStudentFees([]);
+      setPayingAmounts({});
       setPaymentData(prev => ({...prev, studentFeeIds: [], amount: '0'}));
     }
   }, [selectedStudentId]);
 
-  const getFeeRemainingDisplay = (f) => (f ? (f.remainingAmount ?? 0) : 0);
+  const getDynamicRemaining = (f) => {
+    if (!f) return 0;
+    const less = f.concessionStatus === 'Active' ? (f.lessAmount || 0) : 0;
+    return Math.max(0, f.totalAmount - less - (f.paidAmount || 0));
+  };
+
+  const isFormInvalid = paymentData.studentFeeIds.some(id => {
+    const fee = studentFees.find(sf => (sf._id || sf.id) === id);
+    const dynamicRemaining = getDynamicRemaining(fee);
+    const val = payingAmounts[id] ?? '';
+    const num = parseFloat(val);
+    
+    // If the remaining payable balance is 0, 0 is the only allowed amount
+    if (dynamicRemaining === 0) {
+      return val !== '0' && val !== '';
+    }
+    
+    return val === '' || isNaN(num) || num <= 0 || num > dynamicRemaining;
+  });
+
+  const getFeeRemainingDisplay = (f) => (f ? getDynamicRemaining(f) : 0);
 
   const selectedStudent = students.find(s => (s._id || s.id) === selectedStudentId);
   const isPreviousYearFee = (f, student) => {
@@ -154,10 +195,16 @@ const Payments = () => {
     }
     setLoading(true);
     try {
+      const feeAllocations = paymentData.studentFeeIds.map(id => ({
+        studentFeeId: id,
+        amount: parseFloat(payingAmounts[id] || 0)
+      }));
+
       await api.post('/payments', {
         studentId: selectedStudentId,
         studentFeeIds: paymentData.studentFeeIds,
         amount: Number(paymentData.amount),
+        feeAllocations,
         paymentMethod: paymentData.paymentMethod,
         referenceNumber: paymentData.referenceNumber,
         remarks: paymentData.remarks
@@ -172,6 +219,7 @@ const Payments = () => {
         referenceNumber: '',
         remarks: ''
       });
+      setPayingAmounts({});
       fetchData();
       toastSuccess('Payment recorded successfully.');
     } catch (error) {
@@ -549,7 +597,7 @@ const Payments = () => {
 
           <div className="space-y-2">
             <Label>Select Fees to Pay</Label>
-            <div className="max-h-48 overflow-y-auto p-2 border border-gray-300 rounded-md bg-white space-y-2">
+            <div className="max-h-96 overflow-y-auto p-2 border border-gray-300 rounded-md bg-white space-y-3">
             {studentFees.length === 0 && (
               <p className="text-xs text-red-500">This student has no pending fee dues.</p>
             )}
@@ -565,38 +613,102 @@ const Payments = () => {
                   : '';
               
               const isChecked = paymentData.studentFeeIds.includes(feeId);
+              const dynamicRemaining = getDynamicRemaining(f);
+              const payingVal = payingAmounts[feeId] ?? '';
+              const payingNum = parseFloat(payingVal) || 0;
+              const remainingAfter = Math.max(0, dynamicRemaining - payingNum);
 
               return (
-                <div key={feeId} className={`flex items-center space-x-2 py-1 ${isDisabled ? 'opacity-50' : ''}`}>
-                  <input
-                    type="checkbox"
-                    id={`fee-${feeId}`}
-                    checked={isChecked}
-                    disabled={isDisabled}
-                    className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-600 cursor-pointer"
-                    onChange={(e) => {
-                      let newIds;
-                      if (e.target.checked) {
-                        newIds = [...paymentData.studentFeeIds, feeId];
-                      } else {
-                        newIds = paymentData.studentFeeIds.filter(id => id !== feeId);
-                      }
-                      
-                      const newTotal = newIds.reduce((sum, id) => {
-                        const fee = studentFees.find(sf => (sf._id || sf.id) === id);
-                        return sum + getFeeRemainingDisplay(fee);
-                      }, 0);
+                <div key={feeId} className={`p-3 border rounded-lg bg-gray-50/50 space-y-3 transition-all ${isChecked ? 'border-orange-200 bg-orange-50/10' : 'border-gray-200'} ${isDisabled ? 'opacity-50' : ''}`}>
+                  <div className="flex items-start space-x-2.5">
+                    <input
+                      type="checkbox"
+                      id={`fee-${feeId}`}
+                      checked={isChecked}
+                      disabled={isDisabled}
+                      className="h-4 w-4 mt-0.5 rounded border-gray-300 text-orange-600 focus:ring-orange-600 cursor-pointer"
+                      onChange={(e) => {
+                        let newIds;
+                        if (e.target.checked) {
+                          newIds = [...paymentData.studentFeeIds, feeId];
+                        } else {
+                          newIds = paymentData.studentFeeIds.filter(id => id !== feeId);
+                        }
+                        
+                        const newTotal = newIds.reduce((sum, id) => {
+                          const val = payingAmounts[id] ?? '0';
+                          return sum + (parseFloat(val) || 0);
+                        }, 0);
 
-                      setPaymentData({
-                        ...paymentData,
-                        studentFeeIds: newIds,
-                        amount: newTotal.toString()
-                      });
-                    }}
-                  />
-                  <Label htmlFor={`fee-${feeId}`} className={`text-sm cursor-pointer ${isChecked ? 'font-medium text-orange-700' : 'text-gray-700'}`}>
-                    {classLabel} {f.feeCategory?.name || 'Fee'} - Rs. {getFeeRemainingDisplay(f)} {isDisabled && !isChecked ? '(Clear previous dues first)' : ''}
-                  </Label>
+                        setPaymentData(prev => ({
+                          ...prev,
+                          studentFeeIds: newIds,
+                          amount: newTotal.toString()
+                        }));
+                      }}
+                    />
+                    <div className="flex-1 space-y-1">
+                      <Label htmlFor={`fee-${feeId}`} className={`text-sm cursor-pointer font-bold select-none ${isChecked ? 'text-orange-950' : 'text-gray-800'}`}>
+                        {classLabel} {f.feeCategory?.name || 'Fee'}
+                      </Label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-gray-500 font-medium pt-0.5">
+                        <div>Original: <span className="font-bold text-gray-700">₹{f.totalAmount}</span></div>
+                        {f.concessionStatus === 'Active' && f.lessAmount > 0 && (
+                          <>
+                            <div>Less: <span className="font-bold text-red-600">₹{f.lessAmount}</span></div>
+                            <div>Net Payable: <span className="font-bold text-emerald-700">₹{f.totalAmount - f.lessAmount}</span></div>
+                          </>
+                        )}
+                        <div>Already Paid: <span className="font-bold text-blue-600">₹{f.paidAmount || 0}</span></div>
+                        <div>Remaining: <span className="font-bold text-orange-600">₹{dynamicRemaining}</span></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {isChecked && (
+                    <div className="pl-6 pt-1 grid grid-cols-1 sm:grid-cols-2 gap-4 items-center bg-white p-3 rounded-lg border border-orange-100 shadow-sm animate-in fade-in slide-in-from-top-1 duration-150">
+                      <div className="space-y-1.5">
+                        <Label htmlFor={`paying-${feeId}`} className="text-xs font-bold text-gray-700">Amount Paying Now (Rs.)</Label>
+                        <Input
+                          id={`paying-${feeId}`}
+                          type="text"
+                          value={payingVal}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val !== '' && !/^\d+$/.test(val)) return;
+
+                            const newAmounts = {
+                              ...payingAmounts,
+                              [feeId]: val
+                            };
+                            setPayingAmounts(newAmounts);
+
+                            const newTotal = paymentData.studentFeeIds.reduce((sum, id) => {
+                              const currVal = newAmounts[id] ?? '0';
+                              return sum + (parseFloat(currVal) || 0);
+                            }, 0);
+
+                            setPaymentData(prev => ({
+                              ...prev,
+                              amount: newTotal.toString()
+                            }));
+                          }}
+                          className={`h-9 font-bold text-sm ${parseFloat(payingVal) > dynamicRemaining ? 'border-red-500 focus:ring-red-500' : ''}`}
+                        />
+                        {parseFloat(payingVal) > dynamicRemaining && (
+                          <p className="text-[10px] text-red-500 font-semibold leading-tight mt-0.5">
+                            Entered amount cannot exceed the remaining payable amount of ₹{dynamicRemaining}.
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex flex-col justify-end text-right pr-2">
+                        <div className="text-xs text-gray-500 font-medium">Remaining After Payment:</div>
+                        <div className={`text-base font-black ${remainingAfter === 0 ? 'text-emerald-600' : 'text-orange-600'}`}>
+                          ₹{remainingAfter}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -656,7 +768,7 @@ const Payments = () => {
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">
             <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={loading || !selectedStudentId || paymentData.studentFeeIds.length === 0}>
+            <Button type="submit" disabled={loading || !selectedStudentId || paymentData.studentFeeIds.length === 0 || isFormInvalid}>
               {loading ? 'Processing...' : 'Confirm Payment'}
             </Button>
           </div>

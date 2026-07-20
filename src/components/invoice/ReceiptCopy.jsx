@@ -131,19 +131,23 @@ const ReceiptCopy = ({ payment }) => {
           </p>
           <div className="mt-1 space-y-0.5 text-[8.5px] leading-tight text-slate-900">
             <div className="flex items-center justify-between gap-2">
-              <span>Total Amount</span>
+              <span>Original Fee</span>
               <span className="font-semibold">{formatCurrency(totals.totalAmount)}</span>
             </div>
             <div className="flex items-center justify-between gap-2">
-              <span>Less Amount</span>
+              <span>Total Less Amount</span>
               <span className="font-semibold">{formatCurrency(totals.discountAmount)}</span>
             </div>
             <div className="flex items-center justify-between gap-2">
-              <span>Paid Amount</span>
+              <span>Net Payable</span>
+              <span className="font-semibold">{formatCurrency(totals.totalAmount - totals.discountAmount)}</span>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span>Paid This Invoice</span>
               <span className="font-semibold">{formatCurrency(totals.paidAmount)}</span>
             </div>
             <div className="flex items-center justify-between gap-2 border-t border-slate-200 pt-0.5 text-[9px] font-bold">
-              <span>Balance Amount</span>
+              <span>Balance Pending</span>
               <span>{formatCurrency(totals.balanceAmount)}</span>
             </div>
           </div>

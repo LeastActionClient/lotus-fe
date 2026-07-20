@@ -18,8 +18,10 @@ import StudentEdit from './pages/StudentEdit';
 import OldStudents from './pages/OldStudents';
 import PendingFees from './pages/PendingFees';
 import AcademicYearPage from './pages/AcademicYear';
+import Concessions from './pages/Concessions';
 
 const ProtectedRoute = ({ children }) => {
+
   const token = sessionStorage.getItem('token');
   if (!token) {
     return <Navigate to="/" replace />;
@@ -55,7 +57,9 @@ const App = () => {
         <Route path="reports" element={<Reports />} />
         <Route path="admins" element={<Admins />} />
         <Route path="print-export" element={<PrintExport />} />
+        <Route path="concessions" element={<Concessions />} />
       </Route>
+
     </Routes>
   );
 };
