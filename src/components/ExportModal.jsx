@@ -7,7 +7,14 @@ import { Input } from './ui/Input';
 import { Download, FileText, Loader2 } from 'lucide-react';
 import { toastWarning } from '../services/toastService';
 
-const ExportModal = ({ isOpen, onClose, selectedStudentIds = [], defaultScope = 'CLASS', isOldStudentsPage = false }) => {
+const ExportModal = ({
+  isOpen,
+  onClose,
+  selectedStudentIds = [],
+  filteredStudentIds = [],
+  defaultScope = 'CLASS',
+  isOldStudentsPage = false
+}) => {
   const [exportScope, setExportScope] = useState(defaultScope);
   const [classes, setClasses] = useState([]);
   const [academicYears, setAcademicYears] = useState([]);
@@ -23,9 +30,25 @@ const ExportModal = ({ isOpen, onClose, selectedStudentIds = [], defaultScope = 
 
   const [loading, setLoading] = useState(false);
   const [progressText, setProgressText] = useState('');
+  const effectiveStudentIds = selectedStudentIds.length > 0 ? selectedStudentIds : filteredStudentIds;
+
+  const resetFilters = () => {
+    setClassFilter('All');
+    setSectionFilter('All');
+    setAcademicYear('All');
+    setExitType('All');
+    setFeeStatus('All');
+    setStudentGroup('All');
+    setSearchName('');
+    setSearchAdmissionNumber('');
+  };
 
   const handleScopeChange = (newScope) => {
     setExportScope(newScope);
+    resetFilters();
+    if (newScope === 'FILTERED') {
+      return;
+    }
     if (newScope === 'CLASS') {
       if (classes.length > 0) {
         setClassFilter(classes[0].name);
@@ -43,20 +66,16 @@ const ExportModal = ({ isOpen, onClose, selectedStudentIds = [], defaultScope = 
       if (academicYears.length > 0) {
         setAcademicYear(academicYears[0]);
       }
-    } else if (newScope === 'OLD_STUDENTS') {
-      setClassFilter('All');
-      setSectionFilter('All');
-      setAcademicYear('All');
     }
   };
 
   useEffect(() => {
     if (isOpen) {
       let targetScope = defaultScope;
-      if (selectedStudentIds.length === 1) {
+      if (effectiveStudentIds.length === 1) {
         targetScope = 'SINGLE';
-      } else if (selectedStudentIds.length > 1) {
-        targetScope = 'SELECTED';
+      } else if (effectiveStudentIds.length > 1) {
+        targetScope = defaultScope === 'FILTERED' ? 'FILTERED' : 'SELECTED';
       }
       setExportScope(targetScope);
       
@@ -93,6 +112,11 @@ const ExportModal = ({ isOpen, onClose, selectedStudentIds = [], defaultScope = 
             setClassFilter('All');
             setSectionFilter('All');
             setAcademicYear('All');
+          } else if (targetScope === 'FILTERED') {
+            // Current visible rows should export exactly as filtered on the page.
+            setClassFilter('All');
+            setSectionFilter('All');
+            setAcademicYear('All');
           }
         } catch (error) {
           console.error("Error fetching filters", error);
@@ -100,7 +124,7 @@ const ExportModal = ({ isOpen, onClose, selectedStudentIds = [], defaultScope = 
       };
       fetchFilters();
     }
-  }, [isOpen, selectedStudentIds, defaultScope]);
+  }, [isOpen, effectiveStudentIds.length, defaultScope]);
 
   const selectedClassObj = classes.find(c => c.name === classFilter);
 
@@ -114,8 +138,8 @@ const ExportModal = ({ isOpen, onClose, selectedStudentIds = [], defaultScope = 
       const payload = {
         exportScope,
         exportType,
-        studentIds: selectedStudentIds,
-        classFilter: classFilter === 'All' ? null : classFilter,
+        studentIds: effectiveStudentIds,
+        classFilter: exportScope === 'FILTERED' ? null : (classFilter === 'All' ? null : classFilter),
         sectionFilter: sectionFilter === 'All' ? null : sectionFilter,
         academicYear: academicYear === 'All' ? null : academicYear,
         exitType,
@@ -167,12 +191,12 @@ const ExportModal = ({ isOpen, onClose, selectedStudentIds = [], defaultScope = 
         <div className="space-y-3">
           <Label className="text-base font-semibold">Choose Export Scope</Label>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <label className={`flex items-center space-x-2 border p-3 rounded-md transition-colors ${selectedStudentIds.length <= 1 ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'cursor-pointer hover:bg-orange-50'}`}>
-              <input type="radio" name="scope" value="SELECTED" checked={exportScope === 'SELECTED'} onChange={(e) => handleScopeChange(e.target.value)} disabled={selectedStudentIds.length <= 1} className="text-orange-600 focus:ring-orange-600" />
-              <span className="text-sm">Selected Students ({selectedStudentIds.length})</span>
+            <label className={`flex items-center space-x-2 border p-3 rounded-md transition-colors ${effectiveStudentIds.length <= 1 ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'cursor-pointer hover:bg-orange-50'}`}>
+              <input type="radio" name="scope" value="SELECTED" checked={exportScope === 'SELECTED'} onChange={(e) => handleScopeChange(e.target.value)} disabled={effectiveStudentIds.length <= 1} className="text-orange-600 focus:ring-orange-600" />
+              <span className="text-sm">Selected Students ({effectiveStudentIds.length})</span>
             </label>
-            <label className={`flex items-center space-x-2 border p-3 rounded-md transition-colors ${selectedStudentIds.length !== 1 ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'cursor-pointer hover:bg-orange-50'}`}>
-              <input type="radio" name="scope" value="SINGLE" checked={exportScope === 'SINGLE'} onChange={(e) => handleScopeChange(e.target.value)} disabled={selectedStudentIds.length !== 1} className="text-orange-600 focus:ring-orange-600" />
+            <label className={`flex items-center space-x-2 border p-3 rounded-md transition-colors ${effectiveStudentIds.length !== 1 ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'cursor-pointer hover:bg-orange-50'}`}>
+              <input type="radio" name="scope" value="SINGLE" checked={exportScope === 'SINGLE'} onChange={(e) => handleScopeChange(e.target.value)} disabled={effectiveStudentIds.length !== 1} className="text-orange-600 focus:ring-orange-600" />
               <span className="text-sm">Single Student</span>
             </label>
             {!isOldStudentsPage && (
@@ -191,6 +215,10 @@ const ExportModal = ({ isOpen, onClose, selectedStudentIds = [], defaultScope = 
                 </label>
               </>
             )}
+            <label className={`flex items-center space-x-2 border p-3 rounded-md transition-colors ${effectiveStudentIds.length === 0 ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'cursor-pointer hover:bg-orange-50'}`}>
+              <input type="radio" name="scope" value="FILTERED" checked={exportScope === 'FILTERED'} onChange={(e) => handleScopeChange(e.target.value)} disabled={effectiveStudentIds.length === 0} className="text-orange-600 focus:ring-orange-600" />
+              <span className="text-sm">Current Visible Results ({effectiveStudentIds.length})</span>
+            </label>
             <label className="flex items-center space-x-2 border p-3 rounded-md cursor-pointer hover:bg-orange-50 transition-colors">
               <input type="radio" name="scope" value="OLD_STUDENTS" checked={exportScope === 'OLD_STUDENTS'} onChange={(e) => handleScopeChange(e.target.value)} className="text-orange-600 focus:ring-orange-600" />
               <span className="text-sm">Entire Old Students</span>
@@ -199,9 +227,9 @@ const ExportModal = ({ isOpen, onClose, selectedStudentIds = [], defaultScope = 
         </div>
 
         {/* Dynamic Filters based on Scope */}
-        {(exportScope === 'CLASS' || exportScope === 'SECTION' || exportScope === 'ACADEMIC_YEAR' || exportScope === 'OLD_STUDENTS') && (
+        {(exportScope === 'SELECTED' || exportScope === 'CLASS' || exportScope === 'SECTION' || exportScope === 'ACADEMIC_YEAR' || exportScope === 'OLD_STUDENTS') && (
           <div className="space-y-4 pt-4 border-t border-gray-200">
-            <Label className="text-base font-semibold">Choose Filters</Label>
+            <Label className="text-base font-semibold">Filter Students</Label>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               
               {(exportScope === 'ACADEMIC_YEAR' || exportScope === 'OLD_STUDENTS') && (
@@ -233,7 +261,7 @@ const ExportModal = ({ isOpen, onClose, selectedStudentIds = [], defaultScope = 
                 </div>
               )}
 
-              {(exportScope === 'SECTION' || (exportScope === 'OLD_STUDENTS' && classFilter !== 'All')) && (
+              {((exportScope === 'SECTION' || exportScope === 'CLASS') || (exportScope === 'OLD_STUDENTS' && classFilter !== 'All')) && selectedClassObj?.sections?.length > 0 && (
                 <div className="space-y-1">
                   <Label>Section</Label>
                   <select className="flex h-10 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600" value={sectionFilter} onChange={(e) => setSectionFilter(e.target.value)}>

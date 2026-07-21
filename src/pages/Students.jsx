@@ -12,7 +12,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { getStudentCategoryLabel, isRTEStudent } from '../utils/studentCategory';
 import { PageLoader } from '../components/ui/Spinner';
 import ExportModal from '../components/ExportModal';
-import { toastError } from '../services/toastService';
+import { toastError, toastSuccess } from '../services/toastService';
 import { useConfirm } from '../components/ui/ConfirmDialog';
 import { useClassesQuery, useQueryInvalidator, useStudentsQuery } from '../hooks/useSchoolQueries';
 
@@ -145,6 +145,7 @@ const Students = () => {
       setNewClassName('');
       setIsClassModalOpen(false);
       fetchClasses();
+      toastSuccess('Class added successfully!');
     } catch (error) {
       console.error("Error creating class", error);
     }
@@ -281,6 +282,11 @@ const Students = () => {
 
   useEffect(() => {
     setCurrentPage(1);
+  }, [viewMode, selectedClass, selectedSection, searchQuery, feeFilter, studentGroupFilter]);
+
+  useEffect(() => {
+    // Keep selection in sync with the current filtered view so exports do not use stale rows.
+    setSelectedStudentIds([]);
   }, [viewMode, selectedClass, selectedSection, searchQuery, feeFilter, studentGroupFilter]);
 
   const handleSelectAll = (e) => {
@@ -657,68 +663,166 @@ const Students = () => {
         </form>
       </Modal>
 
-      <Modal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} title="Student Details">
+      <Modal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} title="Student Details" className="max-w-4xl">
         {selectedStudent && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-500 ">Student Name</p>
-                <p className="font-medium text-gray-900 ">{selectedStudent.studentName}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 ">Admission No</p>
-                <p className="font-mono text-gray-900 ">{selectedStudent.admissionNumber}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 ">EMIS No</p>
-                <p className="font-mono text-gray-900 ">{selectedStudent.emisNo || selectedStudent.emisNumber || '-'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 ">Caste</p>
-                <p className="text-gray-900 ">{selectedStudent.caste || '-'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 ">Class & Section</p>
-                <p className="font-medium text-gray-900 ">{selectedStudent.currentClass} {selectedStudent.section && `- ${selectedStudent.section}`}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 ">Enrollment Date</p>
-                <p className="text-gray-900 ">{new Date(selectedStudent.createdAt).toLocaleDateString()}</p>
+          <div className="space-y-5">
+            {/* Personal Details */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-1 mb-3">Personal Details</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-xs text-gray-500">Admission No</p>
+                  <p className="font-mono text-sm font-medium text-gray-900">{selectedStudent.admissionNumber || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Student Name</p>
+                  <p className="text-sm font-medium text-gray-900">{selectedStudent.studentName || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Date of Birth</p>
+                  <p className="text-sm text-gray-900">{selectedStudent.dateOfBirth ? new Date(selectedStudent.dateOfBirth).toLocaleDateString() : '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Gender</p>
+                  <p className="text-sm text-gray-900">{selectedStudent.gender || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Blood Group</p>
+                  <p className="text-sm text-gray-900">{selectedStudent.bloodGroup || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Aadhaar Number</p>
+                  <p className="text-sm text-gray-900">{selectedStudent.aadhaarNumber || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Religion</p>
+                  <p className="text-sm text-gray-900">{selectedStudent.religion || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Community</p>
+                  <p className="text-sm text-gray-900">{selectedStudent.community || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Caste</p>
+                  <p className="text-sm text-gray-900">{selectedStudent.caste || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Nationality</p>
+                  <p className="text-sm text-gray-900">{selectedStudent.nationality || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Email</p>
+                  <p className="text-sm text-gray-900">{selectedStudent.email || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Enrollment Date</p>
+                  <p className="text-sm text-gray-900">{selectedStudent.createdAt ? new Date(selectedStudent.createdAt).toLocaleDateString() : '-'}</p>
+                </div>
               </div>
             </div>
-            
-            <div className="border-t border-gray-200  pt-4 grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-500 ">Father Name</p>
-                <p className="text-gray-900 ">{selectedStudent.fatherName || '-'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 ">Mother Name</p>
-                <p className="text-gray-900 ">{selectedStudent.motherName || '-'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 ">Guardian Name</p>
-                <p className="text-gray-900 ">{selectedStudent.guardianName || selectedStudent.guardian || '-'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 ">Father Phone</p>
-                <p className="text-gray-900 ">{selectedStudent.fatherPhone || '-'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 ">Mother Phone</p>
-                <p className="text-gray-900 ">{selectedStudent.motherPhone || '-'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 ">WhatsApp Number</p>
-                <p className="text-gray-900 ">{selectedStudent.whatsappNumber || '-'}</p>
+
+            {/* Academic Details */}
+            <div className="border-t border-gray-200 pt-4">
+              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-1 mb-3">Academic Details</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-xs text-gray-500">Class</p>
+                  <p className="text-sm font-medium text-gray-900">{selectedStudent.currentClass || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Section</p>
+                  <p className="text-sm text-gray-900">{selectedStudent.section || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Roll Number</p>
+                  <p className="text-sm text-gray-900">{selectedStudent.rollNumber || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">EMIS No</p>
+                  <p className="text-sm text-gray-900">{selectedStudent.emisNo || selectedStudent.emisNumber || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Admission Date</p>
+                  <p className="text-sm text-gray-900">{selectedStudent.admissionDate ? new Date(selectedStudent.admissionDate).toLocaleDateString() : '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Academic Year</p>
+                  <p className="text-sm text-gray-900">{selectedStudent.academicYear || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Student Status</p>
+                  <p className={`text-sm font-medium ${selectedStudent.studentStatus === 'Active' ? 'text-green-600' : 'text-red-600'}`}>{selectedStudent.studentStatus || 'Active'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Course Group</p>
+                  <p className="text-sm text-gray-900">{selectedStudent.RTE === 'RTE' ? 'RTE' : 'General'}</p>
+                </div>
               </div>
             </div>
 
-            <div className="border-t border-gray-200  pt-4">
-              <p className="text-sm text-gray-500 ">Address</p>
-              <p className="text-gray-900 ">{selectedStudent.address || '-'}</p>
+            {/* Parent Details */}
+            <div className="border-t border-gray-200 pt-4">
+              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-1 mb-3">Parent Details</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-xs text-gray-500">Father Name</p>
+                  <p className="text-sm text-gray-900">{selectedStudent.fatherName || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Father Mobile</p>
+                  <p className="text-sm text-gray-900">{selectedStudent.fatherPhone || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Father Occupation</p>
+                  <p className="text-sm text-gray-900">{selectedStudent.fatherOccupation || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Mother Name</p>
+                  <p className="text-sm text-gray-900">{selectedStudent.motherName || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Mother Mobile</p>
+                  <p className="text-sm text-gray-900">{selectedStudent.motherPhone || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Mother Occupation</p>
+                  <p className="text-sm text-gray-900">{selectedStudent.motherOccupation || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Guardian Name</p>
+                  <p className="text-sm text-gray-900">{selectedStudent.guardianName || selectedStudent.guardian || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">WhatsApp Number</p>
+                  <p className="text-sm text-gray-900">{selectedStudent.whatsappNumber || '-'}</p>
+                </div>
+              </div>
             </div>
 
+            {/* Address */}
+            <div className="border-t border-gray-200 pt-4">
+              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-1 mb-3">Address</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="sm:col-span-4">
+                  <p className="text-xs text-gray-500">Address</p>
+                  <p className="text-sm text-gray-900">{selectedStudent.address || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">City</p>
+                  <p className="text-sm text-gray-900">{selectedStudent.city || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">State</p>
+                  <p className="text-sm text-gray-900">{selectedStudent.state || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Pincode</p>
+                  <p className="text-sm text-gray-900">{selectedStudent.pincode || '-'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Academic Journey History */}
             <div className="border-t border-gray-200 pt-4">
               <p className="text-sm font-semibold text-gray-700 mb-3">Academic Journey History</p>
               {historyLoading ? (
@@ -739,8 +843,8 @@ const Students = () => {
                 </div>
               )}
             </div>
-            
-            <div className="pt-4 flex justify-end">
+
+            <div className="pt-4 flex justify-end border-t border-gray-200">
               <Button onClick={() => setIsViewModalOpen(false)}>Close</Button>
             </div>
           </div>
@@ -751,7 +855,12 @@ const Students = () => {
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
         selectedStudentIds={selectedStudentIds}
-        defaultScope={selectedStudentIds.length > 0 ? (selectedStudentIds.length === 1 ? 'SINGLE' : 'SELECTED') : 'CLASS'}
+        filteredStudentIds={filteredStudents.map(student => student._id)}
+        defaultScope={
+          selectedStudentIds.length > 0
+            ? (selectedStudentIds.length === 1 ? 'SINGLE' : 'SELECTED')
+            : 'FILTERED'
+        }
       />
 
     </div>
