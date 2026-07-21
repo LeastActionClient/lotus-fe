@@ -1,14 +1,13 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowUpCircle, DollarSign, FileText, TrendingUp, Users } from 'lucide-react';
+
+import { ArrowUpCircle, Calendar, DollarSign, FileText, IndianRupee, TrendingUp, Users } from 'lucide-react';
 import api from '../services/api';
 import { useDashboardOverviewQuery, useQueryInvalidator } from '../hooks/useSchoolQueries';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
-import { Users, FileText, IndianRupee, TrendingUp, ArrowUpCircle, Calendar } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { PageLoader } from '../components/ui/Spinner';
 import { toastError, toastSuccess, toastWarning } from '../services/toastService';
 import { useConfirm } from '../components/ui/ConfirmDialog';
