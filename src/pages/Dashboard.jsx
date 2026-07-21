@@ -191,7 +191,7 @@ const Dashboard = () => {
             <FileText className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-gray-900">{stats.applications}</div>
+            <div className="text-2xl sm:text-3xl font-bold text-gray-900 break-words">{stats.applications}</div>
             <div className="mt-2 flex gap-4">
               <p className="rounded-full bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-600">Pending: {stats.pendingApplications}</p>
               <p className="rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-600">Approved: {stats.approvedApplications}</p>
@@ -205,7 +205,7 @@ const Dashboard = () => {
             <Users className="h-4 w-4 text-emerald-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-gray-900">{stats.students}</div>
+            <div className="text-2xl sm:text-3xl font-bold text-gray-900 break-words">{stats.students}</div>
             <p className="mt-1 text-xs text-gray-500">Currently active enrolled students</p>
           </CardContent>
         </Card>
@@ -216,7 +216,7 @@ const Dashboard = () => {
             <IndianRupee className="h-4 w-4 text-orange-600 " />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-gray-900">₹{stats.collections.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+            <div className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 break-words">₹{stats.collections.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
             <p className="mt-2 flex items-center text-xs text-gray-500">
               <TrendingUp className="mr-1 h-3 w-3" />
               Collected through fees
@@ -230,7 +230,7 @@ const Dashboard = () => {
             <Users className="h-4 w-4 text-violet-700" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-gray-900">{stats.RTEStudents}</div>
+            <div className="text-2xl sm:text-3xl font-bold text-gray-900 break-words">{stats.RTEStudents}</div>
             <p className="mt-1 text-xs text-gray-500">Students marked as RTE</p>
           </CardContent>
         </Card>
@@ -241,7 +241,7 @@ const Dashboard = () => {
             <Calendar className="h-4 w-4 text-amber-700" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{activeYear?.year || 'None'}</div>
+            <div className="text-xl sm:text-2xl font-bold text-gray-900 break-words">{activeYear?.year || 'None'}</div>
             <p className="mt-1 text-xs text-gray-500">
               <span
                 className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
