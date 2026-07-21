@@ -203,7 +203,6 @@ const OldStudents = () => {
     graduated: cohortStudents.filter(s => s.studentStatus === 'Graduated').length,
     transferred: cohortStudents.filter(s => s.studentStatus === 'Transferred').length,
     discontinued: cohortStudents.filter(s => s.studentStatus === 'Discontinued').length,
-    leftSchool: cohortStudents.filter(s => s.studentStatus === 'Left School').length,
     pendingFees: cohortStudents.filter(s => getStudentTotalPending(s) > 0).length,
   };
   const totalPages = Math.max(1, Math.ceil(filteredStudents.length / itemsPerPage));
@@ -243,7 +242,7 @@ const OldStudents = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <Card className="bg-white border-gray-200">
           <CardContent className="p-4 flex flex-col items-center text-center">
             <Users className="h-6 w-6 text-blue-500 mb-2" />
@@ -270,13 +269,6 @@ const OldStudents = () => {
             <XCircle className="h-6 w-6 text-red-500 mb-2" />
             <p className="text-xs text-gray-500 font-medium">Discontinued</p>
             <p className="text-2xl font-bold text-gray-900">{stats.discontinued}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-white border-gray-200">
-          <CardContent className="p-4 flex flex-col items-center text-center">
-            <UserMinus className="h-6 w-6 text-orange-500 mb-2" />
-            <p className="text-xs text-gray-500 font-medium">Left School</p>
-            <p className="text-2xl font-bold text-gray-900">{stats.leftSchool}</p>
           </CardContent>
         </Card>
         <Card className="bg-white border-gray-200 border-l-4 border-l-orange-500">
@@ -337,7 +329,6 @@ const OldStudents = () => {
                   <option value="Completed">Completed</option>
                   <option value="Transferred">Transferred</option>
                   <option value="Discontinued">Discontinued</option>
-                  <option value="Left School">Left School</option>
                   <option value="Other">Other</option>
                 </select>
               </div>
@@ -462,7 +453,7 @@ const OldStudents = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedStudents.map(student => {
+                  paginatedStudents.map((student, index) => {
                     const totalPending = getStudentTotalPending(student);
                     const totalPaid = getStudentTotalPaid(student);
                     const totalFee = getStudentTotalFee(student);
@@ -501,10 +492,31 @@ const OldStudents = () => {
                         <TableCell>{new Date(student.updatedAt).toLocaleDateString()}</TableCell>
                         <TableCell className="text-right font-medium">₹{totalFee.toFixed(2)}</TableCell>
                         <TableCell className="text-right text-emerald-600">₹{totalPaid.toFixed(2)}</TableCell>
-                        <TableCell className={`text-right font-bold ${totalPending > 0 ? 'text-red-600' : 'text-gray-500'}`}>
-                          ₹{totalPending.toFixed(2)}
-                          {previousPending > 0 && (
-                            <span className="block text-xs text-purple-600 font-normal">(includes ₹{previousPending.toFixed(2)} carry-over)</span>
+                        <TableCell className="text-right font-bold">
+                          {totalPending > 0 ? (
+                            <div className="relative group inline-block">
+                              <span className="text-red-600 cursor-pointer border-b border-dashed border-red-400 hover:text-red-700">
+                                ₹{totalPending.toFixed(2)}
+                              </span>
+                              <div className={`absolute right-0 ${index < 2 ? 'top-full mt-2' : 'bottom-full mb-2'} z-50 invisible group-hover:visible bg-white text-gray-800 text-xs rounded-lg shadow-xl border border-gray-200 p-3 min-w-[220px] pointer-events-none transition-all duration-200`}>
+                                <div className="font-bold border-b border-gray-100 pb-1 mb-1.5 text-gray-700 text-left">
+                                  Pending Fees Breakdown
+                                </div>
+                                <div className="space-y-1.5 max-h-[150px] overflow-y-auto pr-1">
+                                  {(student.studentFees || []).filter(f => f.remainingAmount > 0).map((f, idx) => (
+                                    <div key={idx} className="flex justify-between gap-4 text-left font-normal">
+                                      <span className="text-gray-600">{f.feeCategory?.name || f.feeCategoryId?.name || 'Unknown'}</span>
+                                      <span className="font-semibold text-red-600">₹{f.remainingAmount.toFixed(2)}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              {previousPending > 0 && (
+                                <span className="block text-xs text-purple-600 font-normal">(includes ₹{previousPending.toFixed(2)} carry-over)</span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-gray-500">₹{totalPending.toFixed(2)}</span>
                           )}
                         </TableCell>
                         <TableCell>
@@ -518,12 +530,12 @@ const OldStudents = () => {
                             </span>
                           )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="whitespace-nowrap">
                           {totalPending > 0 ? (
                             <Button 
                               size="sm" 
                               onClick={() => navigate('/dashboard/payments', { state: { studentId: student._id } })}
-                              className="bg-orange-600 hover:bg-orange-700 text-white"
+                              className="bg-orange-600 hover:bg-orange-700 text-white whitespace-nowrap px-3"
                             >
                               Pay Pending
                             </Button>

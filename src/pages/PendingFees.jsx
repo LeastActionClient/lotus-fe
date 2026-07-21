@@ -124,6 +124,9 @@ const PendingFees = () => {
 
   const filteredStudents = useMemo(() => {
     return students.filter(student => {
+      // Exclude students with no assigned fee amount (i.e. not assigned to class)
+      if (getStudentTotalFee(student) <= 0) return false;
+
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         if (!student.studentName?.toLowerCase().includes(q) && !student.admissionNumber?.toLowerCase().includes(q)) {
@@ -445,7 +448,7 @@ const PendingFees = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedStudents.map(student => {
+                  paginatedStudents.map((student, index) => {
                     const totalPending = getStudentTotalPending(student);
                     const totalPaid = getStudentTotalPaid(student);
                     const totalFee = getStudentTotalFee(student);
@@ -506,20 +509,41 @@ const PendingFees = () => {
                             Rs. {currentPending.toFixed(2)}
                           </span>
                         </TableCell>
-                        <TableCell className={`text-right font-bold ${totalPending > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                          Rs. {totalPending.toFixed(2)}
+                        <TableCell className="text-right font-bold">
+                          {totalPending > 0 ? (
+                            <div className="relative group inline-block">
+                              <span className="text-red-600 cursor-pointer border-b border-dashed border-red-400 hover:text-red-700">
+                                Rs. {totalPending.toFixed(2)}
+                              </span>
+                              <div className={`absolute right-0 ${index < 2 ? 'top-full mt-2' : 'bottom-full mb-2'} z-50 invisible group-hover:visible bg-white text-gray-800 text-xs rounded-lg shadow-xl border border-gray-200 p-3 min-w-[220px] pointer-events-none transition-all duration-200`}>
+                                <div className="font-bold border-b border-gray-100 pb-1 mb-1.5 text-gray-700 text-left">
+                                  Pending Fees Breakdown
+                                </div>
+                                <div className="space-y-1.5 max-h-[150px] overflow-y-auto pr-1">
+                                  {(student.studentFees || []).filter(f => f.remainingAmount > 0).map((f, idx) => (
+                                    <div key={idx} className="flex justify-between gap-4 text-left font-normal">
+                                      <span className="text-gray-600">{f.feeCategory?.name || f.feeCategoryId?.name || 'Unknown'}</span>
+                                      <span className="font-semibold text-red-600">Rs. {f.remainingAmount.toFixed(2)}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-green-600">Rs. {totalPending.toFixed(2)}</span>
+                          )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="whitespace-nowrap">
                           {totalPending > 0 ? (
                             <Button
                               size="sm"
                               onClick={() => navigate('/dashboard/payments', { state: { studentId: student._id } })}
-                              className="bg-orange-600 hover:bg-orange-700 text-white"
+                              className="bg-orange-600 hover:bg-orange-700 text-white whitespace-nowrap px-3"
                             >
                               Pay Pending
                             </Button>
                           ) : (
-                            <span className="text-sm font-semibold text-green-600 px-3 flex items-center gap-1">
+                            <span className="text-sm font-semibold text-green-600 px-3 flex items-center gap-1 whitespace-nowrap">
                               <CheckCircle size={16} /> Paid
                             </span>
                           )}
