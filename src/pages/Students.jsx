@@ -14,6 +14,7 @@ import { PageLoader } from '../components/ui/Spinner';
 import ExportModal from '../components/ExportModal';
 import { toastError } from '../services/toastService';
 import { useConfirm } from '../components/ui/ConfirmDialog';
+import { useClassesQuery, useQueryInvalidator, useStudentsQuery } from '../hooks/useSchoolQueries';
 
 
 const Students = () => {
@@ -22,6 +23,9 @@ const Students = () => {
   const location = useLocation();
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
+  const { data: studentsData = [], isLoading: studentsLoading } = useStudentsQuery();
+  const { data: classesData = [], isLoading: classesLoading } = useClassesQuery();
+  const { invalidateStudents, invalidateClasses } = useQueryInvalidator();
   
   const [viewMode, setViewMode] = useState('CLASSES');
   const [selectedClass, setSelectedClass] = useState(null);
@@ -29,7 +33,6 @@ const Students = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [feeFilter, setFeeFilter] = useState('ALL');
   const [studentGroupFilter, setStudentGroupFilter] = useState('All');
-  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -54,6 +57,14 @@ const Students = () => {
   const [selectedStudentIds, setSelectedStudentIds] = useState([]);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
+  useEffect(() => {
+    setStudents(studentsData);
+  }, [studentsData]);
+
+  useEffect(() => {
+    setClasses(classesData);
+  }, [classesData]);
+
   const openViewModal = async (student) => {
     setSelectedStudent(student);
     setIsViewModalOpen(true);
@@ -70,29 +81,12 @@ const Students = () => {
   };
 
   const fetchStudents = async () => {
-    try {
-      const res = await api.get('/students');
-      setStudents(res.data);
-    } catch (error) {
-      console.error("Error fetching students", error);
-    }
+    await invalidateStudents();
   };
 
   const fetchClasses = async () => {
-    try {
-      const res = await api.get('/classes');
-      setClasses(res.data);
-    } catch (error) {
-      console.error("Error fetching classes", error);
-    } finally {
-      setLoading(false);
-    }
+    await invalidateClasses();
   };
-
-  useEffect(() => {
-    fetchStudents();
-    fetchClasses();
-  }, []);
 
   useEffect(() => {
     if (classes.length > 0 && location.state) {
@@ -282,7 +276,7 @@ const Students = () => {
     );
   };
 
-  if (loading) return <PageLoader />;
+  if (studentsLoading || classesLoading) return <PageLoader />;
 
   const handleSearch = (e) => {
     const val = e.target.value;

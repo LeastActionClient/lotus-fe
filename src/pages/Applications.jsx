@@ -11,6 +11,7 @@ import { FileText, Plus, CheckCircle, Trash2, Settings } from 'lucide-react';
 import { PageLoader } from '../components/ui/Spinner';
 import { toastError, toastSuccess } from '../services/toastService';
 import { useConfirm } from '../components/ui/ConfirmDialog';
+import { useApplicationsQuery, useQueryInvalidator } from '../hooks/useSchoolQueries';
 
 const Applications = () => {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -22,7 +23,7 @@ const Applications = () => {
   const [selectedAppId, setSelectedAppId] = useState(null);
   const [assignSection, setAssignSection] = useState('');
   const [loading, setLoading] = useState(false);
-  const [pageLoading, setPageLoading] = useState(true);
+  
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [customIds, setCustomIds] = useState({ nextApplicationNo: '', applicationFeeAmount: '' });
@@ -35,6 +36,8 @@ const Applications = () => {
     feePaid: false,
     adminNo: ''
   });
+  const { data: applicationsData = [], isLoading } = useApplicationsQuery();
+  const { invalidateApplications } = useQueryInvalidator();
 
   const handleNewApplication = async () => {
     setIsModalOpen(true);
@@ -53,25 +56,17 @@ const Applications = () => {
   const toggleFeePaid = async (id, currentStatus) => {
     try {
       await api.put(`/applications/${id}/fee-status`, { feePaid: !currentStatus });
-      fetchApplications();
+      invalidateApplications();
     } catch (error) {
       console.error("Error updating fee status", error);
     }
   };
 
-  const fetchApplications = async () => {
-    try {
-      const res = await api.get('/applications');
-      setApplications(res.data);
-    } catch (error) {
-      console.error("Error fetching applications", error);
-    } finally {
-      setPageLoading(false);
-    }
-  };
+  useEffect(() => {
+    setApplications(applicationsData);
+  }, [applicationsData]);
 
   useEffect(() => {
-    fetchApplications();
     fetchCustomIds();
   }, []);
 
@@ -130,7 +125,7 @@ const Applications = () => {
         feePaid: false,
         adminNo: ''
       });
-      fetchApplications();
+      invalidateApplications();
       toastSuccess('Application submitted successfully.');
     } catch (error) {
       console.error("Error creating application", error);
@@ -152,7 +147,7 @@ const Applications = () => {
     try {
       await api.put(`/applications/${selectedAppId}/approve`, { section: assignSection });
       setIsApproveModalOpen(false);
-      fetchApplications();
+      invalidateApplications();
       toastSuccess('Application approved successfully.');
     } catch (error) {
       console.error("Error approving application", error);
@@ -172,7 +167,7 @@ const Applications = () => {
   const totalPages = Math.max(1, Math.ceil(filteredApplications.length / itemsPerPage));
   const paginatedApplications = filteredApplications.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  if (pageLoading) return <PageLoader />;
+  if (isLoading && applications.length === 0) return <PageLoader />;
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -276,7 +271,7 @@ const Applications = () => {
 
                           try {
                             await api.delete(`/applications/${app._id || app.id}`);
-                            fetchApplications();
+                            invalidateApplications();
                             toastSuccess('Application deleted successfully.');
                           } catch(e) { toastError('Error deleting application'); }
                         }}>

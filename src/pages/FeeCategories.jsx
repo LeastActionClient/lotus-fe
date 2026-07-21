@@ -13,6 +13,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { PageLoader } from '../components/ui/Spinner';
 import { toastError, toastSuccess, toastWarning } from '../services/toastService';
 import { useConfirm } from '../components/ui/ConfirmDialog';
+import { useClassesQuery, useFeeCategoriesQuery, useQueryInvalidator, useStudentsQuery } from '../hooks/useSchoolQueries';
 
 const FeeCategories = () => {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -20,6 +21,10 @@ const FeeCategories = () => {
   const [categories, setCategories] = useState([]);
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
+  const { data: categoriesData = [], isLoading: categoriesLoading } = useFeeCategoriesQuery();
+  const { data: studentsData = [], isLoading: studentsLoading } = useStudentsQuery();
+  const { data: classesData = [], isLoading: classesLoading } = useClassesQuery();
+  const { invalidateFeeCategories, invalidateStudents, invalidateClasses } = useQueryInvalidator();
   
   const [isNewCatModalOpen, setIsNewCatModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -52,31 +57,24 @@ const FeeCategories = () => {
   const [bulkFees, setBulkFees] = useState({});
   const [selectedBulkCats, setSelectedBulkCats] = useState({});
   const [isEditingBulkFees, setIsEditingBulkFees] = useState(true);
-  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
   const fetchData = async () => {
-    try {
-      const [catRes, stuRes, classRes] = await Promise.all([
-        api.get('/fees/categories'),
-        api.get('/students'),
-        api.get('/classes')
-      ]);
-      console.log("[RUNTIME DEBUG Step 11 - FeeCategories UI] Refetched categories response from API:", catRes.data);
-      setCategories(catRes.data);
-      setStudents(stuRes.data);
-      setClasses(classRes.data);
-    } catch (error) {
-      console.error("Error fetching data", error);
-    } finally {
-      setLoading(false);
-    }
+    await Promise.all([invalidateFeeCategories(), invalidateStudents(), invalidateClasses()]);
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    setCategories(categoriesData);
+  }, [categoriesData]);
+
+  useEffect(() => {
+    setStudents(studentsData);
+  }, [studentsData]);
+
+  useEffect(() => {
+    setClasses(classesData);
+  }, [classesData]);
 
   const initializeBulkAssign = (clsName, secName) => {
     let defaultFees = {};
@@ -317,7 +315,8 @@ const FeeCategories = () => {
     setCurrentPage(1);
   }, [categories.length]);
 
-  if (loading) return <PageLoader />;
+  const pageLoading = categoriesLoading || studentsLoading || classesLoading;
+  if (pageLoading) return <PageLoader />;
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">

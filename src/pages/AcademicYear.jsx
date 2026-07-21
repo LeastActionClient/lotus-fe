@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import api from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
@@ -9,32 +9,22 @@ import { Label } from '../components/ui/Label';
 import { Calendar, Plus, CheckCircle, AlertCircle, PlayCircle, ToggleRight } from 'lucide-react';
 import { PageLoader } from '../components/ui/Spinner';
 import { toastError, toastSuccess, toastWarning } from '../services/toastService';
+import { useAcademicYearsQuery, useQueryInvalidator } from '../hooks/useSchoolQueries';
 
 const AcademicYearPage = () => {
   const [academicYears, setAcademicYears] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   const [formData, setFormData] = useState({
     year: '',
     status: 'Active'
   });
-
-  const fetchAcademicYears = async () => {
-    try {
-      const res = await api.get('/academic-years');
-      setAcademicYears(res.data);
-    } catch (error) {
-      console.error('Error fetching academic years:', error);
-      toastError('Failed to fetch academic years');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: academicYearsData = [], isLoading } = useAcademicYearsQuery();
+  const { invalidateAcademicYears, invalidateDashboard } = useQueryInvalidator();
 
   useEffect(() => {
-    fetchAcademicYears();
-  }, []);
+    setAcademicYears(academicYearsData);
+  }, [academicYearsData]);
 
   const currentActiveYear = academicYears.find(y => y.status === 'Active');
 
@@ -73,7 +63,7 @@ const AcademicYearPage = () => {
       toastSuccess('Academic Year created successfully.');
       setIsModalOpen(false);
       setFormData({ year: '', status: 'Active' });
-      fetchAcademicYears();
+      await Promise.all([invalidateAcademicYears(), invalidateDashboard()]);
     } catch (error) {
       console.error('Error saving academic year:', error);
       toastError(error.response?.data?.error || 'Failed to save Academic Year');
@@ -87,14 +77,14 @@ const AcademicYearPage = () => {
     try {
       await api.put(`/academic-years/${id}/status`, { status: nextStatus });
       toastSuccess(`Academic Year status updated to ${nextStatus}.`);
-      fetchAcademicYears();
+      await Promise.all([invalidateAcademicYears(), invalidateDashboard()]);
     } catch (error) {
       console.error('Error updating status:', error);
       toastError(error.response?.data?.error || 'Failed to update Academic Year status');
     }
   };
 
-  if (loading) return <PageLoader text="Loading Academic Years..." />;
+  if (isLoading) return <PageLoader text="Loading Academic Years..." />;
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">

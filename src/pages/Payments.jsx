@@ -14,6 +14,7 @@ import { PageLoader } from '../components/ui/Spinner';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toastError, toastSuccess, toastWarning } from '../services/toastService';
 import { useConfirm } from '../components/ui/ConfirmDialog';
+import { useFeeCategoriesQuery, usePaymentsQuery, useQueryInvalidator, useStudentQuery, useStudentsQuery } from '../hooks/useSchoolQueries';
 
 const Payments = () => {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -25,12 +26,16 @@ const Payments = () => {
   const [students, setStudents] = useState([]);
   const [feeCategories, setFeeCategories] = useState([]);
   const [selectedStudentId, setSelectedStudentId] = useState('');
+  const { data: paymentsData = [], isLoading: paymentsLoading } = usePaymentsQuery();
+  const { data: studentsData = [], isLoading: studentsLoading } = useStudentsQuery();
+  const { data: feeCategoriesData = [], isLoading: feeCategoriesLoading } = useFeeCategoriesQuery();
+  const { data: selectedStudentData } = useStudentQuery(selectedStudentId, Boolean(selectedStudentId));
+  const { invalidatePayments, invalidateStudents, invalidateFeeCategories } = useQueryInvalidator();
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedSection, setSelectedSection] = useState('');
   const [studentFees, setStudentFees] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [pageLoading, setPageLoading] = useState(true);
   const [filterCategory, setFilterCategory] = useState('All');
   const [filterTableClass, setFilterTableClass] = useState('All');
   const [filterTableSection, setFilterTableSection] = useState('All');
@@ -46,103 +51,70 @@ const Payments = () => {
   });
   const [payingAmounts, setPayingAmounts] = useState({});
 
-  const fetchData = async () => {
-    try {
-      const [payRes, stuRes, catRes] = await Promise.all([
-        api.get('/payments'),
-        api.get('/students'),
-        api.get('/fees/categories')
-      ]);
-      setPayments(payRes.data);
-      setStudents(stuRes.data);
-      setFeeCategories(catRes.data);
-    } catch (error) {
-      console.error("Error fetching data", error);
-    } finally {
-      setPageLoading(false);
-    }
-  };
+  useEffect(() => {
+    setPayments(paymentsData);
+  }, [paymentsData]);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    setStudents(studentsData);
+  }, [studentsData]);
+
+  useEffect(() => {
+    setFeeCategories(feeCategoriesData);
+  }, [feeCategoriesData]);
 
   useEffect(() => {
     const sid = incomingStudentId.current;
     if (!sid) return;
-    const loadIncomingStudent = async () => {
-      try {
-        const res = await api.get(`/students/${sid}`);
-        const student = res.data;
-        setStudents(prev => {
-          const idx = prev.findIndex(s => (s._id || s.id) === sid);
-          if (idx >= 0) {
-            const updated = [...prev];
-            updated[idx] = student;
-            return updated;
-          }
-          return [student, ...prev];
-        });
-        setSelectedStudentId(sid);
-        setIsModalOpen(true);
-        window.history.replaceState({}, document.title);
-      } catch (err) {
-        console.error('Failed to load student for payment', err);
-      }
-    };
-    loadIncomingStudent();
+    setSelectedStudentId(sid);
+    setIsModalOpen(true);
+    window.history.replaceState({}, document.title);
   }, []);
 
   useEffect(() => {
-    if (selectedStudentId) {
-      api.get(`/students/${selectedStudentId}`).then(res => {
-        const student = res.data;
-        if (student && student.studentFees) {
-          const pendingFees = student.studentFees.filter((f) => {
-            const isFullyPaid = (f.paidAmount || 0) > 0 && (f.remainingAmount === 0);
-            return !isFullyPaid;
-          }).map(f => {
-            return {
-              ...f,
-              lessAmount: f.lessAmount || 0,
-              concessionStatus: f.concessionStatus || 'None'
-            };
-          });
+    if (selectedStudentId && selectedStudentData) {
+      const student = selectedStudentData;
+      if (student.studentFees) {
+        const pendingFees = student.studentFees.filter((f) => {
+          const isFullyPaid = (f.paidAmount || 0) > 0 && (f.remainingAmount === 0);
+          return !isFullyPaid;
+        }).map((f) => ({
+          ...f,
+          lessAmount: f.lessAmount || 0,
+          concessionStatus: f.concessionStatus || 'None'
+        }));
 
-          setStudentFees(pendingFees);
-          const allPendingIds = pendingFees.map(f => f._id || f.id);
-          
-          const initialAmounts = {};
-          pendingFees.forEach(f => {
-            const dynamicRemaining = Math.max(0, f.totalAmount - (f.concessionStatus === 'Active' ? f.lessAmount : 0) - (f.paidAmount || 0));
-            initialAmounts[f._id || f.id] = dynamicRemaining.toString();
-          });
-          setPayingAmounts(initialAmounts);
+        setStudentFees(pendingFees);
+        const allPendingIds = pendingFees.map(f => f._id || f.id);
 
-          const totalAmt = pendingFees.reduce((sum, f) => {
-            const dynamicRemaining = Math.max(0, f.totalAmount - (f.concessionStatus === 'Active' ? f.lessAmount : 0) - (f.paidAmount || 0));
-            return sum + dynamicRemaining;
-          }, 0);
+        const initialAmounts = {};
+        pendingFees.forEach(f => {
+          const dynamicRemaining = Math.max(0, f.totalAmount - (f.concessionStatus === 'Active' ? f.lessAmount : 0) - (f.paidAmount || 0));
+          initialAmounts[f._id || f.id] = dynamicRemaining.toString();
+        });
+        setPayingAmounts(initialAmounts);
 
-          setPaymentData(prev => ({
-            ...prev,
-            studentFeeIds: allPendingIds,
-            amount: totalAmt.toString()
-          }));
-        } else {
-          setStudentFees([]);
-          setPayingAmounts({});
-          setPaymentData(prev => ({...prev, studentFeeIds: [], amount: '0'}));
-        }
-      }).catch(err => {
-        console.error("Error fetching fresh student fees for payment modal:", err);
-      });
+        const totalAmt = pendingFees.reduce((sum, f) => {
+          const dynamicRemaining = Math.max(0, f.totalAmount - (f.concessionStatus === 'Active' ? f.lessAmount : 0) - (f.paidAmount || 0));
+          return sum + dynamicRemaining;
+        }, 0);
+
+        setPaymentData(prev => ({
+          ...prev,
+          studentFeeIds: allPendingIds,
+          amount: totalAmt.toString()
+        }));
+      } else {
+        setStudentFees([]);
+        setPayingAmounts({});
+        setPaymentData(prev => ({...prev, studentFeeIds: [], amount: '0'}));
+      }
     } else {
       setStudentFees([]);
       setPayingAmounts({});
       setPaymentData(prev => ({...prev, studentFeeIds: [], amount: '0'}));
     }
-  }, [selectedStudentId]);
+  }, [selectedStudentId, selectedStudentData]);
 
   const getDynamicRemaining = (f) => {
     if (!f) return 0;
@@ -166,7 +138,7 @@ const Payments = () => {
 
   const getFeeRemainingDisplay = (f) => (f ? getDynamicRemaining(f) : 0);
 
-  const selectedStudent = students.find(s => (s._id || s.id) === selectedStudentId);
+  const selectedStudent = selectedStudentData || students.find(s => (s._id || s.id) === selectedStudentId);
   const isPreviousYearFee = (f, student) => {
     if (!student) return false;
     return (f.academicYear && student.academicYear && f.academicYear !== student.academicYear) || 
@@ -220,7 +192,8 @@ const Payments = () => {
         remarks: ''
       });
       setPayingAmounts({});
-      fetchData();
+      invalidatePayments();
+      invalidateStudents();
       toastSuccess('Payment recorded successfully.');
     } catch (error) {
       console.error("Error creating payment", error);
@@ -349,6 +322,7 @@ const Payments = () => {
     setCurrentPage(1);
   }, [filterCategory, filterTableClass, filterTableSection, payments.length]);
 
+  const pageLoading = paymentsLoading || studentsLoading || feeCategoriesLoading;
   if (pageLoading) return <PageLoader />;
 
   const studentOptions = students
@@ -515,7 +489,8 @@ const Payments = () => {
 
                           try {
                             await api.delete(`/payments/${payment._id || payment.id}`);
-                            fetchData();
+                            invalidatePayments();
+                            invalidateStudents();
                             toastSuccess('Payment deleted successfully.');
                           } catch(e) { toastError('Error deleting payment'); }
                         }}>

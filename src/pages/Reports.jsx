@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Download } from 'lucide-react';
 import { Button } from '../components/ui/Button';
-import api from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { PieChart, TrendingUp, Calendar, LayoutList } from 'lucide-react';
 import { PageLoader } from '../components/ui/Spinner';
+import { useFeeCategoriesQuery, usePendingFeesQuery, useReportDataQuery } from '../hooks/useSchoolQueries';
 
 const Reports = () => {
   const [daily, setDaily] = useState([]);
   const [pending, setPending] = useState([]);
   const [categoryWise, setCategoryWise] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   const [timeframe, setTimeframe] = useState('daily');
   
@@ -20,56 +19,39 @@ const Reports = () => {
 
   const [feeCategories, setFeeCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('ALL');
+  const { data: reportData = {}, isLoading: reportLoading } = useReportDataQuery(timeframe, startDate, endDate);
+  const { data: pendingData = {}, isLoading: pendingLoading } = usePendingFeesQuery();
+  const { data: feeCategoriesData = [], isLoading: categoriesLoading } = useFeeCategoriesQuery();
 
   useEffect(() => {
-    const fetchReports = async () => {
-      setLoading(true);
-      try {
-        let collectionEndpoint = `/reports/${timeframe}-collection`;
-        
-        if (timeframe === 'custom') {
-          collectionEndpoint = `/reports/custom-collection?startDate=${startDate}&endDate=${endDate}`;
-        }
+    const rawPayments = reportData.payments || [];
+    const processedPayments = [];
 
-        const [collectionRes, pendingRes, categoriesRes] = await Promise.all([
-          api.get(collectionEndpoint),
-          api.get('/reports/pending-fees'),
-          api.get('/fees/categories')
-        ]);
-        
-        const rawPayments = collectionRes.data.payments || [];
-        const processedPayments = [];
-        
-        rawPayments.forEach(p => {
-          if (p.feeAllocations && p.feeAllocations.length > 0) {
-            p.feeAllocations.forEach(alloc => {
-              processedPayments.push({
-                ...p,
-                amount: alloc.amount,
-                studentFeeId: alloc.studentFeeId,
-                isFlattened: true
-              });
-            });
-          } else {
-            processedPayments.push(p);
-          }
+    rawPayments.forEach((payment) => {
+      if (payment.feeAllocations && payment.feeAllocations.length > 0) {
+        payment.feeAllocations.forEach((alloc) => {
+          processedPayments.push({
+            ...payment,
+            amount: alloc.amount,
+            studentFeeId: alloc.studentFeeId,
+            isFlattened: true
+          });
         });
-
-        setDaily(processedPayments);
-        setPending(pendingRes.data.pendingFees || []);
-        setFeeCategories(categoriesRes.data || []);
-      } catch (error) {
-        console.error("Error fetching reports", error);
-      } finally {
-        setLoading(false);
+      } else {
+        processedPayments.push(payment);
       }
-    };
-    
-    // For custom timeframe, only fetch if both dates are set
-    if (timeframe !== 'custom' || (startDate && endDate)) {
-      fetchReports();
-    }
-  }, [timeframe, startDate, endDate]);
+    });
+
+    setDaily(processedPayments);
+  }, [reportData]);
+
+  useEffect(() => {
+    setPending(pendingData.pendingFees || []);
+  }, [pendingData]);
+
+  useEffect(() => {
+    setFeeCategories(feeCategoriesData || []);
+  }, [feeCategoriesData]);
 
   const filteredCollections = daily.filter(item => {
     if (selectedCategory === 'ALL') return true;
@@ -105,7 +87,8 @@ const Reports = () => {
     link.click();
   };
 
-  if (loading && daily.length === 0) return <PageLoader text="Loading reports..." />;
+  const isPageLoading = reportLoading || pendingLoading || categoriesLoading;
+  if (isPageLoading && daily.length === 0) return <PageLoader text="Loading reports..." />;
 
   const totalPending = pending.reduce((sum, item) => sum + (item.remainingAmount || 0), 0);
 

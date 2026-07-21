@@ -18,6 +18,9 @@ const DashboardLayout = () => {
     } catch (e) {
       console.error('Logout error', e);
     }
+    if (typeof api.clearCache === 'function') {
+      api.clearCache();
+    }
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('user');
     navigate('/', { replace: true });
