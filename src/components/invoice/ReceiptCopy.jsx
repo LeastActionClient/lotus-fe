@@ -1,5 +1,5 @@
 import React from 'react';
-import logo from '../../assets/logo.png';
+import { logoBase64 } from './logoBase64';
 import { calculateReceiptTotals, formatCurrency, formatReceiptDate, groupFeeAllocations } from './invoiceUtils';
 
 const ReceiptCopy = ({ payment }) => {
@@ -15,7 +15,7 @@ const ReceiptCopy = ({ payment }) => {
     <section className="receipt-copy flex h-[95mm] flex-col overflow-hidden px-2 py-2">
       <div className="flex items-start justify-between gap-2 border-b border-slate-300 pb-1">
         <div className="flex items-start gap-2">
-          <img src={logo} alt="Kasthuri School Logo" className="mt-0.5 h-10 w-10 object-contain" />
+          <img src={logoBase64} alt="Kasthuri School Logo" className="mt-0.5 w-12 h-auto object-contain" />
           <div className="space-y-0.5">
             <h2 className="text-[12px] font-bold uppercase leading-tight text-slate-900">
               KASTHURI NURSERY AND PRIMARY SCHOOL

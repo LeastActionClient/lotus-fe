@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
 import { Card, CardContent } from '../components/ui/Card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
-import { Plus, Download, Trash2, DollarSign, Printer } from 'lucide-react';
+import { Plus, Download, Trash2, IndianRupee, Printer } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
@@ -24,6 +24,7 @@ const Payments = () => {
   const [payments, setPayments] = useState([]);
   const [students, setStudents] = useState([]);
   const [feeCategories, setFeeCategories] = useState([]);
+  const [classes, setClasses] = useState([]);
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedSection, setSelectedSection] = useState('');
@@ -48,14 +49,16 @@ const Payments = () => {
 
   const fetchData = async () => {
     try {
-      const [payRes, stuRes, catRes] = await Promise.all([
+      const [payRes, stuRes, catRes, classRes] = await Promise.all([
         api.get('/payments'),
         api.get('/students'),
-        api.get('/fees/categories')
+        api.get('/fees/categories'),
+        api.get('/classes')
       ]);
       setPayments(payRes.data);
       setStudents(stuRes.data);
       setFeeCategories(catRes.data);
+      setClasses(classRes.data);
     } catch (error) {
       console.error("Error fetching data", error);
     } finally {
@@ -255,11 +258,36 @@ const Payments = () => {
     });
   };
 
-  const uniqueClasses = [...new Set(students.map(s => s.currentClass).filter(Boolean))].sort();
-  const uniqueSections = [...new Set(students.filter(s => !selectedClass || s.currentClass === selectedClass).map(s => s.section).filter(Boolean))].sort();
+  const classSortFn = (a, b) => {
+    const preSchoolOrder = { 'pre-kg': 1, 'lkg': 2, 'ukg': 3 };
+    const aNorm = String(a).trim().toLowerCase();
+    const bNorm = String(b).trim().toLowerCase();
+    const isPreA = preSchoolOrder[aNorm];
+    const isPreB = preSchoolOrder[bNorm];
+    if (isPreA && isPreB) return isPreA - isPreB;
+    if (isPreA) return -1;
+    if (isPreB) return 1;
+    const numA = parseInt(aNorm, 10);
+    const numB = parseInt(bNorm, 10);
+    const isNumA = !isNaN(numA);
+    const isNumB = !isNaN(numB);
+    if (isNumA && isNumB) return numA - numB;
+    if (isNumA) return 1;
+    if (isNumB) return -1;
+    return aNorm.localeCompare(bNorm);
+  };
+
+  const uniqueClasses = classes.map(c => c.name).sort(classSortFn);
+  const selectedClassObj = classes.find(c => c.name === selectedClass);
+  const uniqueSections = selectedClassObj 
+    ? (selectedClassObj.sections || []).map(s => s.name).sort() 
+    : [];
   
-  const uniqueTableClasses = [...new Set(payments.map(p => p.studentId?.currentClass).filter(Boolean))].sort();
-  const uniqueTableSections = [...new Set(payments.filter(p => filterTableClass === 'All' || p.studentId?.currentClass === filterTableClass).map(p => p.studentId?.section).filter(Boolean))].sort();
+  const uniqueTableClasses = classes.map(c => c.name).sort(classSortFn);
+  const selectedTableClassObj = classes.find(c => c.name === filterTableClass);
+  const uniqueTableSections = selectedTableClassObj 
+    ? (selectedTableClassObj.sections || []).map(s => s.name).sort() 
+    : [];
   
   const uniqueCategories = [
     ...feeCategories.map(c => c.name)
@@ -296,6 +324,66 @@ const Payments = () => {
     }
 
     return [];
+  };
+
+  const getCategoryDotColorClass = (name) => {
+    const norm = name.toLowerCase();
+    if (norm.includes('term')) {
+      return 'text-blue-500';
+    }
+    if (norm.includes('uniform') || norm.includes('shoe') || norm.includes('book') || norm.includes('note') || norm.includes('verification')) {
+      return 'text-amber-500';
+    }
+    if (norm.includes('activity') || norm.includes('activities')) {
+      return 'text-purple-500';
+    }
+    if (norm.includes('base') || norm.includes('admission') || norm.includes('application')) {
+      return 'text-emerald-500';
+    }
+    return 'text-slate-400';
+  };
+
+  const getPaymentCategoryDetails = (payment) => {
+    let rawDetails = [];
+
+    if (payment.paymentType === 'APPLICATION') {
+      rawDetails = [{ name: 'Application Fee', amount: payment.amount }];
+    } else {
+      const allocations = payment.feeAllocations || [];
+      if (allocations.length > 0) {
+        rawDetails = allocations
+          .map((alloc) => {
+            const feeCategory = alloc.studentFeeId?.feeCategoryId;
+            if (!feeCategory) return null;
+            return {
+              name: feeCategory.name,
+              amount: alloc.amount || 0
+            };
+          })
+          .filter(Boolean);
+      } else {
+        const singleCategory = payment.studentFee?.feeCategory || payment.studentFeeId?.feeCategoryId;
+        if (singleCategory) {
+          rawDetails = [{
+            name: singleCategory.name,
+            amount: payment.amount
+          }];
+        }
+      }
+    }
+
+    const grouped = {};
+    rawDetails.forEach(item => {
+      if (!grouped[item.name]) {
+        grouped[item.name] = 0;
+      }
+      grouped[item.name] += item.amount;
+    });
+
+    return Object.keys(grouped).map(name => ({
+      name,
+      amount: grouped[name]
+    }));
   };
 
   const matchesCategoryFilter = (payment) => {
@@ -364,7 +452,7 @@ const Payments = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900  flex items-center">
-            <DollarSign className="mr-3 text-emerald-600" size={32} />
+            <IndianRupee className="mr-3 text-emerald-600" size={32} />
             Payments & Invoices
           </h1>
           <p className="text-gray-500  mt-2">Record fee collections and generate receipts</p>
@@ -431,7 +519,7 @@ const Payments = () => {
                 <TableHead>Invoice No</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Student</TableHead>
-                <TableHead>Fee Category</TableHead>
+                <TableHead className="w-[220px] min-w-[220px]">Fee Category</TableHead>
                 <TableHead>Amount</TableHead>
                 <TableHead>Method</TableHead>
                 <TableHead>Recorded By</TableHead>
@@ -473,16 +561,20 @@ const Payments = () => {
                         </>
                       )}
                     </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {getPaymentCategoryDescriptors(payment).length > 0 ? (
-                          getPaymentCategoryDescriptors(payment).map((category) => (
-                            <span key={category.id} className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700" title={category.title}>
-                              {category.name}
-                            </span>
+                    <TableCell className="align-top py-3">
+                      <div className="flex flex-col gap-1.5 w-full min-w-[200px]">
+                        {getPaymentCategoryDetails(payment).length > 0 ? (
+                          getPaymentCategoryDetails(payment).map((item, idx) => (
+                            <div key={idx} className="flex justify-between items-center text-xs font-medium text-gray-800 py-0.5">
+                              <div className="flex items-center gap-1.5 min-w-0 pr-2">
+                                <span className={`text-[10px] select-none leading-none ${getCategoryDotColorClass(item.name)}`}>●</span>
+                                <span className="truncate" title={item.name}>{item.name}</span>
+                              </div>
+                              <span className="font-semibold text-gray-950 whitespace-nowrap">₹{item.amount.toFixed(2)}</span>
+                            </div>
                           ))
                         ) : (
-                          <span className="text-gray-500">N/A</span>
+                          <span className="text-gray-400 text-xs">N/A</span>
                         )}
                       </div>
                     </TableCell>

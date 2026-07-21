@@ -4,7 +4,16 @@ import { cn } from './Card';
 
 
 export const Input = React.forwardRef(
-  ({ className, type, ...props }, ref) => {
+  ({ className, type, onWheel, ...props }, ref) => {
+    const handleWheel = (e) => {
+      if (type === 'number') {
+        e.target.blur();
+      }
+      if (onWheel) {
+        onWheel(e);
+      }
+    };
+
     return (
       <input
         type={type}
@@ -13,6 +22,7 @@ export const Input = React.forwardRef(
           className
         )}
         ref={ref}
+        onWheel={handleWheel}
         {...props}
       />
     );

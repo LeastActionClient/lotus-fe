@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import api from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
-import { Users, FileText, DollarSign, TrendingUp, ArrowUpCircle, Calendar } from 'lucide-react';
+import { Users, FileText, IndianRupee, TrendingUp, ArrowUpCircle, Calendar } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
@@ -213,7 +213,7 @@ const Dashboard = () => {
         <Card className="bg-gradient-to-br from-purple-50 to-white">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-orange-600 ">Total Collections</CardTitle>
-            <DollarSign className="h-4 w-4 text-orange-600 " />
+            <IndianRupee className="h-4 w-4 text-orange-600 " />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-gray-900 ">

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Users, FileText, UserPlus, DollarSign, FileCheck, PieChart, LogOut, Printer, Menu, X, Calendar, Percent } from 'lucide-react';
+import { Home, Users, FileText, UserPlus, IndianRupee, FileCheck, PieChart, LogOut, Printer, Menu, X, Calendar, Percent } from 'lucide-react';
 
 import logo from '../assets/logo.png';
 
@@ -54,9 +54,9 @@ const DashboardLayout = () => {
     { name: 'Students', path: '/dashboard/students', icon: <Users size={20} /> },
     { name: 'Academic Year', path: '/dashboard/academic-year', icon: <Calendar size={20} /> },
     { name: 'Old Students', path: '/dashboard/old-students', icon: <Users size={20} /> },
-    { name: 'Pending Fees', path: '/dashboard/pending-fees', icon: <DollarSign size={20} /> },
+    { name: 'Pending Fees', path: '/dashboard/pending-fees', icon: <IndianRupee size={20} /> },
     { name: 'Fee Categories', path: '/dashboard/fee-categories', icon: <FileCheck size={20} /> },
-    { name: 'Payments', path: '/dashboard/payments', icon: <DollarSign size={20} /> },
+    { name: 'Payments', path: '/dashboard/payments', icon: <IndianRupee size={20} /> },
     { name: 'Reports', path: '/dashboard/reports', icon: <PieChart size={20} /> },
     { name: 'Print & Export', path: '/dashboard/print-export', icon: <Printer size={20} /> },
   ];

@@ -85,7 +85,7 @@ const Admissions = () => {
     } else if (validationType === 'bloodGroup') {
       val = val.replace(/[^a-zA-Z\s\-\+]/g, '');
     }
-    const limit = maxLen ?? (field === 'aadhaarNumber' ? 12 : (field === 'emisNumber' || field === 'emisNo') ? 10 : (field === 'fatherPhone' || field === 'motherPhone' || field === 'whatsappNumber') ? 10 : null);
+    const limit = maxLen ?? (field === 'pincode' ? 6 : field === 'aadhaarNumber' ? 12 : (field === 'emisNumber' || field === 'emisNo') ? 10 : (field === 'fatherPhone' || field === 'motherPhone' || field === 'whatsappNumber') ? 10 : null);
     if (limit && val.length > limit) {
       val = val.slice(0, limit);
     }
@@ -361,7 +361,8 @@ const Admissions = () => {
         address: data.address || '',
         city: data.city || '',
         state: data.state || '',
-        pincode: data.pincode || ''
+        pincode: data.pincode || '',
+        academicYear: data.academicYear || ''
       });
       setSelectedStudent(student);
       setIsEditing(true);
@@ -445,6 +446,7 @@ const Admissions = () => {
         city: editForm.city || '',
         state: editForm.state || '',
         pincode: editForm.pincode || '',
+        academicYear: editForm.academicYear || '',
         includedChargesIds,
         activitiesIds,
         admissionDate: fullStudentData.admissionDate ? fullStudentData.admissionDate.split('T')[0] : ''
@@ -827,7 +829,7 @@ const Admissions = () => {
                 </div>
                 <div className="space-y-2">
                   <Label>Caste</Label>
-                  <Input name="caste" value={editForm.caste} onChange={handleEditChange} maxLength={50} placeholder="e.g. BC, MBC" />
+                  <Input name="caste" value={editForm.caste} onChange={handleEditChange} maxLength={50} />
                 </div>
                 <div className="space-y-2">
                   <Label>Nationality</Label>
@@ -917,7 +919,7 @@ const Admissions = () => {
                   </div>
                   <div className="space-y-2">
                     <Label>Pincode</Label>
-                    <Input name="pincode" value={editForm.pincode} onChange={handleEditChange} />
+                    <Input name="pincode" value={editForm.pincode} onChange={(e) => handleValidatedChange('pincode', e, 'numbers', editForm, setEditForm)} />
                   </div>
                 </div>
               </div>
@@ -1036,7 +1038,7 @@ const Admissions = () => {
               </div>
               <div className="space-y-2">
                 <Label>Caste</Label>
-                <Input value={manualForm.caste} maxLength={50} placeholder="e.g. BC, MBC" onChange={(e) => handleValidatedChange('caste', e, 'letters', manualForm, setManualForm, 50)} />
+                <Input value={manualForm.caste} maxLength={50} onChange={(e) => handleValidatedChange('caste', e, 'letters', manualForm, setManualForm, 50)} />
               </div>
               <div className="space-y-2">
                 <Label>Nationality</Label>
