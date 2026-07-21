@@ -372,15 +372,7 @@ const Concessions = () => {
             Super Admin dashboard to assign, view, and audit fee concessions. Original fees are preserved.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            onClick={fetchConcessionsHistory}
-            variant="ghost"
-            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-colors border border-gray-200"
-            title="Refresh List"
-          >
-            <RefreshCw size={18} />
-          </Button>
+        <div className="flex items-center gap-3">
           {isSuperAdmin && (
             <Button
               onClick={handleOpenAssignModal}
@@ -529,7 +521,7 @@ const Concessions = () => {
             <span className="font-medium">{totalHistoryItems}</span> concessions
           </p>
           <Pagination
-            currentPage={historyPage}
+            page={historyPage}
             totalPages={totalHistoryPages}
             onPageChange={(page) => setHistoryPage(page)}
           />
@@ -782,8 +774,8 @@ const Concessions = () => {
                   </div>
                 </div>
 
-                {/* Reason & Remarks */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Reason */}
+                <div className="grid grid-cols-1 gap-5">
                   <div className="space-y-1.5">
                     <Label htmlFor="modalReason" className="text-gray-700 font-semibold">Concession Reason *</Label>
                     <Input
@@ -793,17 +785,6 @@ const Concessions = () => {
                       onChange={(e) => setModalReason(e.target.value)}
                       disabled={!modalFeeCategory}
                       required
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="modalRemarks" className="text-gray-700 font-semibold">Remarks (Optional)</Label>
-                    <Input
-                      id="modalRemarks"
-                      placeholder="Optional remarks"
-                      value={modalRemarks}
-                      disabled={!modalFeeCategory}
-                      onChange={(e) => setModalRemarks(e.target.value)}
                     />
                   </div>
                 </div>

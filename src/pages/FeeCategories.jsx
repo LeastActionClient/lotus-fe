@@ -645,11 +645,15 @@ const FeeCategories = () => {
                             <TableCell>
                               {!isUniform ? (
                                 <Input 
-                                  type="number" 
-                                  min="0" step="0.01"
+                                  type="text"
+                                  inputMode="numeric"
+                                  pattern="[0-9]*"
                                   placeholder="e.g., 5000"
                                   value={bulkFees[cat._id] || ''}
-                                  onChange={(e) => setBulkFees({...bulkFees, [cat._id]: e.target.value})}
+                                  onChange={(e) => {
+                                    const cleaned = e.target.value.replace(/[^0-9]/g, '');
+                                    setBulkFees({...bulkFees, [cat._id]: cleaned});
+                                  }}
                                   readOnly={!isEditingBulkFees || !selectedBulkCats[cat._id]}
                                   className={(!isEditingBulkFees || !selectedBulkCats[cat._id]) ? "bg-gray-100" : ""}
                                   required={selectedBulkCats[cat._id]}
@@ -668,11 +672,15 @@ const FeeCategories = () => {
                                   <div className="space-y-1">
                                     <Label className="text-xs font-semibold text-gray-600">Top Price / Metre (₹)</Label>
                                     <Input 
-                                      type="number"
-                                      min="0" step="0.01"
+                                      type="text"
+                                      inputMode="numeric"
+                                      pattern="[0-9]*"
                                       placeholder="e.g., 450"
                                       value={bulkFees[`${cat._id}_top`] || ''}
-                                      onChange={(e) => setBulkFees({...bulkFees, [`${cat._id}_top`]: e.target.value})}
+                                      onChange={(e) => {
+                                        const cleaned = e.target.value.replace(/[^0-9]/g, '');
+                                        setBulkFees({...bulkFees, [`${cat._id}_top`]: cleaned});
+                                      }}
                                       readOnly={!isEditingBulkFees}
                                       className={!isEditingBulkFees ? "bg-gray-100 h-8 text-xs" : "h-8 text-xs"}
                                       required
@@ -681,11 +689,15 @@ const FeeCategories = () => {
                                   <div className="space-y-1">
                                     <Label className="text-xs font-semibold text-gray-600">Bottom Price / Metre (₹)</Label>
                                     <Input 
-                                      type="number"
-                                      min="0" step="0.01"
+                                      type="text"
+                                      inputMode="numeric"
+                                      pattern="[0-9]*"
                                       placeholder="e.g., 350"
                                       value={bulkFees[`${cat._id}_bottom`] || ''}
-                                      onChange={(e) => setBulkFees({...bulkFees, [`${cat._id}_bottom`]: e.target.value})}
+                                      onChange={(e) => {
+                                        const cleaned = e.target.value.replace(/[^0-9]/g, '');
+                                        setBulkFees({...bulkFees, [`${cat._id}_bottom`]: cleaned});
+                                      }}
                                       readOnly={!isEditingBulkFees}
                                       className={!isEditingBulkFees ? "bg-gray-100 h-8 text-xs" : "h-8 text-xs"}
                                       required

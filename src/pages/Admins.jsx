@@ -263,12 +263,11 @@ const Admins = () => {
             <Label htmlFor="role">Role</Label>
             <select 
               id="role" 
-              className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600 disabled:opacity-50   "
+              className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600 disabled:opacity-50"
               value={formData.role}
               onChange={(e) => setFormData({...formData, role: e.target.value})}
             >
               <option value="ADMIN">Admin</option>
-              <option value="SUPER_ADMIN">Super Admin</option>
             </select>
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">
@@ -299,7 +298,7 @@ const Admins = () => {
               ) : (
                 paginatedLogs.map((log) => (
                   <TableRow key={log.id}>
-                    <TableCell className="font-medium">{log.user?.username || 'Unknown'}</TableCell>
+                    <TableCell className="font-medium">{log.userId?.username || log.user?.username || 'Unknown'}</TableCell>
                     <TableCell>{new Date(log.timestamp).toLocaleString()}</TableCell>
                   </TableRow>
                 ))
