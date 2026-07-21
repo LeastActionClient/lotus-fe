@@ -71,7 +71,7 @@ const DashboardLayout = () => {
 
 
   return (
-    <div className="dashboard-shell flex h-auto bg-gray-100 ">
+    <div className="dashboard-shell flex h-screen overflow-hidden bg-gray-100">
       {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div 
@@ -94,7 +94,7 @@ const DashboardLayout = () => {
           </div>
           <p className="text-sm text-gray-500 mt-1 text-center">Logged in as {user.username}</p>
         </div>
-        <nav className="mt-2 flex-1 overflow-y-auto pb-6">
+        <nav className="mt-2 flex-1 overflow-y-auto no-scrollbar pb-6">
           {navItems.map((item) => {
             const isActive = item.path === '/dashboard'
               ? location.pathname === item.path
