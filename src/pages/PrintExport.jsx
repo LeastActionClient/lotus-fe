@@ -157,13 +157,13 @@ const PrintExport = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 print-wrapper">
-      <div className="flex items-center justify-between print:hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 print:hidden">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center">
-            <Printer className="mr-3 text-orange-600" size={32} />
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 flex items-center">
+            <Printer className="mr-2 sm:mr-3 text-orange-600" size={28} />
             Print & Export
           </h1>
-          <p className="text-gray-500 mt-2">Filter and select specific fields to export your student data.</p>
+          <p className="text-gray-500 mt-1 sm:mt-2 text-sm sm:text-base">Filter and select specific fields to export your student data.</p>
         </div>
       </div>
 
@@ -250,8 +250,14 @@ const PrintExport = () => {
                       id="phoneFilter" 
                       placeholder="Search by phone..." 
                       className="pl-8"
+                      inputMode="numeric"
+                      maxLength={10}
+                      pattern="[0-9]*"
                       value={phoneSearch}
-                      onChange={(e) => setPhoneSearch(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        setPhoneSearch(val);
+                      }}
                     />
                   </div>
                 </div>
@@ -270,11 +276,11 @@ const PrintExport = () => {
                 </div>
               </div>
 
-              <div className="flex gap-4 justify-end mt-6 border-t border-orange-200 pt-4">
-                <Button variant="outline" onClick={handlePrint} className="bg-white hover:bg-orange-50 text-orange-700 border-orange-200">
+              <div className="flex flex-col sm:flex-row gap-3 sm:justify-end mt-6 border-t border-orange-200 pt-4">
+                <Button variant="outline" onClick={handlePrint} className="bg-white hover:bg-orange-50 text-orange-700 border-orange-200 w-full sm:w-auto">
                   <Printer className="mr-2 h-4 w-4" /> Print Results
                 </Button>
-                <Button onClick={downloadCSV} className="bg-orange-600 hover:bg-orange-700 text-white">
+                <Button onClick={downloadCSV} className="bg-orange-600 hover:bg-orange-700 text-white w-full sm:w-auto">
                   <Download className="mr-2 h-4 w-4" /> Export CSV ({Object.values(selectedFields).filter(Boolean).length} columns)
                 </Button>
               </div>
@@ -292,36 +298,57 @@ const PrintExport = () => {
             </div>
             
             <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Admission No</TableHead>
-                    <TableHead>Student Name</TableHead>
-                    <TableHead>Class & Section</TableHead>
-                    <TableHead>Father's Name</TableHead>
-                    <TableHead>Contact</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredStudents.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center h-32 text-gray-500">
-                        No students found matching your criteria.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    paginatedStudents.map((student) => (
-                      <TableRow key={student.id}>
-                        <TableCell className="font-mono text-sm">{student.admissionNumber}</TableCell>
-                        <TableCell className="font-medium text-gray-900">{student.studentName}</TableCell>
-                        <TableCell>{student.currentClass} {student.section && `- ${student.section}`}</TableCell>
-                        <TableCell>{student.fatherName || '-'}</TableCell>
-                        <TableCell>{student.fatherPhone || student.motherPhone || '-'}</TableCell>
+              {(() => {
+                const activeFields = AVAILABLE_FIELDS.filter(f => selectedFields[f.id]);
+                const getStudentValue = (student, fieldId) => {
+                  if (fieldId === 'emisNo') return student.emisNo || student.emisNumber || '';
+                  if (fieldId === 'guardian') return student.guardianName || student.guardian || '';
+                  return student[fieldId] || '';
+                };
+                const colSpan = activeFields.length || 1;
+                return (
+                  <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        {activeFields.map(field => (
+                          <TableHead key={field.id} className="whitespace-nowrap">{field.label}</TableHead>
+                        ))}
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredStudents.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={colSpan} className="text-center h-32 text-gray-500">
+                            No students found matching your criteria.
+                          </TableCell>
+                        </TableRow>
+                      ) : activeFields.length === 0 ? (
+                        <TableRow>
+                          <TableCell className="text-center h-32 text-gray-500">
+                            Select at least one field to preview.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        paginatedStudents.map((student) => (
+                          <TableRow key={student.id}>
+                            {activeFields.map(field => {
+                              const raw = getStudentValue(student, field.id);
+                              const display = field.format ? field.format(raw) : (raw || '-');
+                              return (
+                                <TableCell key={field.id} className={`whitespace-nowrap text-xs sm:text-sm ${field.id === 'admissionNumber' ? 'font-mono' : field.id === 'studentName' ? 'font-medium text-gray-900' : ''}`}>
+                                  {display}
+                                </TableCell>
+                              );
+                            })}
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                  </div>
+                );
+              })()}
               <Pagination page={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} className="print:hidden" />
               {filteredStudents.length > paginatedStudents.length && (
                 <div className="text-center p-4 text-sm text-gray-500 bg-gray-50 border-t print:hidden">
