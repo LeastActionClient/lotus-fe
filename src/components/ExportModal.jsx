@@ -199,15 +199,11 @@ const ExportModal = ({
               <input type="radio" name="scope" value="SINGLE" checked={exportScope === 'SINGLE'} onChange={(e) => handleScopeChange(e.target.value)} disabled={effectiveStudentIds.length !== 1} className="text-orange-600 focus:ring-orange-600" />
               <span className="text-sm">Single Student</span>
             </label>
-            {!isOldStudentsPage && (
+             {!isOldStudentsPage && (
               <>
                 <label className="flex items-center space-x-2 border p-3 rounded-md cursor-pointer hover:bg-orange-50 transition-colors">
                   <input type="radio" name="scope" value="CLASS" checked={exportScope === 'CLASS'} onChange={(e) => handleScopeChange(e.target.value)} className="text-orange-600 focus:ring-orange-600" />
                   <span className="text-sm">Entire Class</span>
-                </label>
-                <label className="flex items-center space-x-2 border p-3 rounded-md cursor-pointer hover:bg-orange-50 transition-colors">
-                  <input type="radio" name="scope" value="SECTION" checked={exportScope === 'SECTION'} onChange={(e) => handleScopeChange(e.target.value)} className="text-orange-600 focus:ring-orange-600" />
-                  <span className="text-sm">Entire Section</span>
                 </label>
                 <label className="flex items-center space-x-2 border p-3 rounded-md cursor-pointer hover:bg-orange-50 transition-colors">
                   <input type="radio" name="scope" value="ACADEMIC_YEAR" checked={exportScope === 'ACADEMIC_YEAR'} onChange={(e) => handleScopeChange(e.target.value)} className="text-orange-600 focus:ring-orange-600" />
@@ -294,14 +290,7 @@ const ExportModal = ({
                 </select>
               </div>
 
-              <div className="space-y-1">
-                <Label>Student Group</Label>
-                <select className="flex h-10 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600" value={studentGroup} onChange={(e) => setStudentGroup(e.target.value)}>
-                  <option value="All">All Groups</option>
-                  <option value="RTE">RTE Students</option>
-                  <option value="General">General Students</option>
-                </select>
-              </div>
+
               
               <div className="space-y-1">
                 <Label>Search Name</Label>
