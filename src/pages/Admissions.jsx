@@ -111,7 +111,8 @@ const Admissions = () => {
         guardian: app.parentName || app.guardian || '',
         fatherPhone: app.fatherPhone || '',
         motherPhone: app.motherPhone || '',
-        address: app.address || ''
+        address: app.address || '',
+        admissionNumber: ''
       }));
       
       setIsManualModalOpen(true);
@@ -123,6 +124,25 @@ const Admissions = () => {
       console.error("Error fetching application details", error);
       toastError("Failed to load application details.");
     }
+  };
+
+  const handleOpenManualModal = async () => {
+    if (!selectedClass) {
+      toastWarning("Please select a class first");
+      return;
+    }
+    
+    setManualForm({
+      admissionNumber: '',
+      studentName: '', fatherName: '', motherName: '', fatherPhone: '', motherPhone: '', address: '',
+      dateOfBirth: '', gender: '', bloodGroup: '', aadhaarNumber: '', religion: '', community: '', caste: '', RTE: '', nationality: '', 
+      fatherOccupation: '', motherOccupation: '', guardian: '', guardianName: '', city: '', state: '', pincode: '', whatsappNumber: '', emisNumber: '', emisNo: '',
+      isRTE: false,
+      section: selectedSection || '',
+      applicationId: ''
+    });
+
+    setIsManualModalOpen(true);
   };
 
   const fetchStudents = async () => {
@@ -563,10 +583,7 @@ const Admissions = () => {
               }} className="flex items-center bg-orange-100 text-orange-700 hover:bg-orange-200" type="button">
                 <Upload className="h-4 w-4 mr-2" /> Bulk Import
               </Button>
-              <Button onClick={() => {
-                if (!selectedClass) { toastWarning("Please select a class first"); return; }
-                setIsManualModalOpen(true);
-              }} className="flex items-center">
+              <Button onClick={handleOpenManualModal} className="flex items-center">
                 <Plus className="h-4 w-4 mr-2" /> Add Student
               </Button>
             </div>

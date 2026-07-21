@@ -32,27 +32,89 @@ const Dashboard = () => {
     RTEStudents: 0,
     generalStudents: 0,
   };
-  const classes = overview.classes || [];
+  const classSortFn = (a, b) => {
+    const preSchoolOrder = { 'pre-kg': 1, 'lkg': 2, 'ukg': 3 };
+    const aNorm = String(a).trim().toLowerCase();
+    const bNorm = String(b).trim().toLowerCase();
+    const isPreA = preSchoolOrder[aNorm];
+    const isPreB = preSchoolOrder[bNorm];
+    if (isPreA && isPreB) return isPreA - isPreB;
+    if (isPreA) return -1;
+    if (isPreB) return 1;
+    const numA = parseInt(aNorm, 10);
+    const numB = parseInt(bNorm, 10);
+    const isNumA = !isNaN(numA);
+    const isNumB = !isNaN(numB);
+    if (isNumA && isNumB) return numA - numB;
+    if (isNumA) return 1;
+    if (isNumB) return -1;
+    return aNorm.localeCompare(bNorm);
+  };
+
+  const rawClasses = overview.classes || [];
+  const classes = useMemo(() => {
+    return [...rawClasses].sort((x, y) => classSortFn(x.name, y.name));
+  }, [rawClasses]);
+
   const activeYear = overview.activeYear || null;
   const academicYears = overview.academicYears || [];
 
-  const toYearExists = useMemo(() => {
-    if (!toYear) return false;
-    return academicYears.some((year) => year.year === toYear);
+  const normalizeYear = (yr) => {
+    if (!yr) return '';
+    return String(yr).replace(/[\u2013]/g, '-').trim();
+  };
+
+  const matchedFromYearDoc = useMemo(() => {
+    const normFrom = normalizeYear(fromYear);
+    return academicYears.find((y) => normalizeYear(y.year) === normFrom);
+  }, [academicYears, fromYear]);
+
+  const matchedToYearDoc = useMemo(() => {
+    const normTo = normalizeYear(toYear);
+    return academicYears.find((y) => normalizeYear(y.year) === normTo);
   }, [academicYears, toYear]);
 
-  const handleOpenPromote = () => {
-    if (activeYear?.year) {
-      setFromYear(activeYear.year);
-      const parts = String(activeYear.year).split(/[-\u2013]/);
+  const toYearExists = useMemo(() => {
+    return Boolean(matchedToYearDoc);
+  }, [matchedToYearDoc]);
+
+  const handleOpenPromote = async () => {
+    let latestOverview = overview;
+    try {
+      const refetched = await refetch();
+      if (refetched.data) {
+        latestOverview = refetched.data;
+      }
+    } catch (err) {
+      console.error("Error refetching dashboard overview", err);
+    }
+
+    const latestActiveYear = latestOverview.activeYear || null;
+    const latestAcademicYears = latestOverview.academicYears || [];
+    const latestClasses = latestOverview.classes || [];
+    const sortedClasses = [...latestClasses].sort((x, y) => classSortFn(x.name, y.name));
+
+    let defaultFromYear = '';
+    if (latestActiveYear?.year) {
+      defaultFromYear = latestActiveYear.year;
+    } else if (latestAcademicYears.length > 0) {
+      defaultFromYear = latestAcademicYears[0].year;
+    }
+
+    if (defaultFromYear) {
+      setFromYear(defaultFromYear);
+      const parts = String(defaultFromYear).split(/[-\u2013]/);
       if (parts.length === 2 && !Number.isNaN(Number(parts[0])) && !Number.isNaN(Number(parts[1]))) {
         setToYear(`${Number(parts[0]) + 1}-${Number(parts[1]) + 1}`);
       }
+    } else {
+      setFromYear('');
+      setToYear('');
     }
 
     const mapping = {};
-    classes.forEach((c, idx) => {
-      mapping[c.name] = idx < classes.length - 1 ? classes[idx + 1].name : 'Graduated';
+    sortedClasses.forEach((c, idx) => {
+      mapping[c.name] = idx < sortedClasses.length - 1 ? sortedClasses[idx + 1].name : 'Graduated';
     });
     setClassMapping(mapping);
     setIsPromoteModalOpen(true);
@@ -65,15 +127,25 @@ const Dashboard = () => {
       return;
     }
 
+    const normalizedFromInput = normalizeYear(fromYear);
+    const normalizedToInput = normalizeYear(toYear);
     const yearRegex = /^\d{4}-\d{4}$/;
-    if (!yearRegex.test(fromYear) || !yearRegex.test(toYear)) {
+    if (!yearRegex.test(normalizedFromInput) || !yearRegex.test(normalizedToInput)) {
       toastWarning('Academic years must be in YYYY-YYYY format.');
       return;
     }
 
+    if (!toYearExists) {
+      toastWarning(`Please create Academic Year ${toYear} before promoting students.`);
+      return;
+    }
+
+    const finalFromYear = matchedFromYearDoc ? matchedFromYearDoc.year : fromYear;
+    const finalToYear = matchedToYearDoc ? matchedToYearDoc.year : toYear;
+
     const accepted = await confirm({
       title: 'Bulk Promote Students',
-      description: `Are you sure you want to promote students from ${fromYear} to ${toYear}? This will update their current class and academic year.`,
+      description: `Are you sure you want to promote students from ${finalFromYear} to ${finalToYear}? This will update their current class and academic year.`,
       confirmText: 'Promote',
       tone: 'primary'
     });
@@ -83,8 +155,8 @@ const Dashboard = () => {
     setIsPromoting(true);
     try {
       const response = await api.post('/students/promote', {
-        fromAcademicYear: fromYear,
-        toAcademicYear: toYear,
+        fromAcademicYear: finalFromYear,
+        toAcademicYear: finalToYear,
         classMapping
       });
       toastSuccess(response.data.message);
@@ -92,7 +164,7 @@ const Dashboard = () => {
       await Promise.all([invalidateDashboard(), invalidateAcademicYears(), refetch()]);
     } catch (error) {
       console.error('Error promoting students', error);
-      toastError('Failed to promote students. Check console for details.');
+      toastError(error.response?.data?.error || 'Failed to promote students. Check console for details.');
     } finally {
       setIsPromoting(false);
     }
@@ -188,11 +260,21 @@ const Dashboard = () => {
           <div className="grid grid-cols-2 gap-4 rounded-lg border bg-gray-50 p-4">
             <div>
               <Label>From Academic Year</Label>
-              <Input value={fromYear} readOnly className="cursor-not-allowed bg-gray-100 font-medium text-gray-800" />
+              <Input 
+                value={fromYear} 
+                onChange={(e) => setFromYear(e.target.value)} 
+                placeholder="e.g., 2028-2029" 
+                className="font-medium text-gray-800" 
+              />
             </div>
             <div>
               <Label>To Academic Year</Label>
-              <Input value={toYear} readOnly className="cursor-not-allowed bg-gray-100 font-medium text-gray-800" />
+              <Input 
+                value={toYear} 
+                onChange={(e) => setToYear(e.target.value)} 
+                placeholder="e.g., 2029-2030" 
+                className="font-medium text-gray-800" 
+              />
             </div>
           </div>
 
@@ -230,7 +312,7 @@ const Dashboard = () => {
 
           <div className="flex justify-end gap-3 border-t pt-4">
             <Button type="button" variant="outline" onClick={() => setIsPromoteModalOpen(false)}>Cancel</Button>
-            <Button type="submit" className="bg-orange-600 text-white hover:bg-orange-700" disabled={isPromoting || !toYearExists}>
+            <Button type="submit" className="bg-orange-600 text-white hover:bg-orange-700" disabled={isPromoting}>
               {isPromoting ? 'Promoting...' : 'Confirm Promotion'}
             </Button>
           </div>
