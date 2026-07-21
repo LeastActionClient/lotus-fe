@@ -102,8 +102,9 @@ const Reports = () => {
         <p className="text-gray-500  mt-2">Insights on collections and pending dues</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="md:col-span-2">
+          <Card>
           <CardHeader className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 pb-2">
             <CardTitle className="flex items-center text-gray-700 ">
               <Calendar className="h-5 w-5 mr-2 text-orange-600" /> Collections
@@ -196,8 +197,10 @@ const Reports = () => {
             )}
           </CardContent>
         </Card>
+        </div>
 
-        <Card>
+        <div className="md:col-span-1">
+        <Card className="h-fit bg-gradient-to-br from-red-50/50 to-white border-red-100/80 shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center text-gray-700 ">
               <TrendingUp className="h-5 w-5 mr-2 text-red-500" /> Pending Fees
@@ -211,6 +214,7 @@ const Reports = () => {
             {!pending || pending.length === 0 ? <p className="text-gray-500">No pending dues.</p> : null}
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   );

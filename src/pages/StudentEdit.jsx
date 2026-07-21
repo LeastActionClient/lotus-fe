@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
-import { ArrowLeft, User, BookOpen, Users, DollarSign, Save } from 'lucide-react';
+import { ArrowLeft, User, BookOpen, Users, IndianRupee, Save } from 'lucide-react';
 import { MultiSelectDropdown } from '../components/ui/MultiSelectDropdown';
 import { isRTEStudent } from '../utils/studentCategory';
 import { toastError, toastSuccess, toastWarning } from '../services/toastService';
@@ -24,6 +24,7 @@ const StudentEdit = () => {
   const [selectedCharges, setSelectedCharges] = useState([]); // Selected optional category IDs
   const [topLength, setTopLength] = useState('');
   const [bottomLength, setBottomLength] = useState('');
+  const [originalStudent, setOriginalStudent] = useState(null);
 
   // Form State
   // Form State
@@ -79,7 +80,7 @@ const StudentEdit = () => {
     } else if (validationType === 'bloodGroup') {
       val = val.replace(/[^a-zA-Z\s\-\+]/g, '');
     }
-    const limit = maxLen ?? (field === 'aadhaarNumber' ? 12 : (field === 'emisNumber' || field === 'emisNo') ? 10 : (field === 'fatherPhone' || field === 'motherPhone' || field === 'whatsappNumber') ? 10 : null);
+    const limit = maxLen ?? (field === 'pincode' ? 6 : field === 'aadhaarNumber' ? 12 : (field === 'emisNumber' || field === 'emisNo') ? 10 : (field === 'fatherPhone' || field === 'motherPhone' || field === 'whatsappNumber') ? 10 : null);
     if (limit && val.length > limit) {
       val = val.slice(0, limit);
     }
@@ -129,6 +130,7 @@ const StudentEdit = () => {
 
       setCategories(cats);
       setClasses(cls);
+      setOriginalStudent(student);
 
       // Find Class and Section default fees
       let defFees = {};
@@ -266,10 +268,36 @@ const StudentEdit = () => {
   };
 
   // Calculations
-  const mandatoryCats = categories.filter(cat => cat.isEnabled && cat.mandatory && cat.name.toLowerCase() !== 'uniform' && getFeeAmount(defaultFees[cat._id]) > 0);
-  const baseFeeAmount = mandatoryCats.reduce((sum, cat) => {
-    return sum + getFeeAmount(defaultFees[cat._id]);
-  }, 0);
+  const baseFeeAmount = React.useMemo(() => {
+    if (!originalStudent || formData.currentClass !== originalStudent.currentClass || formData.section !== originalStudent.section) {
+      const mandatoryCats = categories.filter(cat => cat.isEnabled && cat.mandatory && cat.name.toLowerCase() !== 'uniform' && getFeeAmount(defaultFees[cat._id]) > 0);
+      return mandatoryCats.reduce((sum, cat) => sum + getFeeAmount(defaultFees[cat._id]), 0);
+    }
+    const actualMandatoryFees = (originalStudent.studentFees || []).filter(f => {
+      const rawCatId = f.feeCategoryId?._id || f.feeCategoryId;
+      const catId = rawCatId ? rawCatId.toString() : '';
+      const cat = categories.find(c => c._id?.toString() === catId);
+      return cat && cat.isEnabled && cat.mandatory && cat.name.toLowerCase() !== 'uniform';
+    });
+    return actualMandatoryFees.reduce((sum, f) => sum + (f.totalAmount || 0), 0);
+  }, [formData.currentClass, formData.section, originalStudent, categories, defaultFees]);
+
+  const mandatoryCatIds = React.useMemo(() => {
+    if (!originalStudent || formData.currentClass !== originalStudent.currentClass || formData.section !== originalStudent.section) {
+      return categories
+        .filter(cat => cat.isEnabled && cat.mandatory && cat.name.toLowerCase() !== 'uniform' && getFeeAmount(defaultFees[cat._id]) > 0)
+        .map(cat => cat._id?.toString());
+    }
+    return (originalStudent.studentFees || [])
+      .filter(f => {
+        const rawCatId = f.feeCategoryId?._id || f.feeCategoryId;
+        const catId = rawCatId ? rawCatId.toString() : '';
+        const cat = categories.find(c => c._id?.toString() === catId);
+        return cat && cat.isEnabled && cat.mandatory && cat.name.toLowerCase() !== 'uniform';
+      })
+      .map(f => (f.feeCategoryId?._id || f.feeCategoryId)?.toString())
+      .filter(Boolean);
+  }, [formData.currentClass, formData.section, originalStudent, categories, defaultFees]);
 
   const optionalCats = categories.filter(cat => cat.isEnabled && !cat.mandatory && cat.name.toLowerCase() !== 'uniform' && getFeeAmount(defaultFees[cat._id]) > 0);
   const chargesOptions = optionalCats.map(cat => {
@@ -447,10 +475,6 @@ const StudentEdit = () => {
     }
 
     try {
-      const mandatoryCatIds = categories
-        .filter(cat => cat.isEnabled && cat.mandatory && cat.name.toLowerCase() !== 'uniform' && getFeeAmount(defaultFees[cat._id]) > 0)
-        .map(cat => cat._id);
-
       const selectedFeeCategoryIds = [...mandatoryCatIds, ...selectedCharges];
 
       if (hasUniform && uniformCategory) {
@@ -567,7 +591,7 @@ const StudentEdit = () => {
               </div>
               <div className="space-y-2">
                 <Label>Caste</Label>
-                <Input name="caste" value={formData.caste} maxLength={50} onChange={(e) => handleValidatedChange('caste', e, 'letters', formData, setFormData, 50)} placeholder="e.g. BC, MBC" />
+                 <Input name="caste" value={formData.caste} maxLength={50} onChange={(e) => handleValidatedChange('caste', e, 'letters', formData, setFormData, 50)} />
               </div>
               <div className="space-y-2">
                 <Label>Nationality</Label>
@@ -708,7 +732,7 @@ const StudentEdit = () => {
           <Card className="border-orange-200 shadow-sm sticky top-6">
             <CardHeader className="bg-orange-50 border-b border-orange-100 pb-4">
               <CardTitle className="text-lg flex items-center text-orange-800">
-                <DollarSign className="mr-2 h-5 w-5 text-orange-600" /> Fee Details
+                <IndianRupee className="mr-2 h-5 w-5 text-orange-600" /> Fee Details
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">

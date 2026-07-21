@@ -27,6 +27,27 @@ const Students = () => {
   const { data: classesData = [], isLoading: classesLoading } = useClassesQuery();
   const { invalidateStudents, invalidateClasses } = useQueryInvalidator();
   
+  const sortedClasses = React.useMemo(() => {
+    return [...classes].sort((a, b) => {
+      const preSchoolOrder = { 'pre-kg': 1, 'lkg': 2, 'ukg': 3 };
+      const aNorm = String(a.name).trim().toLowerCase();
+      const bNorm = String(b.name).trim().toLowerCase();
+      const isPreA = preSchoolOrder[aNorm];
+      const isPreB = preSchoolOrder[bNorm];
+      if (isPreA && isPreB) return isPreA - isPreB;
+      if (isPreA) return -1;
+      if (isPreB) return 1;
+      const numA = parseInt(aNorm, 10);
+      const numB = parseInt(bNorm, 10);
+      const isNumA = !isNaN(numA);
+      const isNumB = !isNaN(numB);
+      if (isNumA && isNumB) return numA - numB;
+      if (isNumA) return 1;
+      if (isNumB) return -1;
+      return aNorm.localeCompare(bNorm);
+    });
+  }, [classes]);
+  
   const [viewMode, setViewMode] = useState('CLASSES');
   const [selectedClass, setSelectedClass] = useState(null);
   const [selectedSection, setSelectedSection] = useState(null);
@@ -323,10 +344,10 @@ const Students = () => {
             </Button>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {classes.length === 0 ? (
+            {sortedClasses.length === 0 ? (
               <div className="col-span-full text-center py-12 text-gray-500">No classes found. Add one to get started.</div>
             ) : (
-              classes.map((cls) => (
+              sortedClasses.map((cls) => (
                 <Card 
                   key={cls._id} 
                   className="cursor-pointer hover:border-orange-600 hover:shadow-md transition-all group relative"
