@@ -225,23 +225,31 @@ const Applications = () => {
                   <TableRow key={app._id || app.id}>
                     <TableCell className="font-mono text-sm">{app.applicationId}</TableCell>
                     <TableCell className="font-medium">{app.studentName}</TableCell>
-                    <TableCell>{app.applyingClass}</TableCell>
+                    <TableCell>{/^\d+$/.test(app.applyingClass) ? `${app.applyingClass} STD` : app.applyingClass}</TableCell>
                     <TableCell>{app.parentName || app.fatherName}</TableCell>
                     <TableCell>{app.processedById?.username}</TableCell>
                     <TableCell>
-                      <select 
-                        value={app.feePaid ? "true" : "false"}
-                        onChange={(e) => {
-                          const isPaid = e.target.value === "true";
-                          if(app.feePaid !== isPaid) toggleFeePaid(app._id || app.id, app.feePaid);
-                        }}
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer transition-colors border-0 outline-none focus:ring-0 appearance-none text-center ${
-                          app.feePaid ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-red-100 text-red-800 hover:bg-red-200'
-                        }`}
-                      >
-                        <option value="true" className="bg-white text-emerald-800">Paid</option>
-                        <option value="false" className="bg-white text-red-800">Not Paid</option>
-                      </select>
+                      {app.status === 'APPROVED' ? (
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          app.feePaid ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          {app.feePaid ? 'Paid' : 'Not Paid'}
+                        </span>
+                      ) : (
+                        <select 
+                          value={app.feePaid ? "true" : "false"}
+                          onChange={(e) => {
+                            const isPaid = e.target.value === "true";
+                            if(app.feePaid !== isPaid) toggleFeePaid(app._id || app.id, app.feePaid);
+                          }}
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer transition-colors border-0 outline-none focus:ring-0 appearance-none text-center ${
+                            app.feePaid ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-red-100 text-red-800 hover:bg-red-200'
+                          }`}
+                        >
+                          <option value="true" className="bg-white text-emerald-800">Paid</option>
+                          <option value="false" className="bg-white text-red-800">Not Paid</option>
+                        </select>
+                      )}
                     </TableCell>
                     <TableCell>
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
