@@ -645,7 +645,6 @@ const StudentEdit = () => {
                   <option value="Completed">Completed</option>
                   <option value="Transferred">Transferred</option>
                   <option value="Discontinued">Discontinued</option>
-                  <option value="Left School">Left School</option>
                   <option value="Other">Other</option>
                 </select>
               </div>

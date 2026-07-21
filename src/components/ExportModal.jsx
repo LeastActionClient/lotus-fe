@@ -279,7 +279,6 @@ const ExportModal = ({
                     <option value="Graduated">Graduated</option>
                     <option value="Transferred">Transferred</option>
                     <option value="Discontinued">Discontinued</option>
-                    <option value="Left School">Left School</option>
                     <option value="Completed">Completed</option>
                     <option value="Other">Other</option>
                   </select>
@@ -327,9 +326,6 @@ const ExportModal = ({
           ) : (
             <>
               <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-              <Button type="button" variant="outline" className="border-red-600 text-red-600 hover:bg-red-50" onClick={() => handleExport('PDF')}>
-                <FileText className="mr-2 h-4 w-4" /> Export PDF
-              </Button>
               <Button type="button" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => handleExport('Excel')}>
                 <Download className="mr-2 h-4 w-4" /> Export Excel
               </Button>

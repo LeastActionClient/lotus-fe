@@ -148,10 +148,12 @@ const FeeCategories = () => {
       setCatMandatory(false);
       setCatIsStockItem(false);
       setCatInitialStock('0');
+      toastSuccess("Fee category created successfully!");
+      invalidateFeeCategories();
       fetchData();
     } catch (error) {
       console.error("Error creating category", error);
-      alert(error.response?.data?.error || "Error creating category");
+      toastError(error.response?.data?.error || "Error creating category");
     }
   };
 
@@ -177,10 +179,12 @@ const FeeCategories = () => {
       });
       setIsEditCatModalOpen(false);
       setEditingCat(null);
+      toastSuccess("Fee category updated successfully!");
+      invalidateFeeCategories();
       fetchData();
     } catch (error) {
       console.error("Error updating category", error);
-      alert(error.response?.data?.error || "Error updating category");
+      toastError(error.response?.data?.error || "Error updating category");
     }
   };
 

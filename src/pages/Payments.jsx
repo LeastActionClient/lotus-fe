@@ -14,7 +14,7 @@ import { PageLoader } from '../components/ui/Spinner';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toastError, toastSuccess, toastWarning } from '../services/toastService';
 import { useConfirm } from '../components/ui/ConfirmDialog';
-import { useFeeCategoriesQuery, usePaymentsQuery, useQueryInvalidator, useStudentQuery, useStudentsQuery } from '../hooks/useSchoolQueries';
+import { useFeeCategoriesQuery, usePaymentsQuery, useQueryInvalidator, useStudentQuery, useStudentsQuery, useClassesQuery } from '../hooks/useSchoolQueries';
 
 const Payments = () => {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -30,6 +30,7 @@ const Payments = () => {
   const { data: paymentsData = [], isLoading: paymentsLoading } = usePaymentsQuery();
   const { data: studentsData = [], isLoading: studentsLoading } = useStudentsQuery();
   const { data: feeCategoriesData = [], isLoading: feeCategoriesLoading } = useFeeCategoriesQuery();
+  const { data: classesData = [], isLoading: classesLoading } = useClassesQuery();
   const { data: selectedStudentData } = useStudentQuery(selectedStudentId, Boolean(selectedStudentId));
   const { invalidatePayments, invalidateStudents, invalidateFeeCategories } = useQueryInvalidator();
   const [selectedClass, setSelectedClass] = useState('');
@@ -81,6 +82,10 @@ const Payments = () => {
   useEffect(() => {
     setFeeCategories(feeCategoriesData);
   }, [feeCategoriesData]);
+
+  useEffect(() => {
+    setClasses(classesData);
+  }, [classesData]);
 
   useEffect(() => {
     const sid = incomingStudentId.current;

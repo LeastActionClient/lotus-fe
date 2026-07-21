@@ -96,9 +96,7 @@ const PrintExport = () => {
     setCurrentPage(1);
   }, [selectedClass, selectedSection, phoneSearch, students.length, selectedFields]);
 
-  const handlePrint = () => {
-    window.print();
-  };
+
 
   const toggleField = (fieldId) => {
     setSelectedFields(prev => ({
@@ -277,9 +275,6 @@ const PrintExport = () => {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 sm:justify-end mt-6 border-t border-orange-200 pt-4">
-                <Button variant="outline" onClick={handlePrint} className="bg-white hover:bg-orange-50 text-orange-700 border-orange-200 w-full sm:w-auto">
-                  <Printer className="mr-2 h-4 w-4" /> Print Results
-                </Button>
                 <Button onClick={downloadCSV} className="bg-orange-600 hover:bg-orange-700 text-white w-full sm:w-auto">
                   <Download className="mr-2 h-4 w-4" /> Export CSV ({Object.values(selectedFields).filter(Boolean).length} columns)
                 </Button>

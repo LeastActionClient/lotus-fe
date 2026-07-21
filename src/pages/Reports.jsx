@@ -190,7 +190,10 @@ const Reports = () => {
                         {item.studentFee?.feeCategory?.name || item.studentFeeId?.feeCategoryId?.name} | Admission No: {item.student?.admissionNumber || item.studentId?.admissionNumber} | Collected by: {item.recordedBy?.username || item.recordedById?.username || ''}
                       </span>
                     </div>
-                    <span className="font-bold text-emerald-600">Rs. {item.amount?.toFixed(2) || '0.00'}</span>
+                    <div className="flex justify-between w-28 font-bold text-emerald-600 select-none">
+                      <span className="text-gray-500 font-medium text-left">Rs.</span>
+                      <span>{item.amount?.toFixed(2) || '0.00'}</span>
+                    </div>
                   </div>
                 ))}
               </div>
