@@ -326,7 +326,7 @@ const PrintExport = () => {
                         </TableRow>
                       ) : (
                         paginatedStudents.map((student) => (
-                          <TableRow key={student.id}>
+                          <TableRow key={student._id || student.id}>
                             {activeFields.map(field => {
                               const raw = getStudentValue(student, field.id);
                               const display = field.format ? field.format(raw) : (raw || '-');

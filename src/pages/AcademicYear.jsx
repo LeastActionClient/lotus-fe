@@ -12,19 +12,14 @@ import { toastError, toastSuccess, toastWarning } from '../services/toastService
 import { useAcademicYearsQuery, useQueryInvalidator } from '../hooks/useSchoolQueries';
 
 const AcademicYearPage = () => {
-  const [academicYears, setAcademicYears] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   const [formData, setFormData] = useState({
     year: '',
     status: 'Active'
   });
-  const { data: academicYearsData = [], isLoading } = useAcademicYearsQuery();
+  const { data: academicYears = [], isLoading } = useAcademicYearsQuery();
   const { invalidateAcademicYears, invalidateDashboard } = useQueryInvalidator();
-
-  useEffect(() => {
-    setAcademicYears(academicYearsData);
-  }, [academicYearsData]);
 
   const currentActiveYear = academicYears.find(y => y.status === 'Active');
 

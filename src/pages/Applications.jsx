@@ -16,7 +16,6 @@ import { useApplicationsQuery, useQueryInvalidator } from '../hooks/useSchoolQue
 const Applications = () => {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const confirm = useConfirm();
-  const [applications, setApplications] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
@@ -36,7 +35,7 @@ const Applications = () => {
     feePaid: false,
     adminNo: ''
   });
-  const { data: applicationsData = [], isLoading } = useApplicationsQuery();
+  const { data: applications = [], isLoading } = useApplicationsQuery();
   const { invalidateApplications } = useQueryInvalidator();
 
   const handleNewApplication = async () => {
@@ -61,10 +60,6 @@ const Applications = () => {
       console.error("Error updating fee status", error);
     }
   };
-
-  useEffect(() => {
-    setApplications(applicationsData);
-  }, [applicationsData]);
 
   useEffect(() => {
     fetchCustomIds();

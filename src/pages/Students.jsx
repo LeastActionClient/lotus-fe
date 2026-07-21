@@ -79,11 +79,11 @@ const Students = () => {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   useEffect(() => {
-    setStudents(studentsData);
+    if (studentsData) setStudents(studentsData);
   }, [studentsData]);
 
   useEffect(() => {
-    setClasses(classesData);
+    if (classesData) setClasses(classesData);
   }, [classesData]);
 
   const openViewModal = async (student) => {

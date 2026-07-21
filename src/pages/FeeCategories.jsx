@@ -65,15 +65,15 @@ const FeeCategories = () => {
   };
 
   useEffect(() => {
-    setCategories(categoriesData);
+    if (categoriesData) setCategories(categoriesData);
   }, [categoriesData]);
 
   useEffect(() => {
-    setStudents(studentsData);
+    if (studentsData) setStudents(studentsData);
   }, [studentsData]);
 
   useEffect(() => {
-    setClasses(classesData);
+    if (classesData) setClasses(classesData);
   }, [classesData]);
 
   const initializeBulkAssign = (clsName, secName) => {

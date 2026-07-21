@@ -27,10 +27,10 @@ const Payments = () => {
   const [feeCategories, setFeeCategories] = useState([]);
   const [classes, setClasses] = useState([]);
   const [selectedStudentId, setSelectedStudentId] = useState('');
-  const { data: paymentsData = [], isLoading: paymentsLoading } = usePaymentsQuery();
-  const { data: studentsData = [], isLoading: studentsLoading } = useStudentsQuery();
-  const { data: feeCategoriesData = [], isLoading: feeCategoriesLoading } = useFeeCategoriesQuery();
-  const { data: classesData = [], isLoading: classesLoading } = useClassesQuery();
+  const { data: paymentsData, isLoading: paymentsLoading } = usePaymentsQuery();
+  const { data: studentsData, isLoading: studentsLoading } = useStudentsQuery();
+  const { data: feeCategoriesData, isLoading: feeCategoriesLoading } = useFeeCategoriesQuery();
+  const { data: classesData, isLoading: classesLoading } = useClassesQuery();
   const { data: selectedStudentData } = useStudentQuery(selectedStudentId, Boolean(selectedStudentId));
   const { invalidatePayments, invalidateStudents, invalidateFeeCategories } = useQueryInvalidator();
   const [selectedClass, setSelectedClass] = useState('');
@@ -54,37 +54,19 @@ const Payments = () => {
   const [payingAmounts, setPayingAmounts] = useState({});
 
   useEffect(() => {
-    setPayments(paymentsData);
+    if (paymentsData) setPayments(paymentsData);
   }, [paymentsData]);
-  const fetchData = async () => {
-    try {
-      const [payRes, stuRes, catRes, classRes] = await Promise.all([
-        api.get('/payments'),
-        api.get('/students'),
-        api.get('/fees/categories'),
-        api.get('/classes')
-      ]);
-      setPayments(payRes.data);
-      setStudents(stuRes.data);
-      setFeeCategories(catRes.data);
-      setClasses(classRes.data);
-    } catch (error) {
-      console.error("Error fetching data", error);
-    } finally {
-      setPageLoading(false);
-    }
-  };
 
   useEffect(() => {
-    setStudents(studentsData);
+    if (studentsData) setStudents(studentsData);
   }, [studentsData]);
 
   useEffect(() => {
-    setFeeCategories(feeCategoriesData);
+    if (feeCategoriesData) setFeeCategories(feeCategoriesData);
   }, [feeCategoriesData]);
 
   useEffect(() => {
-    setClasses(classesData);
+    if (classesData) setClasses(classesData);
   }, [classesData]);
 
   useEffect(() => {

@@ -649,6 +649,10 @@ const Admissions = () => {
                   <p className="font-mono text-gray-900">{selectedStudent.admissionNumber}</p>
                 </div>
                 <div>
+                  <p className="text-sm text-gray-500">Academic Year</p>
+                  <p className="text-gray-900">{selectedStudent.academicYear || '-'}</p>
+                </div>
+                <div>
                   <p className="text-sm text-gray-500">EMIS No</p>
                   <p className="font-mono text-gray-900">{selectedStudent.emisNumber || '-'}</p>
                 </div>
@@ -689,12 +693,14 @@ const Admissions = () => {
                   <p className="text-gray-900">{selectedStudent.caste || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">RTE</p>
-                  <p className="text-gray-900">{selectedStudent.RTE || '-'}</p>
-                </div>
-                <div>
                   <p className="text-sm text-gray-500">Nationality</p>
                   <p className="text-gray-900">{selectedStudent.nationality || '-'}</p>
+                </div>
+                <div className="md:col-span-4">
+                  <p className="text-sm text-gray-500">Student Group</p>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${selectedStudent.RTE === 'RTE' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}`}>
+                    {selectedStudent.RTE === 'RTE' ? 'RTE Course Student' : 'General (Non-RTE) Student'}
+                  </span>
                 </div>
               </div>
             </div>
