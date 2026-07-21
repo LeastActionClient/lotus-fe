@@ -21,6 +21,7 @@ const AcademicYearPage = () => {
   const { data: academicYears = [], isLoading } = useAcademicYearsQuery();
   const { invalidateAcademicYears, invalidateDashboard } = useQueryInvalidator();
 
+  const academicYears = academicYearsData;
   const currentActiveYear = academicYears.find(y => y.status === 'Active');
 
   const handleInputChange = (e) => {
