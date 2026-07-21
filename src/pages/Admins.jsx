@@ -124,14 +124,14 @@ const Admins = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center">
             Manage Admins
           </h1>
           <p className="text-gray-500  mt-2">Super Admin controls for system access</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={openHistory}>
             <History className="mr-2 h-4 w-4" /> Login History
           </Button>

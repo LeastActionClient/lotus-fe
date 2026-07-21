@@ -185,7 +185,7 @@ const Dashboard = () => {
 
       <Modal isOpen={isPromoteModalOpen} onClose={() => setIsPromoteModalOpen(false)} title="Bulk Promote Students">
         <form onSubmit={handlePromoteSubmit} className="space-y-4 pt-4">
-          <div className="grid grid-cols-2 gap-4 rounded-lg border bg-gray-50 p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-lg border bg-gray-50 p-4">
             <div>
               <Label>From Academic Year</Label>
               <Input value={fromYear} readOnly className="cursor-not-allowed bg-gray-100 font-medium text-gray-800" />

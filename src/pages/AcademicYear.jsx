@@ -96,7 +96,7 @@ const AcademicYearPage = () => {
           </h1>
           <p className="text-gray-500 mt-2">Manage ERP centralized academic years, activate default sessions, and view promotion status</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)} className="bg-orange-600 hover:bg-orange-700 text-white shadow-md transition-all duration-200 active:scale-95">
+        <Button onClick={() => setIsModalOpen(true)} className="bg-orange-600 hover:bg-orange-700 text-white shadow-md transition-all duration-200 active:scale-95 w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" /> Add Academic Year
         </Button>
       </div>
@@ -146,70 +146,72 @@ const AcademicYearPage = () => {
               <CardTitle className="text-lg font-semibold text-gray-700">Academic Year History</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Academic Year</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created Date</TableHead>
-                    <TableHead>Last Updated</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {academicYears.length === 0 ? (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center h-32 text-gray-500 font-medium">
-                        No academic years configured.
-                      </TableCell>
+                      <TableHead>Academic Year</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="hidden sm:table-cell">Created Date</TableHead>
+                      <TableHead className="hidden md:table-cell">Last Updated</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
                     </TableRow>
-                  ) : (
-                    academicYears.map((ay) => (
-                      <TableRow key={ay._id} className="hover:bg-gray-50/50 transition-all duration-150">
-                        <TableCell className="font-semibold text-gray-800 text-sm tracking-wide">
-                          {ay.year}
-                        </TableCell>
-                        <TableCell>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                            ay.status === 'Active' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {ay.status}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-gray-500 text-xs">
-                          {new Date(ay.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' })}
-                        </TableCell>
-                        <TableCell className="text-gray-500 text-xs">
-                          {new Date(ay.updatedAt).toLocaleDateString(undefined, { dateStyle: 'medium' })}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {ay.status === 'Active' ? (
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => handleStatusChange(ay._id, 'Active')}
-                              className="text-amber-600 border-amber-200 hover:bg-amber-50 active:scale-95 transition-all duration-150"
-                            >
-                              <AlertCircle className="h-4 w-4 mr-1" /> Complete
-                            </Button>
-                          ) : (
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => handleStatusChange(ay._id, 'Completed')}
-                              className="text-green-600 border-green-200 hover:bg-green-50 active:scale-95 transition-all duration-150"
-                              disabled={!!currentActiveYear}
-                              title={currentActiveYear ? "Complete current active year first" : "Activate this session"}
-                            >
-                              <PlayCircle className="h-4 w-4 mr-1" /> Activate
-                            </Button>
-                          )}
+                  </TableHeader>
+                  <TableBody>
+                    {academicYears.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center h-32 text-gray-500 font-medium">
+                          No academic years configured.
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ) : (
+                      academicYears.map((ay) => (
+                        <TableRow key={ay._id} className="hover:bg-gray-50/50 transition-all duration-150">
+                          <TableCell className="font-semibold text-gray-800 text-sm tracking-wide">
+                            {ay.year}
+                          </TableCell>
+                          <TableCell>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                              ay.status === 'Active' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {ay.status}
+                            </span>
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell text-gray-500 text-xs">
+                            {new Date(ay.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' })}
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell text-gray-500 text-xs">
+                            {new Date(ay.updatedAt).toLocaleDateString(undefined, { dateStyle: 'medium' })}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {ay.status === 'Active' ? (
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => handleStatusChange(ay._id, 'Active')}
+                                className="text-amber-600 border-amber-200 hover:bg-amber-50 active:scale-95 transition-all duration-150"
+                              >
+                                <AlertCircle className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Complete</span><span className="sm:hidden">Done</span>
+                              </Button>
+                            ) : (
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => handleStatusChange(ay._id, 'Completed')}
+                                className="text-green-600 border-green-200 hover:bg-green-50 active:scale-95 transition-all duration-150"
+                                disabled={!!currentActiveYear}
+                                title={currentActiveYear ? "Complete current active year first" : "Activate this session"}
+                              >
+                                <PlayCircle className="h-4 w-4 mr-1" /> Activate
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </div>

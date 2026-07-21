@@ -444,7 +444,7 @@ const Payments = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900  flex items-center">
             <IndianRupee className="mr-3 text-emerald-600" size={32} />
@@ -452,7 +452,7 @@ const Payments = () => {
           </h1>
           <p className="text-gray-500  mt-2">Record fee collections and generate receipts</p>
         </div>
-        <div className="flex space-x-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={downloadCSV}>
             <Download className="mr-2 h-4 w-4" /> Export CSV
           </Button>
@@ -623,7 +623,7 @@ const Payments = () => {
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Record New Payment">
         <form onSubmit={handlePayment} className="space-y-4 pt-2">
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="classFilter">Filter by Class (Optional)</Label>
               <select 
@@ -817,7 +817,7 @@ const Payments = () => {
             })()}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="amount">Total Amount (Rs.)</Label>
               <Input 

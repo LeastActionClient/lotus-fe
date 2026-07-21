@@ -372,7 +372,7 @@ const Concessions = () => {
             Super Admin dashboard to assign, view, and audit fee concessions. Original fees are preserved.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Button
             onClick={fetchConcessionsHistory}
             variant="ghost"
@@ -402,7 +402,7 @@ const Concessions = () => {
 
       {/* Main Table: Assigned Concessions List */}
       <Card className="shadow-sm border border-gray-200 rounded-2xl overflow-hidden bg-white">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-gray-100 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-bold text-gray-800">Assigned Concessions List</h2>
           <span className="bg-orange-50 text-orange-700 text-xs font-bold px-3 py-1 rounded-full border border-orange-200">
             Total Records: {totalHistoryItems}
@@ -522,7 +522,7 @@ const Concessions = () => {
 
       {/* Main Page Pagination */}
       {!historyLoading && totalHistoryItems > 0 && (
-        <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
           <p className="text-sm text-gray-500">
             Showing <span className="font-medium">{indexOfFirstHistoryItem + 1}</span> to{' '}
             <span className="font-medium">{Math.min(indexOfLastHistoryItem, totalHistoryItems)}</span> of{' '}
@@ -810,7 +810,7 @@ const Concessions = () => {
 
                 {/* Live Summary Calculation Panel */}
                 {modalFeeCategory && (
-                  <div className="grid grid-cols-3 gap-4 pt-3 border-t border-orange-200/50 text-center font-mono">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-3 border-t border-orange-200/50 text-center font-mono">
                     <div className="bg-white p-3.5 rounded-xl border border-orange-100 shadow-sm">
                       <div className="text-[11px] font-bold text-gray-500 uppercase">Original Fee</div>
                       <div className="text-lg font-bold text-gray-900 mt-1">₹{originalAmount.toFixed(2)}</div>
@@ -891,7 +891,7 @@ const Concessions = () => {
           </div>
 
           {/* Footer - Fixed Layout */}
-          <div className="flex items-center justify-between pt-4 border-t border-gray-200 mt-4 bg-white">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-4 border-t border-gray-200 mt-4 bg-white">
             <div className="flex gap-3">
               <Button
                 type="button"

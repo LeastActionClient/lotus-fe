@@ -267,6 +267,15 @@ const PendingFees = () => {
           </h1>
           <p className="text-gray-500 mt-2">All students (Active & Old) and their fee balances.</p>
         </div>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={handleExportExcel} className="bg-green-600 hover:bg-green-700 text-white shadow-sm">
+            Export Excel
+          </Button>
+          <Button variant="outline" onClick={downloadCSV}>
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
