@@ -202,12 +202,17 @@ const PendingFees = () => {
     });
   }, [students, searchQuery, classFilter, sectionFilter, statusFilter, feeStatusFilter, RTEFilter, categoryFilter]);
 
-  const totalPendingAmount = filteredStudents.reduce((sum, student) => sum + getStudentTotalPending(student), 0);
-  const currentPendingAmount = filteredStudents.reduce((sum, student) => sum + getCurrentPending(student), 0);
-  const previousPendingAmount = filteredStudents.reduce((sum, student) => sum + getPreviousPending(student), 0);
-  const totalPaidAmount = filteredStudents.reduce((sum, student) => sum + getStudentTotalPaid(student), 0);
-  const RTEPaidAmount = filteredStudents.filter(student => isRTEStudent(student)).reduce((sum, student) => sum + getStudentTotalPaid(student), 0);
-  const generalPaidAmount = filteredStudents.filter(student => !isRTEStudent(student)).reduce((sum, student) => sum + getStudentTotalPaid(student), 0);
+  const allStudentsWithFees = useMemo(() => {
+    return students.filter(student => getStudentTotalFee(student) > 0);
+  }, [students]);
+
+  const totalStudentsCount = allStudentsWithFees.length;
+  const totalPendingAmount = allStudentsWithFees.reduce((sum, student) => sum + getStudentTotalPending(student), 0);
+  const currentPendingAmount = allStudentsWithFees.reduce((sum, student) => sum + getCurrentPending(student), 0);
+  const previousPendingAmount = allStudentsWithFees.reduce((sum, student) => sum + getPreviousPending(student), 0);
+  const totalPaidAmount = allStudentsWithFees.reduce((sum, student) => sum + getStudentTotalPaid(student), 0);
+  const RTEPaidAmount = allStudentsWithFees.filter(student => isRTEStudent(student)).reduce((sum, student) => sum + getStudentTotalPaid(student), 0);
+  const generalPaidAmount = allStudentsWithFees.filter(student => !isRTEStudent(student)).reduce((sum, student) => sum + getStudentTotalPaid(student), 0);
   const totalPages = Math.max(1, Math.ceil(filteredStudents.length / itemsPerPage));
   const paginatedStudents = filteredStudents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
@@ -330,14 +335,14 @@ const PendingFees = () => {
         <Card className="bg-white border-gray-200">
           <CardContent className="p-4 flex flex-col items-center text-center">
             <Users className="h-6 w-6 text-blue-500 mb-2" />
-            <p className="text-sm text-gray-500 font-medium">Students in View</p>
-            <p className="text-3xl font-bold text-gray-900">{filteredStudents.length}</p>
+            <p className="text-sm text-gray-500 font-medium">Total Students</p>
+            <p className="text-3xl font-bold text-gray-900">{totalStudentsCount}</p>
           </CardContent>
         </Card>
         <Card className="bg-red-50 border-red-200">
           <CardContent className="p-4 flex flex-col items-center text-center">
             <AlertCircle className="h-6 w-6 text-red-600 mb-2" />
-            <p className="text-sm text-red-600 font-medium">Total Pending (Filtered)</p>
+            <p className="text-sm text-red-600 font-medium">Total Pending</p>
             <p className="text-3xl font-bold text-red-700">Rs. {totalPendingAmount.toLocaleString()}</p>
             <div className="flex gap-4 mt-2 text-xs font-semibold text-red-600 bg-red-100 px-3 py-1 rounded-full">
               <span>Prev: Rs. {previousPendingAmount.toLocaleString()}</span>
@@ -348,7 +353,7 @@ const PendingFees = () => {
         <Card className="bg-green-50 border-green-200">
           <CardContent className="p-4 flex flex-col items-center text-center">
             <CheckCircle className="h-6 w-6 text-green-600 mb-2" />
-            <p className="text-sm text-green-600 font-medium">Total Paid (Filtered)</p>
+            <p className="text-sm text-green-600 font-medium">Total Paid</p>
             <p className="text-3xl font-bold text-green-700">Rs. {totalPaidAmount.toLocaleString()}</p>
             <div className="flex gap-4 mt-2 text-xs font-semibold text-green-700 bg-green-100 px-3 py-1 rounded-full">
               <span>RTE: Rs. {RTEPaidAmount.toLocaleString()}</span>
