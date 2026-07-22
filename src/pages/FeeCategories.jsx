@@ -34,6 +34,8 @@ const FeeCategories = () => {
   const [catMandatory, setCatMandatory] = useState(false);
   const [catIsStockItem, setCatIsStockItem] = useState(false);
   const [catInitialStock, setCatInitialStock] = useState('0');
+  const [catTopStock, setCatTopStock] = useState('0');
+  const [catBottomStock, setCatBottomStock] = useState('0');
 
   // For Edit Fee Category
   const [isEditCatModalOpen, setIsEditCatModalOpen] = useState(false);
@@ -42,6 +44,8 @@ const FeeCategories = () => {
   const [editCatMandatory, setEditCatMandatory] = useState(false);
   const [editCatIsStockItem, setEditCatIsStockItem] = useState(false);
   const [editCatCurrentStock, setEditCatCurrentStock] = useState('0');
+  const [editCatTopStock, setEditCatTopStock] = useState('0');
+  const [editCatBottomStock, setEditCatBottomStock] = useState('0');
   
   // For Assign to Student (Special Fee)
   const [selectedStudentId, setSelectedStudentId] = useState('');
@@ -137,17 +141,22 @@ const FeeCategories = () => {
   const handleCreateCategory = async (e) => {
     e.preventDefault();
     try {
+      const isUniform = catName.trim().toLowerCase() === 'uniform';
       await api.post('/fees/categories', { 
         name: catName, 
         mandatory: catMandatory,
         isStockItem: catIsStockItem,
-        initialStock: catIsStockItem ? Math.max(0, parseInt(catInitialStock || '0', 10)) : 0
+        initialStock: catIsStockItem && !isUniform ? Math.max(0, parseInt(catInitialStock || '0', 10)) : 0,
+        topStock: catIsStockItem && isUniform ? Math.max(0, parseFloat(catTopStock || '0')) : 0,
+        bottomStock: catIsStockItem && isUniform ? Math.max(0, parseFloat(catBottomStock || '0')) : 0
       });
       setIsNewCatModalOpen(false);
       setCatName('');
       setCatMandatory(false);
       setCatIsStockItem(false);
       setCatInitialStock('0');
+      setCatTopStock('0');
+      setCatBottomStock('0');
       toastSuccess("Fee category created successfully!");
       invalidateFeeCategories();
       fetchData();
@@ -163,6 +172,8 @@ const FeeCategories = () => {
     setEditCatMandatory(!!category.mandatory);
     setEditCatIsStockItem(!!category.isStockItem);
     setEditCatCurrentStock(String(category.currentStock ?? 0));
+    setEditCatTopStock(String(category.topStock ?? 0));
+    setEditCatBottomStock(String(category.bottomStock ?? 0));
     setIsEditCatModalOpen(true);
   };
 
@@ -170,12 +181,15 @@ const FeeCategories = () => {
     e.preventDefault();
     if (!editingCat) return;
     try {
+      const isUniform = editCatName.trim().toLowerCase() === 'uniform';
       await api.put(`/fees/categories/${editingCat._id}`, {
         name: editCatName,
         mandatory: editCatMandatory,
         isEnabled: editingCat.isEnabled,
         isStockItem: editCatIsStockItem,
-        updatedStock: editCatIsStockItem ? Math.max(0, parseInt(editCatCurrentStock || '0', 10)) : 0
+        updatedStock: editCatIsStockItem && !isUniform ? Math.max(0, parseInt(editCatCurrentStock || '0', 10)) : 0,
+        updatedTopStock: editCatIsStockItem && isUniform ? Math.max(0, parseFloat(editCatTopStock || '0')) : 0,
+        updatedBottomStock: editCatIsStockItem && isUniform ? Math.max(0, parseFloat(editCatBottomStock || '0')) : 0
       });
       setIsEditCatModalOpen(false);
       setEditingCat(null);
@@ -378,9 +392,16 @@ const FeeCategories = () => {
                     </TableCell>
                     <TableCell>
                       {cat.isStockItem ? (
-                        <span className="font-mono font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded text-sm">
-                          {cat.currentStock ?? 0}
-                        </span>
+                        cat.name.toLowerCase() === 'uniform' ? (
+                          <span className="font-mono text-gray-900 bg-gray-100 px-2 py-1 rounded text-xs inline-flex flex-col items-start leading-normal">
+                            <span>Top: {cat.topStock ?? 0} m</span>
+                            <span>Bottom: {cat.bottomStock ?? 0} m</span>
+                          </span>
+                        ) : (
+                          <span className="font-mono font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded text-sm">
+                            {cat.currentStock ?? 0}
+                          </span>
+                        )
                       ) : (
                         <span className="text-gray-400 font-medium">-</span>
                       )}
@@ -475,26 +496,59 @@ const FeeCategories = () => {
           </div>
 
           {catIsStockItem && (
-            <div className="space-y-2 pt-2 animate-in fade-in duration-300">
-              <Label htmlFor="catInitialStock">Initial Stock</Label>
-              <Input 
-                id="catInitialStock" 
-                type="number" 
-                min="0"
-                step="1"
-                value={catInitialStock} 
-                onChange={(e) => {
-                  const val = e.target.value.replace(/[^0-9]/g, '');
-                  setCatInitialStock(val);
-                }} 
-                placeholder="e.g., 500"
-                required={catIsStockItem}
-              />
-            </div>
+            catName.trim().toLowerCase() === 'uniform' ? (
+              <div className="grid grid-cols-2 gap-4 pt-2 animate-in fade-in duration-300">
+                <div className="space-y-2">
+                  <Label htmlFor="catTopStock">Top Initial Stock (m)</Label>
+                  <Input 
+                    id="catTopStock" 
+                    type="text" 
+                    value={catTopStock} 
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9.]/g, '');
+                      setCatTopStock(val);
+                    }} 
+                    placeholder="e.g., 250.5"
+                    required={catIsStockItem}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="catBottomStock">Bottom Initial Stock (m)</Label>
+                  <Input 
+                    id="catBottomStock" 
+                    type="text" 
+                    value={catBottomStock} 
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9.]/g, '');
+                      setCatBottomStock(val);
+                    }} 
+                    placeholder="e.g., 300"
+                    required={catIsStockItem}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2 pt-2 animate-in fade-in duration-300">
+                <Label htmlFor="catInitialStock">Initial Stock</Label>
+                <Input 
+                  id="catInitialStock" 
+                  type="number" 
+                  min="0"
+                  step="1"
+                  value={catInitialStock} 
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, '');
+                    setCatInitialStock(val);
+                  }} 
+                  placeholder="e.g., 500"
+                  required={catIsStockItem}
+                />
+              </div>
+            )
           )}
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">
-            <Button type="button" variant="ghost" onClick={() => { setIsNewCatModalOpen(false); setCatName(''); setCatMandatory(false); setCatIsStockItem(false); setCatInitialStock('0'); }}>Cancel</Button>
+            <Button type="button" variant="ghost" onClick={() => { setIsNewCatModalOpen(false); setCatName(''); setCatMandatory(false); setCatIsStockItem(false); setCatInitialStock('0'); setCatTopStock('0'); setCatBottomStock('0'); }}>Cancel</Button>
             <Button type="submit">Create Category</Button>
           </div>
         </form>
@@ -535,27 +589,61 @@ const FeeCategories = () => {
           </div>
 
           {editCatIsStockItem && (
-            <div className="space-y-2 pt-2 animate-in fade-in duration-300">
-              <Label htmlFor="editCatCurrentStock">Current Stock</Label>
-              <Input 
-                id="editCatCurrentStock" 
-                type="number" 
-                min="0"
-                step="1"
-                value={editCatCurrentStock} 
-                onChange={(e) => {
-                  const val = e.target.value.replace(/[^0-9]/g, '');
-                  setEditCatCurrentStock(val);
-                }} 
-                placeholder="Current Stock Quantity"
-                required={editCatIsStockItem}
-              />
-              <p className="text-xs text-gray-500">Update value to adjust available inventory.</p>
-            </div>
+            editCatName.trim().toLowerCase() === 'uniform' ? (
+              <div className="grid grid-cols-2 gap-4 pt-2 animate-in fade-in duration-300">
+                <div className="space-y-2">
+                  <Label htmlFor="editCatTopStock">Current Top Stock (m)</Label>
+                  <Input 
+                    id="editCatTopStock" 
+                    type="text" 
+                    value={editCatTopStock} 
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9.]/g, '');
+                      setEditCatTopStock(val);
+                    }} 
+                    placeholder="e.g., 250.5"
+                    required={editCatIsStockItem}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="editCatBottomStock">Current Bottom Stock (m)</Label>
+                  <Input 
+                    id="editCatBottomStock" 
+                    type="text" 
+                    value={editCatBottomStock} 
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9.]/g, '');
+                      setEditCatBottomStock(val);
+                    }} 
+                    placeholder="e.g., 300"
+                    required={editCatIsStockItem}
+                  />
+                </div>
+                <p className="col-span-2 text-xs text-gray-500">Update values to adjust available uniform cloth meters.</p>
+              </div>
+            ) : (
+              <div className="space-y-2 pt-2 animate-in fade-in duration-300">
+                <Label htmlFor="editCatCurrentStock">Current Stock</Label>
+                <Input 
+                  id="editCatCurrentStock" 
+                  type="number" 
+                  min="0"
+                  step="1"
+                  value={editCatCurrentStock} 
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, '');
+                    setEditCatCurrentStock(val);
+                  }} 
+                  placeholder="Current Stock Quantity"
+                  required={editCatIsStockItem}
+                />
+                <p className="text-xs text-gray-500">Update value to adjust available inventory.</p>
+              </div>
+            )
           )}
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">
-            <Button type="button" variant="ghost" onClick={() => { setIsEditCatModalOpen(false); setEditingCat(null); }}>Cancel</Button>
+            <Button type="button" variant="ghost" onClick={() => { setIsEditCatModalOpen(false); setEditingCat(null); setEditCatTopStock('0'); setEditCatBottomStock('0'); }}>Cancel</Button>
             <Button type="submit">Save Changes</Button>
           </div>
         </form>
