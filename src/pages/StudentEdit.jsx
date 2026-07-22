@@ -42,7 +42,6 @@ const StudentEdit = () => {
     emisNo: '',
     emisNumber: '',
     nationality: '',
-    email: '',
     currentClass: '',
     section: '',
     rollNumber: '',
@@ -164,7 +163,6 @@ const StudentEdit = () => {
         emisNo: student.emisNo || student.emisNumber || '',
         emisNumber: student.emisNo || student.emisNumber || '',
         nationality: student.nationality || '',
-        email: student.email || '',
         currentClass: student.currentClass || '',
         section: student.section || '',
         rollNumber: student.rollNumber || '',
@@ -474,6 +472,12 @@ const StudentEdit = () => {
       return;
     }
 
+    const pincode = (formData.pincode || '').trim();
+    if (pincode && !/^\d{6}$/.test(pincode)) {
+      toastWarning("Pincode must be exactly 6 digits.");
+      return;
+    }
+
     try {
       const selectedFeeCategoryIds = [...mandatoryCatIds, ...selectedCharges];
 
@@ -596,10 +600,6 @@ const StudentEdit = () => {
               <div className="space-y-2">
                 <Label>Nationality</Label>
                 <Input name="nationality" value={formData.nationality} onChange={(e) => handleValidatedChange('nationality', e, 'letters', formData, setFormData)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Email</Label>
-                <Input type="email" name="email" value={formData.email} onChange={handleInputChange} />
               </div>
             </CardContent>
           </Card>

@@ -711,10 +711,6 @@ const Students = () => {
                   <p className="text-sm text-gray-900">{selectedStudent.nationality || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Email</p>
-                  <p className="text-sm text-gray-900">{selectedStudent.email || '-'}</p>
-                </div>
-                <div>
                   <p className="text-xs text-gray-500">Enrollment Date</p>
                   <p className="text-sm text-gray-900">{selectedStudent.createdAt ? new Date(selectedStudent.createdAt).toLocaleDateString() : '-'}</p>
                 </div>

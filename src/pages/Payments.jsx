@@ -625,7 +625,7 @@ const Payments = () => {
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="classFilter">Filter by Class (Optional)</Label>
+              <Label htmlFor="classFilter">Filter by Class</Label>
               <select 
                 id="classFilter" 
                 className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
@@ -643,7 +643,7 @@ const Payments = () => {
               </select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sectionFilter">Filter by Section (Optional)</Label>
+              <Label htmlFor="sectionFilter">Filter by Section</Label>
               <select 
                 id="sectionFilter" 
                 className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"

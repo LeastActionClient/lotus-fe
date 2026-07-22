@@ -238,6 +238,10 @@ const Admissions = () => {
     const emisNo = (form.emisNumber || form.emisNo || '').trim();
     if (emisNo && !/^\d{10}$/.test(emisNo)) return "EMIS No must be exactly 10 digits.";
 
+    // Pincode validation (Optional, but must be exactly 6 digits if provided)
+    const pincode = (form.pincode || '').trim();
+    if (pincode && !/^\d{6}$/.test(pincode)) return "Pincode must be exactly 6 digits.";
+
     return null;
   };
 
@@ -562,7 +566,7 @@ const Admissions = () => {
                 </select>
               </div>
               <div className="flex-1 space-y-1">
-                <Label className="whitespace-nowrap">Section (Optional)</Label>
+                <Label className="whitespace-nowrap">Section</Label>
                 <select
                   className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600 focus:border-transparent"
                   value={selectedSection}
