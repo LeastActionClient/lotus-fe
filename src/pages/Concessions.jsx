@@ -57,7 +57,7 @@ const Concessions = () => {
     setHistoryLoading(true);
     try {
       const res = await api.get('/concessions/student-fees');
-      const assignedOnly = res.data.filter(item => item.status === 'Active' || item.status === 'Inactive' || item.status === 'Cancelled');
+      const assignedOnly = res.data.filter(item => ['Active', 'Inactive', 'Completed', 'Expired', 'Cancelled'].includes(item.status));
       const seen = new Set();
       const deduped = assignedOnly.filter(item => {
         const id = item._id || item.concessionId;
@@ -193,6 +193,8 @@ const Concessions = () => {
       const payload = {
         studentIds: [selectedStudentId],
         feeCategoryId: modalFeeCategory,
+        academicYear: selectedStudent?.currentEnrollment?.academicYear || selectedStudent?.academicYear || '',
+        academicYearId: selectedStudent?.currentEnrollment?.academicYearId || '',
         lessAmount: lessAmountNum,
         reason: modalReason,
         remarks: modalRemarks
@@ -206,6 +208,7 @@ const Concessions = () => {
       const newAssignment = {
         admissionNumber: selectedStudent.admissionNumber,
         studentName: selectedStudent.studentName,
+        academicYear: selectedStudent?.currentEnrollment?.academicYear || selectedStudent?.academicYear || '',
         feeCategory: selectedFeeOpt.name,
         originalAmount: originalAmount,
         lessAmount: lessAmountNum,
@@ -303,6 +306,7 @@ const Concessions = () => {
     const headers = [
       'Admission Number',
       'Student Name',
+      'Academic Year',
       'Class',
       'Section',
       'Fee Category',
@@ -319,12 +323,13 @@ const Concessions = () => {
     const rows = concessionsHistory.map(item => {
       const admissionNumber = item.admissionNumber || item.studentId?.admissionNumber || 'N/A';
       const studentName = item.studentName || item.studentId?.studentName || 'N/A';
+      const academicYear = item.academicYear || item.studentId?.academicYear || 'N/A';
       const className = item.className || 'N/A';
       const section = item.section || 'N/A';
       const feeCategoryName = item.feeCategory || item.feeCategoryId?.name || 'N/A';
       const original = item.originalAmount || 0;
       const less = item.lessAmount || 0;
-      const net = item.status === 'Active' ? (original - less) : original;
+      const net = ['Active', 'Completed', 'Expired'].includes(item.status) ? (original - less) : original;
       const reason = item.reason || 'N/A';
       const remarks = item.remarks || 'N/A';
       const assignedBy = item.assignedBy || item.createdBy?.username || 'N/A';
@@ -333,6 +338,7 @@ const Concessions = () => {
       return [
         admissionNumber,
         studentName,
+        academicYear,
         className,
         section,
         feeCategoryName,
@@ -435,6 +441,7 @@ const Concessions = () => {
                   <TableRow className="bg-gray-50 border-b border-gray-200">
                     <TableHead className="py-4">Admission No</TableHead>
                     <TableHead>Student Name</TableHead>
+                    <TableHead>Academic Year</TableHead>
                     <TableHead>Class</TableHead>
                     <TableHead>Section</TableHead>
                     <TableHead>Fee Category</TableHead>
@@ -452,12 +459,13 @@ const Concessions = () => {
                   {currentHistoryItems.map((item) => {
                     const admissionNo = item.admissionNumber || item.studentId?.admissionNumber || 'N/A';
                     const name = item.studentName || item.studentId?.studentName || 'N/A';
+                    const academicYear = item.academicYear || item.studentId?.academicYear || 'N/A';
                     const className = item.className || 'N/A';
                     const section = item.section || 'N/A';
                     const feeCategoryName = item.feeCategory || item.feeCategoryId?.name || 'N/A';
                     const original = item.originalAmount || 0;
                     const less = item.lessAmount || 0;
-                    const net = item.status === 'Active' ? (original - less) : original;
+                    const net = ['Active', 'Completed', 'Expired'].includes(item.status) ? (original - less) : original;
                     const reason = item.reason || 'N/A';
                     const assignedDate = item.assignedDate || item.createdAt;
                     const assignedBy = item.assignedBy || item.createdBy?.username || 'N/A';
@@ -466,6 +474,7 @@ const Concessions = () => {
                       <TableRow key={item._id || item.concessionId} className="border-b border-gray-100 hover:bg-orange-50/10 transition-colors">
                         <TableCell className="font-bold text-gray-800 py-3.5">{admissionNo}</TableCell>
                         <TableCell className="font-semibold text-gray-900">{name}</TableCell>
+                        <TableCell className="text-sm text-gray-600">{academicYear}</TableCell>
                         <TableCell>{className}</TableCell>
                         <TableCell>{section}</TableCell>
                         <TableCell className="font-medium text-gray-600">{feeCategoryName}</TableCell>
@@ -481,6 +490,14 @@ const Concessions = () => {
                           {item.status === 'Cancelled' ? (
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-50 text-red-700 border border-red-200">
                               Cancelled
+                            </span>
+                          ) : ['Completed', 'Expired'].includes(item.status) ? (
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                              item.status === 'Completed'
+                                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                : 'bg-amber-50 text-amber-700 border-amber-200'
+                            }`}>
+                              {item.status}
                             </span>
                           ) : (
                             <div className="flex items-center gap-2">
