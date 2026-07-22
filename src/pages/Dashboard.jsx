@@ -14,7 +14,7 @@ import { useConfirm } from '../components/ui/ConfirmDialog';
 
 const Dashboard = () => {
   const { data: overview = {}, isLoading, refetch } = useDashboardOverviewQuery();
-  const { invalidateDashboard, invalidateAcademicYears } = useQueryInvalidator();
+  const { invalidateDashboard, invalidateAcademicYears, invalidateStudents } = useQueryInvalidator();
   const confirm = useConfirm();
 
   const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
@@ -32,17 +32,18 @@ const Dashboard = () => {
     RTEStudents: 0,
     generalStudents: 0,
   };
+  const normalizeClassName = (value) => String(value ?? '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
   const classSortFn = (a, b) => {
-    const preSchoolOrder = { 'pre-kg': 1, 'lkg': 2, 'ukg': 3 };
-    const aNorm = String(a).trim().toLowerCase();
-    const bNorm = String(b).trim().toLowerCase();
+    const preSchoolOrder = { 'prekg': 1, 'lkg': 2, 'ukg': 3 };
+    const aNorm = normalizeClassName(a);
+    const bNorm = normalizeClassName(b);
     const isPreA = preSchoolOrder[aNorm];
     const isPreB = preSchoolOrder[bNorm];
     if (isPreA && isPreB) return isPreA - isPreB;
     if (isPreA) return -1;
     if (isPreB) return 1;
-    const numA = parseInt(aNorm, 10);
-    const numB = parseInt(bNorm, 10);
+    const numA = /^(\d+)$/.test(aNorm) ? parseInt(aNorm, 10) : NaN;
+    const numB = /^(\d+)$/.test(bNorm) ? parseInt(bNorm, 10) : NaN;
     const isNumA = !isNaN(numA);
     const isNumB = !isNaN(numB);
     if (isNumA && isNumB) return numA - numB;
@@ -157,11 +158,13 @@ const Dashboard = () => {
       const response = await api.post('/students/promote', {
         fromAcademicYear: finalFromYear,
         toAcademicYear: finalToYear,
+        fromAcademicYearId: matchedFromYearDoc?._id || null,
+        toAcademicYearId: matchedToYearDoc?._id || null,
         classMapping
       });
       toastSuccess(response.data.message);
       setIsPromoteModalOpen(false);
-      await Promise.all([invalidateDashboard(), invalidateAcademicYears(), refetch()]);
+      await Promise.all([invalidateDashboard(), invalidateAcademicYears(), invalidateStudents()]);
     } catch (error) {
       console.error('Error promoting students', error);
       toastError(error.response?.data?.error || 'Failed to promote students. Check console for details.');

@@ -234,17 +234,18 @@ const Payments = () => {
     });
   };
 
+  const normalizeClassName = (value) => String(value ?? '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
   const classSortFn = (a, b) => {
-    const preSchoolOrder = { 'pre-kg': 1, 'lkg': 2, 'ukg': 3 };
-    const aNorm = String(a).trim().toLowerCase();
-    const bNorm = String(b).trim().toLowerCase();
+    const preSchoolOrder = { 'prekg': 1, 'lkg': 2, 'ukg': 3 };
+    const aNorm = normalizeClassName(a);
+    const bNorm = normalizeClassName(b);
     const isPreA = preSchoolOrder[aNorm];
     const isPreB = preSchoolOrder[bNorm];
     if (isPreA && isPreB) return isPreA - isPreB;
     if (isPreA) return -1;
     if (isPreB) return 1;
-    const numA = parseInt(aNorm, 10);
-    const numB = parseInt(bNorm, 10);
+    const numA = /^(\d+)$/.test(aNorm) ? parseInt(aNorm, 10) : NaN;
+    const numB = /^(\d+)$/.test(bNorm) ? parseInt(bNorm, 10) : NaN;
     const isNumA = !isNaN(numA);
     const isNumB = !isNaN(numB);
     if (isNumA && isNumB) return numA - numB;

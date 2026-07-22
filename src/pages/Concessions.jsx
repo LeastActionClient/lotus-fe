@@ -58,7 +58,14 @@ const Concessions = () => {
     try {
       const res = await api.get('/concessions/student-fees');
       const assignedOnly = res.data.filter(item => item.status === 'Active' || item.status === 'Inactive' || item.status === 'Cancelled');
-      setConcessionsHistory(assignedOnly);
+      const seen = new Set();
+      const deduped = assignedOnly.filter(item => {
+        const id = item._id || item.concessionId;
+        if (seen.has(id)) return false;
+        seen.add(id);
+        return true;
+      });
+      setConcessionsHistory(deduped);
     } catch (err) {
       console.error('Error fetching concessions list:', err);
       toastError('Failed to fetch concessions history');
@@ -111,17 +118,27 @@ const Concessions = () => {
   const classObj = classes.find(c => c.name === modalClass);
   const sections = classObj ? (classObj.sections || []) : [];
 
+  const normalizeText = (value) => `${value ?? ''}`.trim().toLowerCase();
+  const isActiveStudent = (student) => {
+    const status = normalizeText(student.studentStatus);
+    return !status || status === 'active';
+  };
+
   // Filter students belonging to the selected Class and Section
-  const modalStudents = allStudents.filter(s => 
-    s.currentClass === modalClass && 
-    s.section === modalSection &&
-    s.studentStatus === 'Active'
+  const modalStudents = allStudents.filter(s =>
+    normalizeText(s.currentClass) === normalizeText(modalClass) &&
+    normalizeText(s.section) === normalizeText(modalSection) &&
+    isActiveStudent(s)
   );
 
   // Filter student dropdown options dynamically based on search input
   const filteredStudentDropdownOptions = modalStudents.filter(s => {
-    if (!searchName) return true;
-    return s.studentName.toLowerCase().includes(searchName.toLowerCase());
+    const q = normalizeText(searchName);
+    if (!q) return true;
+    return (
+      normalizeText(s.studentName).includes(q) ||
+      normalizeText(s.admissionNumber).includes(q)
+    );
   });
 
   // Selected Student Object
@@ -601,10 +618,10 @@ const Concessions = () => {
 
                 {/* Optional Student Name Filter */}
                 <div className="space-y-1.5">
-                  <Label htmlFor="searchStudentInput" className="text-gray-700 font-semibold">Filter Dropdown by Name</Label>
+                  <Label htmlFor="searchStudentInput" className="text-gray-700 font-semibold">Filter by Name or Admission No</Label>
                   <Input
                     id="searchStudentInput"
-                    placeholder="Search by student name"
+                    placeholder="Search by name or admission number"
                     value={searchName}
                     onChange={(e) => setSearchName(e.target.value)}
                     disabled={!modalSection}

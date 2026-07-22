@@ -35,15 +35,37 @@ const PendingFees = () => {
     fetchCategories();
   }, []);
 
-  const isPreviousYearFee = (fee, student) => {
-    return (
-      (fee.academicYear && student.academicYear && fee.academicYear !== student.academicYear) ||
-      (!fee.academicYear && fee.className && student.currentClass && fee.className !== student.currentClass)
-    );
+  const normalizeText = (value) => `${value ?? ''}`.trim().toLowerCase();
+  const toTime = (value) => {
+    if (!value) return null;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date.getTime();
   };
 
-  const getCurrentFees = (student) => (student.studentFees || []).filter(f => !isPreviousYearFee(f, student));
-  const getPreviousFees = (student) => (student.studentFees || []).filter(f => isPreviousYearFee(f, student));
+  const getFeeBucket = (fee, student) => {
+    const feeYear = normalizeText(fee.academicYear);
+    const activeYear = normalizeText(student.currentEnrollment?.academicYear || student.academicYear);
+    if (feeYear && activeYear) {
+      return feeYear === activeYear ? 'current' : 'previous';
+    }
+
+    const feeCreatedAt = toTime(fee.createdAt);
+    const enrollmentBoundary = toTime(student.currentEnrollment?.joinedDate || student.currentEnrollment?.promotedDate || student.currentEnrollment?.createdAt);
+    if (feeCreatedAt && enrollmentBoundary) {
+      return feeCreatedAt < enrollmentBoundary ? 'previous' : 'current';
+    }
+
+    const feeClass = normalizeText(fee.className);
+    const currentClass = normalizeText(student.currentClass);
+    if (feeClass && currentClass) {
+      return feeClass === currentClass ? 'current' : 'previous';
+    }
+
+    return 'current';
+  };
+
+  const getCurrentFees = (student) => (student.studentFees || []).filter(f => getFeeBucket(f, student) === 'current');
+  const getPreviousFees = (student) => (student.studentFees || []).filter(f => getFeeBucket(f, student) === 'previous');
 
   const getStudentTotalPending = (student) => {
     return (student.studentFees || []).reduce((sum, fee) => sum + (fee.remainingAmount || 0), 0);
@@ -71,6 +93,25 @@ const PendingFees = () => {
 
   const getPreviousPaid = (student) => {
     return getPreviousFees(student).reduce((sum, fee) => sum + (fee.paidAmount || 0), 0);
+  };
+
+  const formatFeeLabel = (fee) => fee.feeCategory?.name || fee.feeCategoryId?.name || 'Unknown';
+  const formatRs = (amount) => `Rs. ${(amount || 0).toFixed(2)}`;
+  const renderFeeBreakdown = (fees, emptyMessage = 'No pending fees') => {
+    if (!fees || fees.length === 0) {
+      return <div className="text-gray-400">{emptyMessage}</div>;
+    }
+
+    return (
+      <div className="space-y-1.5 max-h-[180px] overflow-y-auto pr-1">
+        {fees.map((fee, idx) => (
+          <div key={`${fee._id || idx}`} className="flex justify-between gap-4 text-left font-normal">
+            <span className="text-gray-600">{formatFeeLabel(fee)}</span>
+            <span className="font-semibold text-red-600">Rs. {(fee.remainingAmount || 0).toFixed(2)}</span>
+          </div>
+        ))}
+      </div>
+    );
   };
 
   const fetchStudents = async () => {
@@ -213,6 +254,8 @@ const PendingFees = () => {
 
   const handleExportExcel = () => {
     const excelData = filteredStudents.map(student => {
+      const previousPendingFees = getPreviousFees(student).filter(f => (f.remainingAmount || 0) > 0);
+      const currentPendingFees = getCurrentFees(student).filter(f => (f.remainingAmount || 0) > 0);
       const pendingCats = (student.studentFees || [])
         .filter(f => f.remainingAmount > 0 && f.feeCategoryId)
         .map(f => ({
@@ -237,6 +280,11 @@ const PendingFees = () => {
         'Student Status': (!student.studentStatus || student.studentStatus === 'Active') ? 'Active' : student.studentStatus,
         'Class': student.currentClass || '',
         'Section': student.section || '',
+        'Academic Year': student.currentEnrollment?.academicYear || student.academicYear || '',
+        'Prev Pending': `Rs. ${getPreviousPending(student).toFixed(2)}`,
+        'Curr Pending': `Rs. ${getCurrentPending(student).toFixed(2)}`,
+        'Prev Pending Details': previousPendingFees.map(f => `${formatFeeLabel(f)}: Rs. ${(f.remainingAmount || 0).toFixed(2)}`).join(' | ') || 'None',
+        'Curr Pending Details': currentPendingFees.map(f => `${formatFeeLabel(f)}: Rs. ${(f.remainingAmount || 0).toFixed(2)}`).join(' | ') || 'None',
         'Pending Categories': pendingCategoriesStr || 'None',
         'Category-wise Pending Amounts': categoryWisePendingAmountsStr || '0',
         'Total Fee': `Rs. ${getStudentTotalFee(student).toFixed(2)}`,
@@ -463,7 +511,9 @@ const PendingFees = () => {
                     const totalFee = getStudentTotalFee(student);
                     const currentPending = getCurrentPending(student);
                     const previousPending = getPreviousPending(student);
-                    const hasPreviousFees = previousPending > 0;
+                    const hasPreviousFees = getPreviousFees(student).length > 0;
+                    const previousPendingFees = getPreviousFees(student).filter(f => (f.remainingAmount || 0) > 0);
+                    const currentPendingFees = getCurrentFees(student).filter(f => (f.remainingAmount || 0) > 0);
 
                     return (
                       <TableRow key={student._id}>
@@ -508,39 +558,67 @@ const PendingFees = () => {
                         <TableCell className="text-right text-emerald-600">Rs. {getCurrentPaid(student).toFixed(2)}</TableCell>
                         <TableCell className="text-right">
                           {hasPreviousFees ? (
-                            <span className="text-red-600 font-medium">Rs. {previousPending.toFixed(2)}</span>
+                            <div className="relative group inline-block">
+                              <span className={`font-medium cursor-pointer border-b border-dashed ${
+                                previousPending > 0
+                                  ? 'text-red-600 border-red-400 hover:text-red-700'
+                                  : 'text-gray-400 border-gray-300 hover:text-gray-500'
+                              }`}>
+                                {previousPending > 0 ? formatRs(previousPending) : '-'}
+                              </span>
+                              <div className={`absolute right-0 ${index < 2 ? 'top-full mt-2' : 'bottom-full mb-2'} z-50 invisible group-hover:visible bg-white text-gray-800 text-xs rounded-lg shadow-xl border border-gray-200 p-3 min-w-[240px] pointer-events-none transition-all duration-200`}>
+                                <div className="font-bold border-b border-gray-100 pb-1 mb-1.5 text-gray-700 text-left">
+                                  Carried Forward Fees
+                                </div>
+                                {renderFeeBreakdown(previousPendingFees, 'No carried forward fees')}
+                              </div>
+                            </div>
                           ) : (
                             <span className="text-gray-300">-</span>
                           )}
                         </TableCell>
                         <TableCell className="text-right">
-                          <span className={currentPending > 0 ? 'text-orange-600 font-medium' : 'text-gray-400'}>
-                            Rs. {currentPending.toFixed(2)}
-                          </span>
+                          <div className="relative group inline-block">
+                            <span className={`font-medium cursor-pointer border-b border-dashed ${
+                              currentPending > 0
+                                ? 'text-orange-600 border-orange-400 hover:text-orange-700'
+                                : 'text-gray-400 border-gray-300 hover:text-gray-500'
+                            }`}>
+                              {formatRs(currentPending)}
+                            </span>
+                            <div className={`absolute right-0 ${index < 2 ? 'top-full mt-2' : 'bottom-full mb-2'} z-50 invisible group-hover:visible bg-white text-gray-800 text-xs rounded-lg shadow-xl border border-gray-200 p-3 min-w-[240px] pointer-events-none transition-all duration-200`}>
+                              <div className="font-bold border-b border-gray-100 pb-1 mb-1.5 text-gray-700 text-left">
+                                Current Year Pending
+                              </div>
+                              {renderFeeBreakdown(currentPendingFees, 'No current year pending fees')}
+                            </div>
+                          </div>
                         </TableCell>
                         <TableCell className="text-right font-bold">
-                          {totalPending > 0 ? (
-                            <div className="relative group inline-block">
-                              <span className="text-red-600 cursor-pointer border-b border-dashed border-red-400 hover:text-red-700">
-                                Rs. {totalPending.toFixed(2)}
-                              </span>
-                              <div className={`absolute right-0 ${index < 2 ? 'top-full mt-2' : 'bottom-full mb-2'} z-50 invisible group-hover:visible bg-white text-gray-800 text-xs rounded-lg shadow-xl border border-gray-200 p-3 min-w-[220px] pointer-events-none transition-all duration-200`}>
-                                <div className="font-bold border-b border-gray-100 pb-1 mb-1.5 text-gray-700 text-left">
-                                  Pending Fees Breakdown
+                          <div className="relative group inline-block">
+                            <span className={`font-bold cursor-pointer border-b border-dashed ${
+                              totalPending > 0
+                                ? 'text-red-600 border-red-400 hover:text-red-700'
+                                : 'text-gray-500 border-gray-300 hover:text-gray-600'
+                            }`}>
+                              {formatRs(totalPending)}
+                            </span>
+                            <div className={`absolute right-0 ${index < 2 ? 'top-full mt-2' : 'bottom-full mb-2'} z-50 invisible group-hover:visible bg-white text-gray-800 text-xs rounded-lg shadow-xl border border-gray-200 p-3 min-w-[220px] pointer-events-none transition-all duration-200`}>
+                              <div className="font-bold border-b border-gray-100 pb-1 mb-1.5 text-gray-700 text-left">
+                                Pending Fees Breakdown
+                              </div>
+                              <div className="space-y-3">
+                                <div>
+                                  <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-purple-700">Carried Forward</div>
+                                  {renderFeeBreakdown(previousPendingFees, 'None')}
                                 </div>
-                                <div className="space-y-1.5 max-h-[150px] overflow-y-auto pr-1">
-                                  {(student.studentFees || []).filter(f => f.remainingAmount > 0).map((f, idx) => (
-                                    <div key={idx} className="flex justify-between gap-4 text-left font-normal">
-                                      <span className="text-gray-600">{f.feeCategory?.name || f.feeCategoryId?.name || 'Unknown'}</span>
-                                      <span className="font-semibold text-red-600">Rs. {f.remainingAmount.toFixed(2)}</span>
-                                    </div>
-                                  ))}
+                                <div>
+                                  <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-orange-700">Current Year</div>
+                                  {renderFeeBreakdown(currentPendingFees, 'None')}
                                 </div>
                               </div>
                             </div>
-                          ) : (
-                            <span className="text-green-600">Rs. {totalPending.toFixed(2)}</span>
-                          )}
+                          </div>
                         </TableCell>
                         <TableCell className="whitespace-nowrap">
                           {totalPending > 0 ? (
