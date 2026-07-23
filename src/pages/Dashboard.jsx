@@ -161,13 +161,26 @@ const Dashboard = () => {
         fromAcademicYearId: matchedFromYearDoc?._id || null,
         toAcademicYearId: matchedToYearDoc?._id || null,
         classMapping
+      }, {
+        timeout: 180000, // 3 minutes timeout for bulk promotion
+        skipToast: true
       });
       toastSuccess(response.data.message);
+      if (response.data.failures && response.data.failures.length > 0) {
+        response.data.failures.forEach(f => {
+          toastWarning(`Promotion failed for student ${f.studentName} (Adm: ${f.admissionNumber}): ${f.error}`, { duration: 6000 });
+        });
+      }
       setIsPromoteModalOpen(false);
       await Promise.all([invalidateDashboard(), invalidateAcademicYears(), invalidateStudents()]);
     } catch (error) {
       console.error('Error promoting students', error);
-      toastError(error.response?.data?.error || 'Failed to promote students. Check console for details.');
+      const isTimeout = error.code === 'ECONNABORTED' || error.message?.includes('timeout') || !error.response;
+      toastError(
+        isTimeout
+          ? 'Failed to promote students due to request timeout. Please check your network connection or if students were already promoted.'
+          : (error.response?.data?.error || 'Failed to promote students. Check console for details.')
+      );
     } finally {
       setIsPromoting(false);
     }

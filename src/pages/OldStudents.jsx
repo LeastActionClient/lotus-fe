@@ -131,22 +131,32 @@ const OldStudents = () => {
   };
 
   const getStudentTotalPending = (s) => {
+    if (s.totalDue !== undefined) return s.totalDue;
     return s.studentFees?.reduce((sum, f) => sum + (f.remainingAmount || 0), 0) || 0;
   };
 
   const getStudentTotalPaid = (s) => {
+    if (s.currentPaid !== undefined && s.previousPaid !== undefined) {
+      return s.currentPaid + s.previousPaid;
+    }
     return s.studentFees?.reduce((sum, f) => sum + (f.paidAmount || 0), 0) || 0;
   };
 
   const getStudentTotalFee = (s) => {
-    return s.studentFees?.reduce((sum, f) => sum + (f.totalAmount || 0), 0) || 0;
+    if (s.totalFee !== undefined) return s.totalFee;
+    return s.studentFees?.reduce((sum, f) => {
+      const concessionAmount = f.concessionStatus === 'Active' ? (f.lessAmount || 0) : 0;
+      return sum + Math.max(0, (f.totalAmount || 0) - concessionAmount);
+    }, 0) || 0;
   };
 
   const getCurrentPending = (s) => {
+    if (s.currentPending !== undefined) return s.currentPending;
     return s.currentClassFees?.reduce((sum, f) => sum + (f.remainingAmount || 0), 0) || 0;
   };
 
   const getPreviousPending = (s) => {
+    if (s.previousPending !== undefined) return s.previousPending;
     return s.previousClassFees?.reduce((sum, f) => sum + (f.remainingAmount || 0), 0) || 0;
   };
 

@@ -57,9 +57,9 @@ export const toastError = (message, options = {}) => {
   }
 
   const technicalKeywords = [
-    'axioserror', 'typeerror', 'mongoerror', 'mongoservererror', 'e11000', 
-    'duplicate key', 'cannot read properties', 'undefined', 'null', 
-    'internal server error', 'network error', 'stack', 'syntaxerror', 
+    'axioserror', 'typeerror', 'mongoerror', 'mongoservererror', 'e11000',
+    'duplicate key', 'cannot read properties', 'undefined', 'null',
+    'internal server error', 'stack', 'syntaxerror',
     'validation failed', 'validationerror', 'cast to objectid', 'cast error',
     'mongodb', 'mongoose', 'server responded with status'
   ];

@@ -79,11 +79,19 @@ const Admissions = () => {
     } else if (validationType === 'admissionNumber') {
       val = val.replace(/[^a-zA-Z0-9\-\/]/g, '');
     } else if (validationType === 'numbers') {
-      val = val.replace(/[^0-9]/g, '');
+      if (field === 'whatsappNumber' || field === 'aadhaarNumber') {
+        val = val.replace(/[^0-9*Xx]/g, '');
+      } else {
+        val = val.replace(/[^0-9]/g, '');
+      }
     } else if (validationType === 'alphanumeric') {
       val = val.replace(/[^a-zA-Z0-9\s\-\+]/g, '');
     } else if (validationType === 'bloodGroup') {
       val = val.replace(/[^a-zA-Z\s\-\+]/g, '');
+    } else if (validationType === 'occupation') {
+      val = val.replace(/[^a-zA-Z0-9\s\-./()&,]/g, '');
+    } else if (validationType === 'caste') {
+      val = val.replace(/[^a-zA-Z\s\-./]/g, '');
     }
     const limit = maxLen ?? (field === 'pincode' ? 6 : field === 'aadhaarNumber' ? 12 : (field === 'emisNumber' || field === 'emisNo') ? 10 : (field === 'fatherPhone' || field === 'motherPhone' || field === 'whatsappNumber') ? 10 : null);
     if (limit && val.length > limit) {
@@ -210,27 +218,29 @@ const Admissions = () => {
     // WhatsApp Number validation (Optional)
     const whatsappNumber = (form.whatsappNumber || '').trim();
     if (whatsappNumber) {
-      if (!/^[5-9]\d{9}$/.test(whatsappNumber)) return "WhatsApp Number must be exactly 10 digits and start with 5, 6, 7, 8, or 9.";
+      const isMasked = /[*Xx]/.test(whatsappNumber);
+      const isValid = isMasked ? /^[0-9*Xx]{10}$/.test(whatsappNumber) : /^[5-9]\d{9}$/.test(whatsappNumber);
+      if (!isValid) return "WhatsApp Number must be exactly 10 digits and start with 5, 6, 7, 8, or 9.";
     }
 
     // Father Occupation validation (Optional)
     const fatherOccupation = (form.fatherOccupation || '').trim();
     if (fatherOccupation) {
-      if (!/^[a-zA-Z\s]+$/.test(fatherOccupation)) return "Father Occupation must contain only alphabets and spaces.";
+      if (!/^[a-zA-Z\s\-./()&,]+$/.test(fatherOccupation)) return "Father Occupation must contain only alphabets, spaces, and common characters (- . / ( ) & ,).";
       if (fatherOccupation.length > 100) return "Father Occupation must not exceed 100 characters.";
     }
 
     // Mother Occupation validation (Optional)
     const motherOccupation = (form.motherOccupation || '').trim();
     if (motherOccupation) {
-      if (!/^[a-zA-Z\s]+$/.test(motherOccupation)) return "Mother Occupation must contain only alphabets and spaces.";
+      if (!/^[a-zA-Z\s\-./()&,]+$/.test(motherOccupation)) return "Mother Occupation must contain only alphabets, spaces, and common characters (- . / ( ) & ,).";
       if (motherOccupation.length > 100) return "Mother Occupation must not exceed 100 characters.";
     }
 
     // Caste validation (Optional)
     const caste = (form.caste || '').trim();
     if (caste) {
-      if (!/^[a-zA-Z\s]+$/.test(caste)) return "Caste must contain only alphabets and spaces.";
+      if (!/^[a-zA-Z\s\-./]+$/.test(caste)) return "Caste must contain only alphabets, spaces, hyphens, dots, and slashes.";
       if (caste.length > 50) return "Caste must not exceed 50 characters.";
     }
 
@@ -406,16 +416,18 @@ const Admissions = () => {
       val = val.replace(/[^a-zA-Z0-9\-\/]/g, '').slice(0, 30);
     } else if (name === 'fatherName' || name === 'motherName' || name === 'guardian' || name === 'guardianName') {
       val = val.replace(/[^a-zA-Z\s.]/g, '').slice(0, 100);
-    } else if (name === 'fatherPhone' || name === 'motherPhone' || name === 'whatsappNumber') {
+    } else if (name === 'fatherPhone' || name === 'motherPhone') {
       val = val.replace(/[^0-9]/g, '').slice(0, 10);
+    } else if (name === 'whatsappNumber') {
+      val = val.replace(/[^0-9*Xx]/g, '').slice(0, 10);
     } else if (name === 'fatherOccupation' || name === 'motherOccupation') {
-      val = val.replace(/[^a-zA-Z\s]/g, '').slice(0, 100);
+      val = val.replace(/[^a-zA-Z0-9\s\-./()&,]/g, '').slice(0, 100);
     } else if (name === 'caste') {
-      val = val.replace(/[^a-zA-Z\s]/g, '').slice(0, 50);
+      val = val.replace(/[^a-zA-Z\s\-./]/g, '').slice(0, 50);
     } else if (name === 'emisNumber' || name === 'emisNo') {
       val = val.replace(/[^0-9]/g, '').slice(0, 10);
     } else if (name === 'aadhaarNumber') {
-      val = val.replace(/[^0-9]/g, '').slice(0, 12);
+      val = val.replace(/[^0-9*Xx]/g, '').slice(0, 12);
     } else if (name === 'bloodGroup') {
       val = val.replace(/[^a-zA-Z\s\-\+]/g, '');
     }
@@ -1065,7 +1077,7 @@ const Admissions = () => {
               </div>
               <div className="space-y-2">
                 <Label>Caste</Label>
-                <Input value={manualForm.caste} maxLength={50} onChange={(e) => handleValidatedChange('caste', e, 'letters', manualForm, setManualForm, 50)} />
+                <Input value={manualForm.caste} maxLength={50} onChange={(e) => handleValidatedChange('caste', e, 'caste', manualForm, setManualForm, 50)} />
               </div>
               <div className="space-y-2">
                 <Label>Nationality</Label>
@@ -1115,11 +1127,11 @@ const Admissions = () => {
               </div>
               <div className="space-y-2">
                 <Label>Father Occupation</Label>
-                <Input value={manualForm.fatherOccupation} onChange={(e) => handleValidatedChange('fatherOccupation', e, 'letters', manualForm, setManualForm)} />
+                <Input value={manualForm.fatherOccupation} onChange={(e) => handleValidatedChange('fatherOccupation', e, 'occupation', manualForm, setManualForm)} />
               </div>
               <div className="space-y-2">
                 <Label>Mother Occupation</Label>
-                <Input value={manualForm.motherOccupation} onChange={(e) => handleValidatedChange('motherOccupation', e, 'letters', manualForm, setManualForm)} />
+                <Input value={manualForm.motherOccupation} onChange={(e) => handleValidatedChange('motherOccupation', e, 'occupation', manualForm, setManualForm)} />
               </div>
             </div>
           </div>

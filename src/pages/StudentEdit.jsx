@@ -14,7 +14,7 @@ const StudentEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const currentUser = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || '{}');
 
   const [loading, setLoading] = useState(true);
   
@@ -73,11 +73,19 @@ const StudentEdit = () => {
     } else if (validationType === 'admissionNumber') {
       val = val.replace(/[^a-zA-Z0-9\-\/]/g, '');
     } else if (validationType === 'numbers') {
-      val = val.replace(/[^0-9]/g, '');
+      if (field === 'whatsappNumber' || field === 'aadhaarNumber') {
+        val = val.replace(/[^0-9*Xx]/g, '');
+      } else {
+        val = val.replace(/[^0-9]/g, '');
+      }
     } else if (validationType === 'alphanumeric') {
       val = val.replace(/[^a-zA-Z0-9\s\-\+]/g, '');
     } else if (validationType === 'bloodGroup') {
       val = val.replace(/[^a-zA-Z\s\-\+]/g, '');
+    } else if (validationType === 'occupation') {
+      val = val.replace(/[^a-zA-Z0-9\s\-./()&,]/g, '');
+    } else if (validationType === 'caste') {
+      val = val.replace(/[^a-zA-Z\s\-./]/g, '');
     }
     const limit = maxLen ?? (field === 'pincode' ? 6 : field === 'aadhaarNumber' ? 12 : (field === 'emisNumber' || field === 'emisNo') ? 10 : (field === 'fatherPhone' || field === 'motherPhone' || field === 'whatsappNumber') ? 10 : null);
     if (limit && val.length > limit) {
@@ -188,6 +196,10 @@ const StudentEdit = () => {
       // Find which optional categories student has in studentFees (excl. Uniform)
       const studentOptionalFeeCatIds = (student.studentFees || [])
         .filter(f => {
+          // Only load optional charges that belong to the student's current class
+          const feeClass = f.className || '';
+          if (feeClass && feeClass !== student.currentClass) return false;
+
           const rawCatId = f.feeCategoryId?._id || f.feeCategoryId;
           const catId = rawCatId ? rawCatId.toString() : '';
           const cat = cats.find(c => c._id?.toString() === catId);
@@ -201,6 +213,10 @@ const StudentEdit = () => {
 
       // Load Uniform lengths
       const uniformFee = (student.studentFees || []).find(f => {
+        // Only load uniform fee that belongs to the student's current class
+        const feeClass = f.className || '';
+        if (feeClass && feeClass !== student.currentClass) return false;
+
         const rawCatId = f.feeCategoryId?._id || f.feeCategoryId;
         const catId = rawCatId ? rawCatId.toString() : '';
         const cat = cats.find(c => c._id?.toString() === catId);
@@ -267,11 +283,16 @@ const StudentEdit = () => {
 
   // Calculations
   const baseFeeAmount = React.useMemo(() => {
-    if (!originalStudent || formData.currentClass !== originalStudent.currentClass || formData.section !== originalStudent.section) {
+    const hasCurrentClassFees = (originalStudent?.studentFees || []).some(f => f.className === formData.currentClass);
+    if (!originalStudent || formData.currentClass !== originalStudent.currentClass || formData.section !== originalStudent.section || !hasCurrentClassFees) {
       const mandatoryCats = categories.filter(cat => cat.isEnabled && cat.mandatory && cat.name.toLowerCase() !== 'uniform' && getFeeAmount(defaultFees[cat._id]) > 0);
       return mandatoryCats.reduce((sum, cat) => sum + getFeeAmount(defaultFees[cat._id]), 0);
     }
     const actualMandatoryFees = (originalStudent.studentFees || []).filter(f => {
+      // Only include mandatory fees belonging to the current class
+      const feeClass = f.className || '';
+      if (feeClass && feeClass !== formData.currentClass) return false;
+
       const rawCatId = f.feeCategoryId?._id || f.feeCategoryId;
       const catId = rawCatId ? rawCatId.toString() : '';
       const cat = categories.find(c => c._id?.toString() === catId);
@@ -281,13 +302,18 @@ const StudentEdit = () => {
   }, [formData.currentClass, formData.section, originalStudent, categories, defaultFees]);
 
   const mandatoryCatIds = React.useMemo(() => {
-    if (!originalStudent || formData.currentClass !== originalStudent.currentClass || formData.section !== originalStudent.section) {
+    const hasCurrentClassFees = (originalStudent?.studentFees || []).some(f => f.className === formData.currentClass);
+    if (!originalStudent || formData.currentClass !== originalStudent.currentClass || formData.section !== originalStudent.section || !hasCurrentClassFees) {
       return categories
         .filter(cat => cat.isEnabled && cat.mandatory && cat.name.toLowerCase() !== 'uniform' && getFeeAmount(defaultFees[cat._id]) > 0)
         .map(cat => cat._id?.toString());
     }
     return (originalStudent.studentFees || [])
       .filter(f => {
+        // Only include mandatory fees belonging to the current class
+        const feeClass = f.className || '';
+        if (feeClass && feeClass !== formData.currentClass) return false;
+
         const rawCatId = f.feeCategoryId?._id || f.feeCategoryId;
         const catId = rawCatId ? rawCatId.toString() : '';
         const cat = categories.find(c => c._id?.toString() === catId);
@@ -336,7 +362,20 @@ const StudentEdit = () => {
 
   const chargesTotal = normalChargesTotal + uniformTotal;
 
-  const grandTotal = baseFeeAmount + chargesTotal;
+  const concessionTotal = React.useMemo(() => {
+    if (!originalStudent) return 0;
+    const currentClassFees = (originalStudent.studentFees || []).filter(f =>
+      f.className === formData.currentClass || (!f.className && !f.academicYear)
+    );
+    return currentClassFees.reduce((sum, f) => {
+      if (f.concessionStatus === 'Active') {
+        return sum + (f.lessAmount || 0);
+      }
+      return sum;
+    }, 0);
+  }, [originalStudent, formData.currentClass]);
+
+  const grandTotal = Math.max(0, baseFeeAmount + chargesTotal - concessionTotal);
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -430,7 +469,9 @@ const StudentEdit = () => {
     // WhatsApp Number validation (Optional)
     const whatsappNumber = (formData.whatsappNumber || '').trim();
     if (whatsappNumber) {
-      if (!/^[5-9]\d{9}$/.test(whatsappNumber)) {
+      const isMasked = /[*Xx]/.test(whatsappNumber);
+      const isValid = isMasked ? /^[0-9*Xx]{10}$/.test(whatsappNumber) : /^[5-9]\d{9}$/.test(whatsappNumber);
+      if (!isValid) {
         toastWarning("WhatsApp Number must be exactly 10 digits and start with 5, 6, 7, 8, or 9.");
         return;
       }
@@ -439,8 +480,8 @@ const StudentEdit = () => {
     // Father Occupation validation (Optional)
     const fatherOccupation = (formData.fatherOccupation || '').trim();
     if (fatherOccupation) {
-      if (!/^[a-zA-Z\s]+$/.test(fatherOccupation)) {
-        toastWarning("Father Occupation must contain only alphabets and spaces.");
+      if (!/^[a-zA-Z\s\-./()&,]+$/.test(fatherOccupation)) {
+        toastWarning("Father Occupation must contain only alphabets, spaces, and common characters (- . / ( ) & ,).");
         return;
       }
       if (fatherOccupation.length > 100) {
@@ -452,8 +493,8 @@ const StudentEdit = () => {
     // Mother Occupation validation (Optional)
     const motherOccupation = (formData.motherOccupation || '').trim();
     if (motherOccupation) {
-      if (!/^[a-zA-Z\s]+$/.test(motherOccupation)) {
-        toastWarning("Mother Occupation must contain only alphabets and spaces.");
+      if (!/^[a-zA-Z\s\-./()&,]+$/.test(motherOccupation)) {
+        toastWarning("Mother Occupation must contain only alphabets, spaces, and common characters (- . / ( ) & ,).");
         return;
       }
       if (motherOccupation.length > 100) {
@@ -467,7 +508,7 @@ const StudentEdit = () => {
       return;
     }
 
-    if (formData.aadhaarNumber && !/^(\d{12}|[xX]{8}\d{4})$/.test(formData.aadhaarNumber.replace(/\s/g, ''))) {
+    if (formData.aadhaarNumber && !/^([0-9*Xx]{12})$/.test(formData.aadhaarNumber.replace(/\s/g, ''))) {
       toastWarning("Aadhaar Number must be exactly 12 digits.");
       return;
     }
@@ -595,7 +636,7 @@ const StudentEdit = () => {
               </div>
               <div className="space-y-2">
                 <Label>Caste</Label>
-                 <Input name="caste" value={formData.caste} maxLength={50} onChange={(e) => handleValidatedChange('caste', e, 'letters', formData, setFormData, 50)} />
+                 <Input name="caste" value={formData.caste} maxLength={50} onChange={(e) => handleValidatedChange('caste', e, 'caste', formData, setFormData, 50)} />
               </div>
               <div className="space-y-2">
                 <Label>Nationality</Label>
@@ -683,7 +724,7 @@ const StudentEdit = () => {
               </div>
               <div className="space-y-2">
                 <Label>Father Occupation</Label>
-                <Input name="fatherOccupation" value={formData.fatherOccupation} onChange={(e) => handleValidatedChange('fatherOccupation', e, 'letters', formData, setFormData, 100)} />
+                <Input name="fatherOccupation" value={formData.fatherOccupation} onChange={(e) => handleValidatedChange('fatherOccupation', e, 'occupation', formData, setFormData, 100)} />
               </div>
               <div className="space-y-2">
                 <Label>Mother Name</Label>
@@ -695,7 +736,7 @@ const StudentEdit = () => {
               </div>
               <div className="space-y-2">
                 <Label>Mother Occupation</Label>
-                <Input name="motherOccupation" value={formData.motherOccupation} onChange={(e) => handleValidatedChange('motherOccupation', e, 'letters', formData, setFormData, 100)} />
+                <Input name="motherOccupation" value={formData.motherOccupation} onChange={(e) => handleValidatedChange('motherOccupation', e, 'occupation', formData, setFormData, 100)} />
               </div>
               <div className="space-y-2">
                 <Label>Guardian Name</Label>
@@ -870,6 +911,13 @@ const StudentEdit = () => {
                   <span>Charges Total</span>
                   <span>₹ {chargesTotal.toFixed(2)}</span>
                 </div>
+
+                {concessionTotal > 0 && (
+                  <div className="flex justify-between text-sm font-semibold text-emerald-600 border-t border-gray-200 pt-2">
+                    <span>Concession Applied</span>
+                    <span>- ₹ {concessionTotal.toFixed(2)}</span>
+                  </div>
+                )}
                 
                 <div className="flex justify-between items-center text-lg font-bold text-gray-900 border-t border-gray-300 pt-3 mt-3">
                   <span>Grand Total</span>

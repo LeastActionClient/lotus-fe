@@ -43,22 +43,28 @@ const PendingFees = () => {
   };
 
   const getFeeBucket = (fee, student) => {
+    const feeClass = normalizeText(fee.className);
+    const currentClass = normalizeText(student.currentClass);
     const feeYear = normalizeText(fee.academicYear);
-    const activeYear = normalizeText(student.currentEnrollment?.academicYear || student.academicYear);
-    if (feeYear && activeYear) {
-      return feeYear === activeYear ? 'current' : 'previous';
+    const currentYear = normalizeText(student.academicYear);
+
+    if (feeClass && currentClass && feeClass !== currentClass) {
+      return 'previous';
+    }
+    if (feeYear && currentYear && feeYear !== currentYear) {
+      return 'previous';
+    }
+    if (feeClass && currentClass && feeClass === currentClass) {
+      return 'current';
+    }
+    if (feeYear && currentYear && feeYear === currentYear) {
+      return 'current';
     }
 
     const feeCreatedAt = toTime(fee.createdAt);
     const enrollmentBoundary = toTime(student.currentEnrollment?.joinedDate || student.currentEnrollment?.promotedDate || student.currentEnrollment?.createdAt);
     if (feeCreatedAt && enrollmentBoundary) {
       return feeCreatedAt < enrollmentBoundary ? 'previous' : 'current';
-    }
-
-    const feeClass = normalizeText(fee.className);
-    const currentClass = normalizeText(student.currentClass);
-    if (feeClass && currentClass) {
-      return feeClass === currentClass ? 'current' : 'previous';
     }
 
     return 'current';
@@ -68,30 +74,42 @@ const PendingFees = () => {
   const getPreviousFees = (student) => (student.studentFees || []).filter(f => getFeeBucket(f, student) === 'previous');
 
   const getStudentTotalPending = (student) => {
+    if (student.totalDue !== undefined) return student.totalDue;
     return (student.studentFees || []).reduce((sum, fee) => sum + (fee.remainingAmount || 0), 0);
   };
 
   const getStudentTotalPaid = (student) => {
+    if (student.currentPaid !== undefined && student.previousPaid !== undefined) {
+      return student.currentPaid + student.previousPaid;
+    }
     return (student.studentFees || []).reduce((sum, fee) => sum + (fee.paidAmount || 0), 0);
   };
 
   const getStudentTotalFee = (student) => {
-    return (student.studentFees || []).reduce((sum, fee) => sum + (fee.totalAmount || 0), 0);
+    if (student.totalFee !== undefined) return student.totalFee;
+    return (student.studentFees || []).reduce((sum, fee) => {
+      const concessionAmount = fee.concessionStatus === 'Active' ? (fee.lessAmount || 0) : 0;
+      return sum + Math.max(0, (fee.totalAmount || 0) - concessionAmount);
+    }, 0);
   };
 
   const getCurrentPending = (student) => {
+    if (student.currentPending !== undefined) return student.currentPending;
     return getCurrentFees(student).reduce((sum, fee) => sum + (fee.remainingAmount || 0), 0);
   };
 
   const getPreviousPending = (student) => {
+    if (student.previousPending !== undefined) return student.previousPending;
     return getPreviousFees(student).reduce((sum, fee) => sum + (fee.remainingAmount || 0), 0);
   };
 
   const getCurrentPaid = (student) => {
+    if (student.currentPaid !== undefined) return student.currentPaid;
     return getCurrentFees(student).reduce((sum, fee) => sum + (fee.paidAmount || 0), 0);
   };
 
   const getPreviousPaid = (student) => {
+    if (student.previousPaid !== undefined) return student.previousPaid;
     return getPreviousFees(student).reduce((sum, fee) => sum + (fee.paidAmount || 0), 0);
   };
 
@@ -552,7 +570,7 @@ const PendingFees = () => {
                         </TableCell>
                         <TableCell>
                           {student.currentClass} {student.section ? `- ${student.section}` : ''}
-                          {hasPreviousFees && (
+                          {previousPending > 0 && (
                             <span className="ml-2 inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
                               Carried Forward
                             </span>

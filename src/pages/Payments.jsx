@@ -95,13 +95,13 @@ const Payments = () => {
 
         const initialAmounts = {};
         pendingFees.forEach(f => {
-          const dynamicRemaining = Math.max(0, f.totalAmount - (f.concessionStatus === 'Active' ? f.lessAmount : 0) - (f.paidAmount || 0));
+          const dynamicRemaining = f.remainingAmount !== undefined ? f.remainingAmount : Math.max(0, (f.totalAmount || 0) - (f.concessionStatus === 'Active' ? (f.lessAmount || 0) : 0) - (f.paidAmount || 0));
           initialAmounts[f._id || f.id] = dynamicRemaining.toString();
         });
         setPayingAmounts(initialAmounts);
 
         const totalAmt = pendingFees.reduce((sum, f) => {
-          const dynamicRemaining = Math.max(0, f.totalAmount - (f.concessionStatus === 'Active' ? f.lessAmount : 0) - (f.paidAmount || 0));
+          const dynamicRemaining = f.remainingAmount !== undefined ? f.remainingAmount : Math.max(0, (f.totalAmount || 0) - (f.concessionStatus === 'Active' ? (f.lessAmount || 0) : 0) - (f.paidAmount || 0));
           return sum + dynamicRemaining;
         }, 0);
 
@@ -124,8 +124,9 @@ const Payments = () => {
 
   const getDynamicRemaining = (f) => {
     if (!f) return 0;
+    if (typeof f.remainingAmount === 'number') return f.remainingAmount;
     const less = f.concessionStatus === 'Active' ? (f.lessAmount || 0) : 0;
-    return Math.max(0, f.totalAmount - less - (f.paidAmount || 0));
+    return Math.max(0, (f.totalAmount || 0) - less - (f.paidAmount || 0));
   };
 
   const isFormInvalid = paymentData.studentFeeIds.some(id => {

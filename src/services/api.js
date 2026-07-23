@@ -143,10 +143,12 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    if (responseMessage) {
-      toastError(responseMessage);
-    } else if (!error.response) {
-      toastError('Network error. Please check your connection.');
+    if (!config.skipToast) {
+      if (responseMessage) {
+        toastError(responseMessage);
+      } else if (!error.response) {
+        toastError('Network error. Please check your connection.');
+      }
     }
 
     return Promise.reject(error);
