@@ -15,14 +15,14 @@ const ReceiptCopy = ({ payment }) => {
   return (
     <section className="receipt-copy flex h-full min-h-full w-full flex-col overflow-hidden px-[2mm] py-[1.5mm]">
       <div className="border-b border-slate-300 pb-0.5">
-        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1">
-          <img src={logoBase64} alt="Kasthuri School Logo" className="w-10 h-auto object-contain" />
+        <div className="grid min-h-[14mm] grid-cols-[14mm_minmax(0,1fr)_auto] items-center gap-2">
+          <img src={logoBase64} alt="Kasthuri School Logo" className="h-[14mm] w-[14mm] object-contain" />
 
-          <h2 className="text-center text-[14px] font-bold uppercase leading-tight text-slate-900">
+          <h2 className="text-center text-[13px] font-bold uppercase leading-tight text-slate-900">
             KASTHURI NURSERY AND PRIMARY SCHOOL
           </h2>
 
-          <h3 className="shrink-0 text-right text-[14px] font-bold uppercase leading-tight text-slate-900">
+          <h3 className="shrink-0 text-right text-[13px] font-bold uppercase leading-tight text-slate-900">
             FEE RECEIPT
           </h3>
         </div>
@@ -70,16 +70,16 @@ const ReceiptCopy = ({ payment }) => {
                 <span className="font-semibold">Admission No:</span> {student.admissionNumber || '-'}
               </p>
               <p>
-                <span className="font-semibold">Receipt No:</span> {invoiceNumber}
+                <span className="font-semibold">Student Name:</span> {student.studentName || '-'}
               </p>
               <p>
-                <span className="font-semibold">Student Name:</span> {student.studentName || '-'}
+                <span className="font-semibold">Class &amp; Section:</span>{' '}
+                {student.currentClass || '-'} {student.section || ''}
               </p>
             </div>
             <div className="space-y-0.5 pr-[1mm] text-right">
               <p>
-                <span className="font-semibold">Class &amp; Section:</span>{' '}
-                {student.currentClass || '-'} {student.section || ''}
+                <span className="font-semibold">Receipt No:</span> {invoiceNumber}
               </p>
               <p>
                 <span className="font-semibold">Date:</span> {receiptDate}
