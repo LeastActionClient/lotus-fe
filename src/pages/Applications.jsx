@@ -11,7 +11,7 @@ import { FileText, Plus, CheckCircle, Trash2, Settings } from 'lucide-react';
 import { PageLoader } from '../components/ui/Spinner';
 import { toastError, toastSuccess } from '../services/toastService';
 import { useConfirm } from '../components/ui/ConfirmDialog';
-import { useApplicationsQuery, useQueryInvalidator } from '../hooks/useSchoolQueries';
+import { useApplicationsQuery, useClassesQuery, useQueryInvalidator } from '../hooks/useSchoolQueries';
 
 const Applications = () => {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -35,8 +35,32 @@ const Applications = () => {
     feePaid: false,
     adminNo: ''
   });
-  const { data: applications = [], isLoading } = useApplicationsQuery();
+  const { data: applications = [], isLoading: applicationsLoading } = useApplicationsQuery();
+  const { data: classesData = [], isLoading: classesLoading } = useClassesQuery();
   const { invalidateApplications } = useQueryInvalidator();
+
+  const isLoading = applicationsLoading || classesLoading;
+
+  const sortedClasses = React.useMemo(() => {
+    return [...classesData].sort((a, b) => {
+      const preSchoolOrder = { 'prekg': 1, 'lkg': 2, 'ukg': 3 };
+      const aNorm = String(a.name).trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+      const bNorm = String(b.name).trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+      const isPreA = preSchoolOrder[aNorm];
+      const isPreB = preSchoolOrder[bNorm];
+      if (isPreA && isPreB) return isPreA - isPreB;
+      if (isPreA) return -1;
+      if (isPreB) return 1;
+      const numA = parseInt(aNorm, 10);
+      const numB = parseInt(bNorm, 10);
+      const isNumA = !isNaN(numA);
+      const isNumB = !isNaN(numB);
+      if (isNumA && isNumB) return numA - numB;
+      if (isNumA) return 1;
+      if (isNumB) return -1;
+      return aNorm.localeCompare(bNorm);
+    });
+  }, [classesData]);
 
   const handleNewApplication = async () => {
     setIsModalOpen(true);
@@ -304,14 +328,11 @@ const Applications = () => {
               <Label htmlFor="applyingClass">Admission for <span className="text-red-500">*</span></Label>
               <select id="applyingClass" name="applyingClass" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600" value={formData.applyingClass} onChange={handleInputChange} required>
                 <option value="">Select...</option>
-                <option value="Pre KG">Pre KG</option>
-                <option value="LKG">L.K.G.</option>
-                <option value="UKG">U.K.G</option>
-                <option value="1">I STD</option>
-                <option value="2">II STD</option>
-                <option value="3">III STD</option>
-                <option value="4">IV STD</option>
-                <option value="5">V STD</option>
+                {sortedClasses.map((cls) => (
+                  <option key={cls._id || cls.id} value={cls.name}>
+                    {cls.name}
+                  </option>
+                ))}
               </select>
             </div>
 

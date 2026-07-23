@@ -196,6 +196,10 @@ const StudentEdit = () => {
       // Find which optional categories student has in studentFees (excl. Uniform)
       const studentOptionalFeeCatIds = (student.studentFees || [])
         .filter(f => {
+          // Only load optional charges that belong to the student's current class
+          const feeClass = f.className || '';
+          if (feeClass && feeClass !== student.currentClass) return false;
+
           const rawCatId = f.feeCategoryId?._id || f.feeCategoryId;
           const catId = rawCatId ? rawCatId.toString() : '';
           const cat = cats.find(c => c._id?.toString() === catId);
@@ -209,6 +213,10 @@ const StudentEdit = () => {
 
       // Load Uniform lengths
       const uniformFee = (student.studentFees || []).find(f => {
+        // Only load uniform fee that belongs to the student's current class
+        const feeClass = f.className || '';
+        if (feeClass && feeClass !== student.currentClass) return false;
+
         const rawCatId = f.feeCategoryId?._id || f.feeCategoryId;
         const catId = rawCatId ? rawCatId.toString() : '';
         const cat = cats.find(c => c._id?.toString() === catId);
@@ -275,11 +283,16 @@ const StudentEdit = () => {
 
   // Calculations
   const baseFeeAmount = React.useMemo(() => {
-    if (!originalStudent || formData.currentClass !== originalStudent.currentClass || formData.section !== originalStudent.section) {
+    const hasCurrentClassFees = (originalStudent?.studentFees || []).some(f => f.className === formData.currentClass);
+    if (!originalStudent || formData.currentClass !== originalStudent.currentClass || formData.section !== originalStudent.section || !hasCurrentClassFees) {
       const mandatoryCats = categories.filter(cat => cat.isEnabled && cat.mandatory && cat.name.toLowerCase() !== 'uniform' && getFeeAmount(defaultFees[cat._id]) > 0);
       return mandatoryCats.reduce((sum, cat) => sum + getFeeAmount(defaultFees[cat._id]), 0);
     }
     const actualMandatoryFees = (originalStudent.studentFees || []).filter(f => {
+      // Only include mandatory fees belonging to the current class
+      const feeClass = f.className || '';
+      if (feeClass && feeClass !== formData.currentClass) return false;
+
       const rawCatId = f.feeCategoryId?._id || f.feeCategoryId;
       const catId = rawCatId ? rawCatId.toString() : '';
       const cat = categories.find(c => c._id?.toString() === catId);
@@ -289,13 +302,18 @@ const StudentEdit = () => {
   }, [formData.currentClass, formData.section, originalStudent, categories, defaultFees]);
 
   const mandatoryCatIds = React.useMemo(() => {
-    if (!originalStudent || formData.currentClass !== originalStudent.currentClass || formData.section !== originalStudent.section) {
+    const hasCurrentClassFees = (originalStudent?.studentFees || []).some(f => f.className === formData.currentClass);
+    if (!originalStudent || formData.currentClass !== originalStudent.currentClass || formData.section !== originalStudent.section || !hasCurrentClassFees) {
       return categories
         .filter(cat => cat.isEnabled && cat.mandatory && cat.name.toLowerCase() !== 'uniform' && getFeeAmount(defaultFees[cat._id]) > 0)
         .map(cat => cat._id?.toString());
     }
     return (originalStudent.studentFees || [])
       .filter(f => {
+        // Only include mandatory fees belonging to the current class
+        const feeClass = f.className || '';
+        if (feeClass && feeClass !== formData.currentClass) return false;
+
         const rawCatId = f.feeCategoryId?._id || f.feeCategoryId;
         const catId = rawCatId ? rawCatId.toString() : '';
         const cat = categories.find(c => c._id?.toString() === catId);
@@ -344,7 +362,20 @@ const StudentEdit = () => {
 
   const chargesTotal = normalChargesTotal + uniformTotal;
 
-  const grandTotal = baseFeeAmount + chargesTotal;
+  const concessionTotal = React.useMemo(() => {
+    if (!originalStudent) return 0;
+    const currentClassFees = (originalStudent.studentFees || []).filter(f =>
+      f.className === formData.currentClass || (!f.className && !f.academicYear)
+    );
+    return currentClassFees.reduce((sum, f) => {
+      if (f.concessionStatus === 'Active') {
+        return sum + (f.lessAmount || 0);
+      }
+      return sum;
+    }, 0);
+  }, [originalStudent, formData.currentClass]);
+
+  const grandTotal = Math.max(0, baseFeeAmount + chargesTotal - concessionTotal);
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -880,6 +911,13 @@ const StudentEdit = () => {
                   <span>Charges Total</span>
                   <span>₹ {chargesTotal.toFixed(2)}</span>
                 </div>
+
+                {concessionTotal > 0 && (
+                  <div className="flex justify-between text-sm font-semibold text-emerald-600 border-t border-gray-200 pt-2">
+                    <span>Concession Applied</span>
+                    <span>- ₹ {concessionTotal.toFixed(2)}</span>
+                  </div>
+                )}
                 
                 <div className="flex justify-between items-center text-lg font-bold text-gray-900 border-t border-gray-300 pt-3 mt-3">
                   <span>Grand Total</span>
