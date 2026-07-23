@@ -165,6 +165,7 @@ const InvoiceGenerated = () => {
 
           .receipt-page {
             width: calc(210mm - 10mm) !important;
+            height: calc(297mm - 10mm) !important;
             max-width: none !important;
             min-height: calc(297mm - 10mm) !important;
             margin: 0 auto !important;
@@ -174,14 +175,19 @@ const InvoiceGenerated = () => {
           }
 
           .receipt-copy {
-            height: 95mm !important;
+            height: 100% !important;
+            min-height: 100% !important;
             break-inside: avoid !important;
             page-break-inside: avoid !important;
             overflow: hidden !important;
           }
 
-          .receipt-copy + .receipt-copy {
-            border-top: 1px dashed #cbd5e1 !important;
+          .receipt-sheet {
+            width: calc(210mm - 10mm) !important;
+            height: calc(297mm - 10mm) !important;
+            max-width: none !important;
+            box-shadow: none !important;
+            border: none !important;
           }
 
           .invoice-sheet {
