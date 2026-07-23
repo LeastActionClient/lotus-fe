@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Download } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
@@ -7,23 +7,18 @@ import { PageLoader } from '../components/ui/Spinner';
 import { useFeeCategoriesQuery, usePendingFeesQuery, useReportDataQuery } from '../hooks/useSchoolQueries';
 
 const Reports = () => {
-  const [daily, setDaily] = useState([]);
-  const [pending, setPending] = useState([]);
-  const [categoryWise, setCategoryWise] = useState([]);
-
   const [timeframe, setTimeframe] = useState('daily');
   
   // Custom date range states
   const [startDate, setStartDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
 
-  const [feeCategories, setFeeCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const { data: reportData = {}, isLoading: reportLoading } = useReportDataQuery(timeframe, startDate, endDate);
   const { data: pendingData = {}, isLoading: pendingLoading } = usePendingFeesQuery();
-  const { data: feeCategoriesData = [], isLoading: categoriesLoading } = useFeeCategoriesQuery();
+  const { data: feeCategories = [], isLoading: categoriesLoading } = useFeeCategoriesQuery();
 
-  useEffect(() => {
+  const daily = useMemo(() => {
     const rawPayments = reportData.payments || [];
     const processedPayments = [];
 
@@ -42,16 +37,10 @@ const Reports = () => {
       }
     });
 
-    setDaily(processedPayments);
+    return processedPayments;
   }, [reportData]);
 
-  useEffect(() => {
-    setPending(pendingData.pendingFees || []);
-  }, [pendingData]);
-
-  useEffect(() => {
-    setFeeCategories(feeCategoriesData || []);
-  }, [feeCategoriesData]);
+  const pending = useMemo(() => pendingData.pendingFees || [], [pendingData]);
 
   const filteredCollections = daily.filter(item => {
     if (selectedCategory === 'ALL') return true;

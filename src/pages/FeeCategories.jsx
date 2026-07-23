@@ -69,15 +69,15 @@ const FeeCategories = () => {
   };
 
   useEffect(() => {
-    setCategories(categoriesData);
+    if (categoriesData) setCategories(categoriesData);
   }, [categoriesData]);
 
   useEffect(() => {
-    setStudents(studentsData);
+    if (studentsData) setStudents(studentsData);
   }, [studentsData]);
 
   useEffect(() => {
-    setClasses(classesData);
+    if (classesData) setClasses(classesData);
   }, [classesData]);
 
   const initializeBulkAssign = (clsName, secName) => {
@@ -651,7 +651,7 @@ const FeeCategories = () => {
 
       <Modal isOpen={isBulkAssignModalOpen} onClose={() => setIsBulkAssignModalOpen(false)} title="Assign Fee to Class">
         <form onSubmit={handleBulkAssignFee} className="space-y-4 pt-2">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Select Class</Label>
               <select 
@@ -823,7 +823,7 @@ const FeeCategories = () => {
       <Modal isOpen={isAssignModalOpen} onClose={() => { setIsAssignModalOpen(false); setSelectedStudentId(''); setSpecialFees({}); setSelectedClassForStudent(''); setSelectedSectionForStudent(''); }} title="Assign Special Fee (Discount) to Student" size="lg">
         <form onSubmit={handleAssignFee} className="space-y-4 pt-2">
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="specialClassFilter">Filter by Class (Optional)</Label>
               <select 

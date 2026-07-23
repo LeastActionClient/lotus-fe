@@ -57,8 +57,15 @@ const Concessions = () => {
     setHistoryLoading(true);
     try {
       const res = await api.get('/concessions/student-fees');
-      const assignedOnly = res.data.filter(item => item.status === 'Active' || item.status === 'Inactive' || item.status === 'Cancelled');
-      setConcessionsHistory(assignedOnly);
+      const assignedOnly = res.data.filter(item => ['Active', 'Inactive', 'Completed', 'Expired', 'Cancelled'].includes(item.status));
+      const seen = new Set();
+      const deduped = assignedOnly.filter(item => {
+        const id = item._id || item.concessionId;
+        if (seen.has(id)) return false;
+        seen.add(id);
+        return true;
+      });
+      setConcessionsHistory(deduped);
     } catch (err) {
       console.error('Error fetching concessions list:', err);
       toastError('Failed to fetch concessions history');
@@ -111,17 +118,27 @@ const Concessions = () => {
   const classObj = classes.find(c => c.name === modalClass);
   const sections = classObj ? (classObj.sections || []) : [];
 
+  const normalizeText = (value) => `${value ?? ''}`.trim().toLowerCase();
+  const isActiveStudent = (student) => {
+    const status = normalizeText(student.studentStatus);
+    return !status || status === 'active';
+  };
+
   // Filter students belonging to the selected Class and Section
-  const modalStudents = allStudents.filter(s => 
-    s.currentClass === modalClass && 
-    s.section === modalSection &&
-    s.studentStatus === 'Active'
+  const modalStudents = allStudents.filter(s =>
+    normalizeText(s.currentClass) === normalizeText(modalClass) &&
+    normalizeText(s.section) === normalizeText(modalSection) &&
+    isActiveStudent(s)
   );
 
   // Filter student dropdown options dynamically based on search input
   const filteredStudentDropdownOptions = modalStudents.filter(s => {
-    if (!searchName) return true;
-    return s.studentName.toLowerCase().includes(searchName.toLowerCase());
+    const q = normalizeText(searchName);
+    if (!q) return true;
+    return (
+      normalizeText(s.studentName).includes(q) ||
+      normalizeText(s.admissionNumber).includes(q)
+    );
   });
 
   // Selected Student Object
@@ -176,6 +193,8 @@ const Concessions = () => {
       const payload = {
         studentIds: [selectedStudentId],
         feeCategoryId: modalFeeCategory,
+        academicYear: selectedStudent?.currentEnrollment?.academicYear || selectedStudent?.academicYear || '',
+        academicYearId: selectedStudent?.currentEnrollment?.academicYearId || '',
         lessAmount: lessAmountNum,
         reason: modalReason,
         remarks: modalRemarks
@@ -189,6 +208,7 @@ const Concessions = () => {
       const newAssignment = {
         admissionNumber: selectedStudent.admissionNumber,
         studentName: selectedStudent.studentName,
+        academicYear: selectedStudent?.currentEnrollment?.academicYear || selectedStudent?.academicYear || '',
         feeCategory: selectedFeeOpt.name,
         originalAmount: originalAmount,
         lessAmount: lessAmountNum,
@@ -286,6 +306,7 @@ const Concessions = () => {
     const headers = [
       'Admission Number',
       'Student Name',
+      'Academic Year',
       'Class',
       'Section',
       'Fee Category',
@@ -302,12 +323,13 @@ const Concessions = () => {
     const rows = concessionsHistory.map(item => {
       const admissionNumber = item.admissionNumber || item.studentId?.admissionNumber || 'N/A';
       const studentName = item.studentName || item.studentId?.studentName || 'N/A';
+      const academicYear = item.academicYear || item.studentId?.academicYear || 'N/A';
       const className = item.className || 'N/A';
       const section = item.section || 'N/A';
       const feeCategoryName = item.feeCategory || item.feeCategoryId?.name || 'N/A';
       const original = item.originalAmount || 0;
       const less = item.lessAmount || 0;
-      const net = item.status === 'Active' ? (original - less) : original;
+      const net = ['Active', 'Completed', 'Expired'].includes(item.status) ? (original - less) : original;
       const reason = item.reason || 'N/A';
       const remarks = item.remarks || 'N/A';
       const assignedBy = item.assignedBy || item.createdBy?.username || 'N/A';
@@ -316,6 +338,7 @@ const Concessions = () => {
       return [
         admissionNumber,
         studentName,
+        academicYear,
         className,
         section,
         feeCategoryName,
@@ -394,7 +417,7 @@ const Concessions = () => {
 
       {/* Main Table: Assigned Concessions List */}
       <Card className="shadow-sm border border-gray-200 rounded-2xl overflow-hidden bg-white">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-gray-100 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-bold text-gray-800">Assigned Concessions List</h2>
           <span className="bg-orange-50 text-orange-700 text-xs font-bold px-3 py-1 rounded-full border border-orange-200">
             Total Records: {totalHistoryItems}
@@ -418,6 +441,7 @@ const Concessions = () => {
                   <TableRow className="bg-gray-50 border-b border-gray-200">
                     <TableHead className="py-4">Admission No</TableHead>
                     <TableHead>Student Name</TableHead>
+                    <TableHead>Academic Year</TableHead>
                     <TableHead>Class</TableHead>
                     <TableHead>Section</TableHead>
                     <TableHead>Fee Category</TableHead>
@@ -435,12 +459,13 @@ const Concessions = () => {
                   {currentHistoryItems.map((item) => {
                     const admissionNo = item.admissionNumber || item.studentId?.admissionNumber || 'N/A';
                     const name = item.studentName || item.studentId?.studentName || 'N/A';
+                    const academicYear = item.academicYear || item.studentId?.academicYear || 'N/A';
                     const className = item.className || 'N/A';
                     const section = item.section || 'N/A';
                     const feeCategoryName = item.feeCategory || item.feeCategoryId?.name || 'N/A';
                     const original = item.originalAmount || 0;
                     const less = item.lessAmount || 0;
-                    const net = item.status === 'Active' ? (original - less) : original;
+                    const net = ['Active', 'Completed', 'Expired'].includes(item.status) ? (original - less) : original;
                     const reason = item.reason || 'N/A';
                     const assignedDate = item.assignedDate || item.createdAt;
                     const assignedBy = item.assignedBy || item.createdBy?.username || 'N/A';
@@ -449,6 +474,7 @@ const Concessions = () => {
                       <TableRow key={item._id || item.concessionId} className="border-b border-gray-100 hover:bg-orange-50/10 transition-colors">
                         <TableCell className="font-bold text-gray-800 py-3.5">{admissionNo}</TableCell>
                         <TableCell className="font-semibold text-gray-900">{name}</TableCell>
+                        <TableCell className="text-sm text-gray-600">{academicYear}</TableCell>
                         <TableCell>{className}</TableCell>
                         <TableCell>{section}</TableCell>
                         <TableCell className="font-medium text-gray-600">{feeCategoryName}</TableCell>
@@ -464,6 +490,14 @@ const Concessions = () => {
                           {item.status === 'Cancelled' ? (
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-50 text-red-700 border border-red-200">
                               Cancelled
+                            </span>
+                          ) : ['Completed', 'Expired'].includes(item.status) ? (
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                              item.status === 'Completed'
+                                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                : 'bg-amber-50 text-amber-700 border-amber-200'
+                            }`}>
+                              {item.status}
                             </span>
                           ) : (
                             <div className="flex items-center gap-2">
@@ -514,7 +548,7 @@ const Concessions = () => {
 
       {/* Main Page Pagination */}
       {!historyLoading && totalHistoryItems > 0 && (
-        <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
           <p className="text-sm text-gray-500">
             Showing <span className="font-medium">{indexOfFirstHistoryItem + 1}</span> to{' '}
             <span className="font-medium">{Math.min(indexOfLastHistoryItem, totalHistoryItems)}</span> of{' '}
@@ -601,10 +635,10 @@ const Concessions = () => {
 
                 {/* Optional Student Name Filter */}
                 <div className="space-y-1.5">
-                  <Label htmlFor="searchStudentInput" className="text-gray-700 font-semibold">Filter Dropdown by Name</Label>
+                  <Label htmlFor="searchStudentInput" className="text-gray-700 font-semibold">Filter by Name or Admission No</Label>
                   <Input
                     id="searchStudentInput"
-                    placeholder="Search by student name"
+                    placeholder="Search by name or admission number"
                     value={searchName}
                     onChange={(e) => setSearchName(e.target.value)}
                     disabled={!modalSection}
@@ -791,7 +825,7 @@ const Concessions = () => {
 
                 {/* Live Summary Calculation Panel */}
                 {modalFeeCategory && (
-                  <div className="grid grid-cols-3 gap-4 pt-3 border-t border-orange-200/50 text-center font-mono">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-3 border-t border-orange-200/50 text-center font-mono">
                     <div className="bg-white p-3.5 rounded-xl border border-orange-100 shadow-sm">
                       <div className="text-[11px] font-bold text-gray-500 uppercase">Original Fee</div>
                       <div className="text-lg font-bold text-gray-900 mt-1">₹{originalAmount.toFixed(2)}</div>
@@ -872,7 +906,7 @@ const Concessions = () => {
           </div>
 
           {/* Footer - Fixed Layout */}
-          <div className="flex items-center justify-between pt-4 border-t border-gray-200 mt-4 bg-white">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-4 border-t border-gray-200 mt-4 bg-white">
             <div className="flex gap-3">
               <Button
                 type="button"

@@ -27,18 +27,19 @@ const Students = () => {
   const { data: classesData = [], isLoading: classesLoading } = useClassesQuery();
   const { invalidateStudents, invalidateClasses } = useQueryInvalidator();
   
+  const normalizeClassName = (value) => String(value ?? '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
   const sortedClasses = React.useMemo(() => {
     return [...classes].sort((a, b) => {
-      const preSchoolOrder = { 'pre-kg': 1, 'lkg': 2, 'ukg': 3 };
-      const aNorm = String(a.name).trim().toLowerCase();
-      const bNorm = String(b.name).trim().toLowerCase();
+      const preSchoolOrder = { 'prekg': 1, 'lkg': 2, 'ukg': 3 };
+      const aNorm = normalizeClassName(a.name);
+      const bNorm = normalizeClassName(b.name);
       const isPreA = preSchoolOrder[aNorm];
       const isPreB = preSchoolOrder[bNorm];
       if (isPreA && isPreB) return isPreA - isPreB;
       if (isPreA) return -1;
       if (isPreB) return 1;
-      const numA = parseInt(aNorm, 10);
-      const numB = parseInt(bNorm, 10);
+      const numA = /^(\d+)$/.test(aNorm) ? parseInt(aNorm, 10) : NaN;
+      const numB = /^(\d+)$/.test(bNorm) ? parseInt(bNorm, 10) : NaN;
       const isNumA = !isNaN(numA);
       const isNumB = !isNaN(numB);
       if (isNumA && isNumB) return numA - numB;
@@ -79,11 +80,11 @@ const Students = () => {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   useEffect(() => {
-    setStudents(studentsData);
+    if (studentsData) setStudents(studentsData);
   }, [studentsData]);
 
   useEffect(() => {
-    setClasses(classesData);
+    if (classesData) setClasses(classesData);
   }, [classesData]);
 
   const openViewModal = async (student) => {
@@ -333,7 +334,7 @@ const Students = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input 
               placeholder="Search by name, class (e.g. 12 B)..." 
-              className="pl-9 w-64 md:w-80"
+              className="pl-9 w-full sm:w-64 md:w-80"
               value={searchQuery}
               onChange={handleSearch}
             />
@@ -396,7 +397,7 @@ const Students = () => {
       {viewMode === 'SECTIONS' && selectedClass && (
         <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
               <Button variant="ghost" size="sm" onClick={() => setViewMode('CLASSES')} className="p-2">
                 <ArrowLeft className="h-5 w-5" />
               </Button>
@@ -451,7 +452,7 @@ const Students = () => {
 
       {(viewMode === 'STUDENTS' || viewMode === 'SEARCH_RESULTS') && (
         <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4">
             {viewMode === 'STUDENTS' && (
               <Button variant="ghost" size="sm" onClick={() => setViewMode('SECTIONS')} className="p-2">
                 <ArrowLeft className="h-5 w-5" />
@@ -460,24 +461,26 @@ const Students = () => {
             <h2 className="text-xl font-semibold flex-1">
               {viewMode === 'SEARCH_RESULTS' ? 'Search Results' : `Class ${selectedClass?.name} - Section ${selectedSection?.name} Students`}
             </h2>
-            <select 
-              className="flex h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
-              value={feeFilter}
-              onChange={(e) => setFeeFilter(e.target.value)}
-            >
-              <option value="ALL">All Fee Status</option>
-              <option value="PAID">Fully Paid</option>
-              <option value="PENDING">Pending Dues</option>
-            </select>
-            <select
-              className="flex h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
-              value={studentGroupFilter}
-              onChange={(e) => setStudentGroupFilter(e.target.value)}
-            >
-              <option value="All">All Groups</option>
-              <option value="RTE">RTE</option>
-              <option value="General">General</option>
-            </select>
+            <div className="flex flex-wrap gap-2">
+              <select 
+                className="flex h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+                value={feeFilter}
+                onChange={(e) => setFeeFilter(e.target.value)}
+              >
+                <option value="ALL">All Fee Status</option>
+                <option value="PAID">Fully Paid</option>
+                <option value="PENDING">Pending Dues</option>
+              </select>
+              <select
+                className="flex h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+                value={studentGroupFilter}
+                onChange={(e) => setStudentGroupFilter(e.target.value)}
+              >
+                <option value="All">All Groups</option>
+                <option value="RTE">RTE</option>
+                <option value="General">General</option>
+              </select>
+            </div>
           </div>
           
           <Card>

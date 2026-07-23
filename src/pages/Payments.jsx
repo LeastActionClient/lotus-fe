@@ -27,10 +27,10 @@ const Payments = () => {
   const [feeCategories, setFeeCategories] = useState([]);
   const [classes, setClasses] = useState([]);
   const [selectedStudentId, setSelectedStudentId] = useState('');
-  const { data: paymentsData = [], isLoading: paymentsLoading } = usePaymentsQuery();
-  const { data: studentsData = [], isLoading: studentsLoading } = useStudentsQuery();
-  const { data: feeCategoriesData = [], isLoading: feeCategoriesLoading } = useFeeCategoriesQuery();
-  const { data: classesData = [], isLoading: classesLoading } = useClassesQuery();
+  const { data: paymentsData, isLoading: paymentsLoading } = usePaymentsQuery();
+  const { data: studentsData, isLoading: studentsLoading } = useStudentsQuery();
+  const { data: feeCategoriesData, isLoading: feeCategoriesLoading } = useFeeCategoriesQuery();
+  const { data: classesData, isLoading: classesLoading } = useClassesQuery();
   const { data: selectedStudentData } = useStudentQuery(selectedStudentId, Boolean(selectedStudentId));
   const { invalidatePayments, invalidateStudents, invalidateFeeCategories } = useQueryInvalidator();
   const [selectedClass, setSelectedClass] = useState('');
@@ -54,37 +54,19 @@ const Payments = () => {
   const [payingAmounts, setPayingAmounts] = useState({});
 
   useEffect(() => {
-    setPayments(paymentsData);
+    if (paymentsData) setPayments(paymentsData);
   }, [paymentsData]);
-  const fetchData = async () => {
-    try {
-      const [payRes, stuRes, catRes, classRes] = await Promise.all([
-        api.get('/payments'),
-        api.get('/students'),
-        api.get('/fees/categories'),
-        api.get('/classes')
-      ]);
-      setPayments(payRes.data);
-      setStudents(stuRes.data);
-      setFeeCategories(catRes.data);
-      setClasses(classRes.data);
-    } catch (error) {
-      console.error("Error fetching data", error);
-    } finally {
-      setPageLoading(false);
-    }
-  };
 
   useEffect(() => {
-    setStudents(studentsData);
+    if (studentsData) setStudents(studentsData);
   }, [studentsData]);
 
   useEffect(() => {
-    setFeeCategories(feeCategoriesData);
+    if (feeCategoriesData) setFeeCategories(feeCategoriesData);
   }, [feeCategoriesData]);
 
   useEffect(() => {
-    setClasses(classesData);
+    if (classesData) setClasses(classesData);
   }, [classesData]);
 
   useEffect(() => {
@@ -252,17 +234,18 @@ const Payments = () => {
     });
   };
 
+  const normalizeClassName = (value) => String(value ?? '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
   const classSortFn = (a, b) => {
-    const preSchoolOrder = { 'pre-kg': 1, 'lkg': 2, 'ukg': 3 };
-    const aNorm = String(a).trim().toLowerCase();
-    const bNorm = String(b).trim().toLowerCase();
+    const preSchoolOrder = { 'prekg': 1, 'lkg': 2, 'ukg': 3 };
+    const aNorm = normalizeClassName(a);
+    const bNorm = normalizeClassName(b);
     const isPreA = preSchoolOrder[aNorm];
     const isPreB = preSchoolOrder[bNorm];
     if (isPreA && isPreB) return isPreA - isPreB;
     if (isPreA) return -1;
     if (isPreB) return 1;
-    const numA = parseInt(aNorm, 10);
-    const numB = parseInt(bNorm, 10);
+    const numA = /^(\d+)$/.test(aNorm) ? parseInt(aNorm, 10) : NaN;
+    const numB = /^(\d+)$/.test(bNorm) ? parseInt(bNorm, 10) : NaN;
     const isNumA = !isNaN(numA);
     const isNumB = !isNaN(numB);
     if (isNumA && isNumB) return numA - numB;
@@ -444,7 +427,7 @@ const Payments = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900  flex items-center">
             <IndianRupee className="mr-3 text-emerald-600" size={32} />
@@ -452,7 +435,7 @@ const Payments = () => {
           </h1>
           <p className="text-gray-500  mt-2">Record fee collections and generate receipts</p>
         </div>
-        <div className="flex space-x-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={downloadCSV}>
             <Download className="mr-2 h-4 w-4" /> Export CSV
           </Button>
@@ -623,7 +606,7 @@ const Payments = () => {
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Record New Payment">
         <form onSubmit={handlePayment} className="space-y-4 pt-2">
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="classFilter">Filter by Class</Label>
               <select 
@@ -817,7 +800,7 @@ const Payments = () => {
             })()}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="amount">Total Amount (Rs.)</Label>
               <Input 

@@ -189,7 +189,7 @@ const IncludedCharges = () => {
             placeholder="Search charges..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-64"
+            className="w-full sm:w-64"
           />
           <Button onClick={() => { resetForm(); setIsModalOpen(true); }}>
             <Plus className="mr-2 h-4 w-4" /> Add Included Charge

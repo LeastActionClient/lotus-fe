@@ -234,7 +234,7 @@ const OldStudents = () => {
           </h1>
           <p className="text-gray-500 mt-2">Permanent archive of students who are no longer active in the school.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Button onClick={() => setIsExportModalOpen(true)} className="bg-orange-600 hover:bg-orange-700 text-white">
             <FolderOpen className="h-4 w-4 mr-2" /> Export Center
           </Button>
@@ -285,11 +285,11 @@ const OldStudents = () => {
         <CardContent className="p-4">
           <div className="flex flex-col gap-4">
             
-            <div className="flex justify-between items-center pb-2 border-b">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-2 border-b">
               <h2 className="text-lg font-semibold flex items-center">
                 <Filter className="mr-2 h-5 w-5 text-gray-500" /> Filters
               </h2>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button 
                   variant={quickFeeFilter === 'ALL' ? 'default' : 'outline'} 
                   onClick={() => setQuickFeeFilter('ALL')}
@@ -406,7 +406,7 @@ const OldStudents = () => {
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex flex-wrap justify-end gap-2 pt-2">
               <Button variant="outline" onClick={clearFilters}>Clear Filters</Button>
               <Button variant="outline" onClick={downloadCSV}>
                 <Download className="mr-2 h-4 w-4" />

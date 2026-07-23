@@ -14,7 +14,7 @@ const StudentEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const currentUser = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || '{}');
 
   const [loading, setLoading] = useState(true);
   
@@ -532,7 +532,7 @@ const StudentEdit = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" onClick={() => {
             if (location.state) {
@@ -738,7 +738,7 @@ const StudentEdit = () => {
 
         {/* Right Column: Fee Details */}
         <div className="space-y-6">
-          <Card className="border-orange-200 shadow-sm sticky top-6">
+          <Card className="border-orange-200 shadow-sm lg:sticky lg:top-6">
             <CardHeader className="bg-orange-50 border-b border-orange-100 pb-4">
               <CardTitle className="text-lg flex items-center text-orange-800">
                 <IndianRupee className="mr-2 h-5 w-5 text-orange-600" /> Fee Details
