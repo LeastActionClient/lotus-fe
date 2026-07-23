@@ -14,7 +14,7 @@ const StudentEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const currentUser = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || '{}');
 
   const [loading, setLoading] = useState(true);
   
