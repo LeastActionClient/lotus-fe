@@ -344,16 +344,21 @@ const Admissions = () => {
 
       let summary = `${message}\n\nSuccessfully Imported : ${successCount}\nDuplicate Records : ${duplicateCount}\nValidation Errors : ${validationErrorsCount}\nDatabase Errors : ${dbErrorsCount}\n`;
 
-      if (errors && errors.length > 0) {
-        // Show only the first 20 errors to prevent huge toasts, with a summary of the rest
-        let errorDisplay = errors.slice(0, 20).join('\n');
-        if (errors.length > 20) {
-           errorDisplay += `\n...and ${errors.length - 20} more errors`;
+      if (successCount > 0) {
+        if (errors && errors.length > 0) {
+          summary += `\n\nSome rows were skipped. Check the console for row-level details.`;
+          console.warn('Bulk import row issues:', errors);
         }
-        summary += `\nErrors:\n${errorDisplay}`;
-        toastWarning(summary);
-      } else {
         toastSuccess(summary);
+      } else {
+        if (errors && errors.length > 0) {
+          let errorDisplay = errors.slice(0, 20).join('\n');
+          if (errors.length > 20) {
+            errorDisplay += `\n...and ${errors.length - 20} more errors`;
+          }
+          summary += `\nErrors:\n${errorDisplay}`;
+        }
+        toastError(summary);
       }
 
       setIsImportModalOpen(false);
