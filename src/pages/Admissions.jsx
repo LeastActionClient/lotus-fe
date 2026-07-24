@@ -330,7 +330,9 @@ const Admissions = () => {
     setImporting(true);
     try {
       const res = await api.post('/students/bulk-import', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 120000,
+        skipToast: true
       });
 
       const {
