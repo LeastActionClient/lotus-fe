@@ -31,9 +31,9 @@ const ReceiptCopy = ({ payment }) => {
           <p className="text-[9.5px] leading-tight text-slate-600">
             No.15 &amp; 44 Eda Street, Saidapet, Vellore - 632 012.
           </p>
-          <p className="text-[9.5px] leading-tight text-slate-600">
+          {/* <p className="text-[9.5px] leading-tight text-slate-600">
             Phone: 0416-2211877, +91 97919 50179 | Email: Kasthurinurseryschool@gmail.com
-          </p>
+          </p> */}
         </div>
       </div>
 
