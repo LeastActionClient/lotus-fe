@@ -24,6 +24,8 @@ const Activities = () => {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState(true);
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [deleteLoadingId, setDeleteLoadingId] = useState(null);
 
   // Search, Pagination, Sort
   const [searchTerm, setSearchTerm] = useState('');
@@ -45,6 +47,7 @@ const Activities = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    setSaveLoading(true);
     try {
       const payload = { name, amount: parseFloat(amount), description, status };
       if (editingId) {
@@ -58,6 +61,8 @@ const Activities = () => {
     } catch (error) {
       console.error("Error saving activity", error);
       toastError(error.response?.data?.error || "Error saving activity.");
+    } finally {
+      setSaveLoading(false);
     }
   };
 
@@ -73,11 +78,14 @@ const Activities = () => {
       return;
     }
 
+    setDeleteLoadingId(id);
     try {
       await api.delete(`/activities/${id}`);
       fetchActivities();
     } catch(error) {
       toastError(error.response?.data?.error || "Error deleting activity.");
+    } finally {
+      setDeleteLoadingId(null);
     }
   };
 
@@ -197,7 +205,14 @@ const Activities = () => {
                       <Button variant="ghost" size="sm" onClick={() => openEdit(activity)}>
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(activity.id)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => handleDelete(activity.id)}
+                        loading={deleteLoadingId === activity.id}
+                        loadingText="Deleting..."
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </TableCell>
@@ -253,8 +268,8 @@ const Activities = () => {
             </select>
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">
-            <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button type="submit">Save</Button>
+            <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)} disabled={saveLoading}>Cancel</Button>
+            <Button type="submit" loading={saveLoading} loadingText="Saving...">Save</Button>
           </div>
         </form>
       </Modal>

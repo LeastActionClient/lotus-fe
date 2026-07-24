@@ -26,6 +26,7 @@ const Admissions = () => {
     fatherName: '', motherName: '', fatherPhone: '', motherPhone: ''
   });
   const [editLoading, setEditLoading] = useState(false);
+  const [manualLoading, setManualLoading] = useState(false);
   const [fullStudentData, setFullStudentData] = useState(null);
   
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
@@ -34,6 +35,7 @@ const Admissions = () => {
   const itemsPerPage = 10;
   const [studentGroupFilter, setStudentGroupFilter] = useState('All');
   const [pageLoading, setPageLoading] = useState(true);
+  const [importing, setImporting] = useState(false);
   
   const [manualForm, setManualForm] = useState({
     admissionNumber: '',
@@ -278,6 +280,7 @@ const Admissions = () => {
       return;
     }
 
+    setManualLoading(true);
     try {
       const res = await api.post('/students/manual', { 
         ...manualForm, 
@@ -308,6 +311,8 @@ const Admissions = () => {
         : (manualForm.applicationId ? "Student added successfully and application approved." : "Student added successfully!"));
     } catch (error) {
       toastError(error.response?.data?.error || "Error adding student.");
+    } finally {
+      setManualLoading(false);
     }
   };
 
@@ -322,14 +327,12 @@ const Admissions = () => {
     formData.append('currentClass', selectedClass);
     if (selectedSection) formData.append('section', selectedSection);
 
+    setImporting(true);
     try {
       const res = await api.post('/students/bulk-import', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      setIsImportModalOpen(false);
-      setFile(null);
-      fetchStudents();
-      
+
       const {
         message,
         successCount,
@@ -352,8 +355,14 @@ const Admissions = () => {
       } else {
         toastSuccess(summary);
       }
+
+      setIsImportModalOpen(false);
+      setFile(null);
+      fetchStudents();
     } catch (error) {
       toastError(error.response?.data?.error || "Error importing students.");
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -968,8 +977,8 @@ const Admissions = () => {
               <Button type="button" variant="outline" onClick={cancelEdit}>
                 <X className="h-4 w-4 mr-2" /> Cancel
               </Button>
-              <Button type="submit" disabled={editLoading}>
-                <Save className="h-4 w-4 mr-2" /> {editLoading ? 'Saving...' : 'Save Changes'}
+              <Button type="submit" loading={editLoading} loadingText="Saving...">
+                <Save className="h-4 w-4 mr-2" /> Save Changes
               </Button>
             </div>
           </form>
@@ -1164,13 +1173,15 @@ const Admissions = () => {
             <Button type="button" variant="outline" onClick={() => {
               setIsManualModalOpen(false);
               setManualForm(prev => ({...prev, applicationId: ''}));
-            }}>Cancel</Button>
-            <Button type="submit">Add Student</Button>
+            }} disabled={manualLoading}>Cancel</Button>
+            <Button type="submit" loading={manualLoading} loadingText="Saving...">
+              Add Student
+            </Button>
           </div>
         </form>
       </Modal>
 
-      <Modal isOpen={isImportModalOpen} onClose={() => setIsImportModalOpen(false)} title="Bulk Import Students">
+      <Modal isOpen={isImportModalOpen} onClose={importing ? () => {} : () => setIsImportModalOpen(false)} title="Bulk Import Students">
         <form onSubmit={handleImportSubmit} className="space-y-4">
           <div className="bg-orange-50 p-3 rounded-md mb-4 border border-orange-100 flex items-center">
             <Users className="text-orange-600 mr-2 h-5 w-5" />
@@ -1215,14 +1226,15 @@ const Admissions = () => {
               type="file" 
               accept=".xlsx,.xls,.csv" 
               required 
+              disabled={importing}
               onChange={(e) => setFile(e.target.files?.[0] || null)} 
               className="pt-1.5"
             />
           </div>
           
           <div className="pt-4 flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setIsImportModalOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={!file} className="flex items-center">
+            <Button type="button" variant="outline" onClick={() => setIsImportModalOpen(false)} disabled={importing}>Cancel</Button>
+            <Button type="submit" loading={importing} loadingText="Importing..." disabled={!file} className="flex items-center">
               <Upload className="h-4 w-4 mr-2" /> Upload & Import
             </Button>
           </div>

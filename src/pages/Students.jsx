@@ -70,6 +70,12 @@ const Students = () => {
   const [isEditSectionModalOpen, setIsEditSectionModalOpen] = useState(false);
   const [editingSection, setEditingSection] = useState(null);
   const [editSectionName, setEditSectionName] = useState('');
+  const [classLoading, setClassLoading] = useState(false);
+  const [sectionLoading, setSectionLoading] = useState(false);
+  const [editClassLoading, setEditClassLoading] = useState(false);
+  const [editSectionLoading, setEditSectionLoading] = useState(false);
+  const [viewLoadingId, setViewLoadingId] = useState(null);
+  const [deleteLoadingId, setDeleteLoadingId] = useState(null);
 
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -90,6 +96,7 @@ const Students = () => {
   const openViewModal = async (student) => {
     setSelectedStudent(student);
     setIsViewModalOpen(true);
+    setViewLoadingId(student._id);
     setHistoryLoading(true);
     try {
       const res = await api.get(`/academic-years/students/${student._id}/history`);
@@ -99,6 +106,7 @@ const Students = () => {
       setAcademicHistory([]);
     } finally {
       setHistoryLoading(false);
+      setViewLoadingId(null);
     }
   };
 
@@ -141,6 +149,7 @@ const Students = () => {
 
   const handleCreateClass = async (e) => {
     e.preventDefault();
+    setClassLoading(true);
     try {
       await api.post('/classes', { name: newClassName });
       setNewClassName('');
@@ -149,12 +158,15 @@ const Students = () => {
       toastSuccess('Class added successfully!');
     } catch (error) {
       console.error("Error creating class", error);
+    } finally {
+      setClassLoading(false);
     }
   };
 
   const handleCreateSection = async (e) => {
     e.preventDefault();
     if (!selectedClass) return;
+    setSectionLoading(true);
     try {
       await api.post(`/classes/${selectedClass._id}/sections`, { name: newSectionName });
       setNewSectionName('');
@@ -166,12 +178,15 @@ const Students = () => {
       setSelectedClass(res.data.find((c) => c._id === selectedClass._id));
     } catch (error) {
       console.error("Error creating section", error);
+    } finally {
+      setSectionLoading(false);
     }
   };
 
   const handleEditClass = async (e) => {
     e.preventDefault();
     if (!editingClass) return;
+    setEditClassLoading(true);
     try {
       await api.put(`/classes/${editingClass._id}`, { name: editClassName });
       setEditClassName('');
@@ -184,6 +199,8 @@ const Students = () => {
       }
     } catch (error) {
       toastError(error.response?.data?.error || 'Error updating class');
+    } finally {
+      setEditClassLoading(false);
     }
   };
 
@@ -197,6 +214,7 @@ const Students = () => {
 
     if (!accepted) return;
 
+    setDeleteLoadingId(`class-${cls._id}`);
     try {
       await api.delete(`/classes/${cls._id}`);
       if (selectedClass?._id === cls._id) {
@@ -206,12 +224,15 @@ const Students = () => {
       fetchClasses();
     } catch (error) {
       toastError(error.response?.data?.error || 'Error deleting class');
+    } finally {
+      setDeleteLoadingId(null);
     }
   };
 
   const handleEditSection = async (e) => {
     e.preventDefault();
     if (!editingSection || !selectedClass) return;
+    setEditSectionLoading(true);
     try {
       await api.put(`/classes/${selectedClass._id}/sections/${editingSection._id}`, { name: editSectionName });
       setEditSectionName('');
@@ -222,6 +243,8 @@ const Students = () => {
       setSelectedClass(res.data.find((c) => c._id === selectedClass._id));
     } catch (error) {
       toastError(error.response?.data?.error || 'Error updating section');
+    } finally {
+      setEditSectionLoading(false);
     }
   };
 
@@ -236,6 +259,7 @@ const Students = () => {
 
     if (!accepted) return;
 
+    setDeleteLoadingId(`section-${sec._id}`);
     try {
       await api.delete(`/classes/${selectedClass._id}/sections/${sec._id}`);
       const res = await api.get('/classes');
@@ -243,6 +267,29 @@ const Students = () => {
       setSelectedClass(res.data.find((c) => c._id === selectedClass._id));
     } catch (error) {
       toastError(error.response?.data?.error || 'Error deleting section');
+    } finally {
+      setDeleteLoadingId(null);
+    }
+  };
+
+  const handleDeleteStudent = async (student) => {
+    const accepted = await confirm({
+      title: 'Delete Student',
+      description: 'Are you sure you want to delete this student?',
+      confirmText: 'Delete',
+      tone: 'danger'
+    });
+
+    if (!accepted) return;
+
+    setDeleteLoadingId(`student-${student._id}`);
+    try {
+      await api.delete(`/students/${student._id}`);
+      fetchStudents();
+    } catch (e) {
+      toastError(e.response?.data?.error || 'Error deleting student');
+    } finally {
+      setDeleteLoadingId(null);
     }
   };
 
@@ -369,10 +416,15 @@ const Students = () => {
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDeleteClass(cls); }}
+                      disabled={deleteLoadingId === `class-${cls._id}`}
                       className="p-1.5 rounded-md bg-white shadow-sm border border-gray-200 hover:bg-red-50 hover:text-red-600 transition-colors"
                       title="Delete Class"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      {deleteLoadingId === `class-${cls._id}` ? (
+                        <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />
+                      ) : (
+                        <Trash2 className="h-3.5 w-3.5" />
+                      )}
                     </button>
                   </div>
                   <CardContent 
@@ -426,10 +478,15 @@ const Students = () => {
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDeleteSection(sec); }}
+                      disabled={deleteLoadingId === `section-${sec._id}`}
                       className="p-1.5 rounded-md bg-white shadow-sm border border-gray-200 hover:bg-red-50 hover:text-red-600 transition-colors"
                       title="Delete Section"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      {deleteLoadingId === `section-${sec._id}` ? (
+                        <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />
+                      ) : (
+                        <Trash2 className="h-3.5 w-3.5" />
+                      )}
                     </button>
                   </div>
                   <CardContent 
@@ -551,7 +608,13 @@ const Students = () => {
                         </TableCell>
                         <TableCell>{student.fatherPhone}</TableCell>
                         <TableCell className="text-right flex justify-end gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => openViewModal(student)}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openViewModal(student)}
+                            loading={viewLoadingId === student._id}
+                            loadingText="Loading..."
+                          >
                             <Eye className="h-4 w-4 mr-2" /> View
                           </Button>
                           <Link to={`/dashboard/students/edit/${student._id}`} state={{ fromClassId: selectedClass?._id, fromSectionId: selectedSection?._id, feeFilter, studentGroupFilter, searchQuery }}>
@@ -560,25 +623,14 @@ const Students = () => {
                             </Button>
                           </Link>
                           {currentUser.role === 'SUPER_ADMIN' && (
-                            <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={async () => {
-                              const accepted = await confirm({
-                                title: 'Delete Student',
-                                description: 'Are you sure you want to delete this student?',
-                                confirmText: 'Delete',
-                                tone: 'danger'
-                              });
-
-                              if (!accepted) {
-                                return;
-                              }
-
-                              try {
-                                await api.delete(`/students/${student._id}`);
-                                fetchStudents();
-                              } catch(e) { 
-                                toastError(e.response?.data?.error || 'Error deleting student'); 
-                              }
-                            }}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => handleDeleteStudent(student)}
+                              loading={deleteLoadingId === `student-${student._id}`}
+                              loadingText="Deleting..."
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           )}
@@ -608,7 +660,7 @@ const Students = () => {
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 ">
             <Button type="button" variant="ghost" onClick={() => setIsClassModalOpen(false)}>Cancel</Button>
-            <Button type="submit">Add Class</Button>
+            <Button type="submit" loading={classLoading} loadingText="Saving...">Add Class</Button>
           </div>
         </form>
       </Modal>
@@ -627,7 +679,7 @@ const Students = () => {
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 ">
             <Button type="button" variant="ghost" onClick={() => setIsSectionModalOpen(false)}>Cancel</Button>
-            <Button type="submit">Add Section</Button>
+            <Button type="submit" loading={sectionLoading} loadingText="Saving...">Add Section</Button>
           </div>
         </form>
       </Modal>
@@ -646,7 +698,7 @@ const Students = () => {
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 ">
             <Button type="button" variant="ghost" onClick={() => { setIsEditClassModalOpen(false); setEditingClass(null); setEditClassName(''); }}>Cancel</Button>
-            <Button type="submit">Save Changes</Button>
+            <Button type="submit" loading={editClassLoading} loadingText="Saving...">Save Changes</Button>
           </div>
         </form>
       </Modal>
@@ -665,7 +717,7 @@ const Students = () => {
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 ">
             <Button type="button" variant="ghost" onClick={() => { setIsEditSectionModalOpen(false); setEditingSection(null); setEditSectionName(''); }}>Cancel</Button>
-            <Button type="submit">Save Changes</Button>
+            <Button type="submit" loading={editSectionLoading} loadingText="Saving...">Save Changes</Button>
           </div>
         </form>
       </Modal>

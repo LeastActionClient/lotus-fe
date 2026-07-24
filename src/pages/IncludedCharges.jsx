@@ -32,6 +32,10 @@ const IncludedCharges = () => {
   const [selectedCharge, setSelectedCharge] = useState(null);
   const [stockTransactions, setStockTransactions] = useState([]);
   const [adjustForm, setAdjustForm] = useState({ type: 'IN', quantity: '', reason: '' });
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [deleteLoadingId, setDeleteLoadingId] = useState(null);
+  const [stockAdjustLoading, setStockAdjustLoading] = useState(false);
+  const [historyLoadingId, setHistoryLoadingId] = useState(null);
 
   // Search, Pagination, Sort
   const [searchTerm, setSearchTerm] = useState('');
@@ -61,19 +65,23 @@ const IncludedCharges = () => {
 
   const openStockHistory = async (charge) => {
     setSelectedCharge(charge);
+    const chargeId = getChargeId(charge);
+    setHistoryLoadingId(chargeId);
     try {
-      const chargeId = getChargeId(charge);
       const res = await api.get(`/included-charges/${chargeId}/stock-transactions`);
       setStockTransactions(res.data);
       setStockHistoryOpen(true);
     } catch (error) {
       console.error('Error fetching stock history', error);
       toastError('Failed to load stock history');
+    } finally {
+      setHistoryLoadingId(null);
     }
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
+    setSaveLoading(true);
     try {
       const payload = {
         name,
@@ -95,6 +103,8 @@ const IncludedCharges = () => {
     } catch (error) {
       console.error("Error saving charge", error);
       toastError(error.response?.data?.error || "Error saving included charge.");
+    } finally {
+      setSaveLoading(false);
     }
   };
 
@@ -110,11 +120,14 @@ const IncludedCharges = () => {
       return;
     }
 
+    setDeleteLoadingId(id);
     try {
       await api.delete(`/included-charges/${id}`);
       fetchCharges();
     } catch(error) {
       toastError(error.response?.data?.error || "Error deleting charge.");
+    } finally {
+      setDeleteLoadingId(null);
     }
   };
 
@@ -144,6 +157,7 @@ const IncludedCharges = () => {
   const handleStockAdjust = async (e) => {
     e.preventDefault();
     if (!selectedCharge) return;
+    setStockAdjustLoading(true);
     try {
       const chargeId = getChargeId(selectedCharge);
       await api.post(`/included-charges/${chargeId}/stock`, {
@@ -156,6 +170,8 @@ const IncludedCharges = () => {
     } catch (error) {
       console.error('Error adjusting stock', error);
       toastError(error.response?.data?.error || 'Failed to adjust stock');
+    } finally {
+      setStockAdjustLoading(false);
     }
   };
 
@@ -279,10 +295,24 @@ const IncludedCharges = () => {
                       <Button variant="ghost" size="sm" onClick={() => openStockAdjust(charge)} title="Adjust stock">
                         <ArrowDownCircle className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => openStockHistory(charge)} title="Stock history">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openStockHistory(charge)}
+                        title="Stock history"
+                        loading={historyLoadingId === getChargeId(charge)}
+                        loadingText="Loading..."
+                      >
                         <History className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(getChargeId(charge))}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => handleDelete(getChargeId(charge))}
+                        loading={deleteLoadingId === getChargeId(charge)}
+                        loadingText="Deleting..."
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </TableCell>
@@ -368,8 +398,8 @@ const IncludedCharges = () => {
             </select>
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">
-            <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button type="submit">Save</Button>
+            <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)} disabled={saveLoading}>Cancel</Button>
+            <Button type="submit" loading={saveLoading} loadingText="Saving...">Save</Button>
           </div>
         </form>
       </Modal>
@@ -408,8 +438,8 @@ const IncludedCharges = () => {
             />
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">
-            <Button type="button" variant="ghost" onClick={() => setStockAdjustOpen(false)}>Cancel</Button>
-            <Button type="submit">Save Adjustment</Button>
+            <Button type="button" variant="ghost" onClick={() => setStockAdjustOpen(false)} disabled={stockAdjustLoading}>Cancel</Button>
+            <Button type="submit" loading={stockAdjustLoading} loadingText="Saving...">Save Adjustment</Button>
           </div>
         </form>
       </Modal>

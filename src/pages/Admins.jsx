@@ -19,6 +19,9 @@ const Admins = () => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [statusLoadingId, setStatusLoadingId] = useState(null);
+  const [deleteLoadingId, setDeleteLoadingId] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -52,9 +55,14 @@ const Admins = () => {
     }
   };
 
-  const openHistory = () => {
-    fetchLogs();
+  const openHistory = async () => {
     setIsHistoryModalOpen(true);
+    setHistoryLoading(true);
+    try {
+      await fetchLogs();
+    } finally {
+      setHistoryLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -91,11 +99,14 @@ const Admins = () => {
   };
 
   const toggleStatus = async (id, currentStatus) => {
+    setStatusLoadingId(id);
     try {
       await api.put(`/users/${id}`, { isActive: !currentStatus });
       fetchAdmins();
     } catch (error) {
       console.error("Error toggling status", error);
+    } finally {
+      setStatusLoadingId(null);
     }
   };
 
@@ -111,12 +122,15 @@ const Admins = () => {
       return;
     }
 
+    setDeleteLoadingId(id);
     try {
       await api.delete(`/users/${id}`);
       fetchAdmins();
     } catch (error) {
       console.error("Error deleting admin", error);
       toastError(error.response?.data?.error || "Error deleting admin");
+    } finally {
+      setDeleteLoadingId(null);
     }
   };
 
@@ -132,7 +146,7 @@ const Admins = () => {
           <p className="text-gray-500  mt-2">Super Admin controls for system access</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={openHistory}>
+          <Button variant="outline" onClick={openHistory} loading={historyLoading} loadingText="Loading...">
             <History className="mr-2 h-4 w-4" /> Login History
           </Button>
           <Button onClick={() => setIsModalOpen(true)}>
@@ -213,8 +227,22 @@ const Admins = () => {
                           variant={admin.isActive ? "danger" : "secondary"} 
                           size="sm"
                           onClick={() => toggleStatus(admin._id || admin.id, admin.isActive)}
+                          loading={statusLoadingId === (admin._id || admin.id)}
+                          loadingText="Updating..."
                         >
                           {admin.isActive ? <><ShieldOff className="h-4 w-4 mr-2"/> Disable</> : <><ShieldCheck className="h-4 w-4 mr-2"/> Enable</>}
+                        </Button>
+                      )}
+                      {currentUser.role === 'SUPER_ADMIN' && admin.role !== 'SUPER_ADMIN' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => deleteAdmin(admin._id || admin.id)}
+                          loading={deleteLoadingId === (admin._id || admin.id)}
+                          loadingText="Deleting..."
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       )}
                     </TableCell>

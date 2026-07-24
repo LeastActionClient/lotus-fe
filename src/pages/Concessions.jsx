@@ -44,6 +44,8 @@ const Concessions = () => {
   const [modalLessAmount, setModalLessAmount] = useState('');
   const [modalReason, setModalReason] = useState('');
   const [modalRemarks, setModalRemarks] = useState('');
+  const [assignLoading, setAssignLoading] = useState(false);
+  const [actionLoadingId, setActionLoadingId] = useState(null);
 
   // Selected Student Fees fetched dynamically on selection
   const [selectedStudentFees, setSelectedStudentFees] = useState([]);
@@ -189,6 +191,7 @@ const Concessions = () => {
       return;
     }
 
+    setAssignLoading(true);
     try {
       const payload = {
         studentIds: [selectedStudentId],
@@ -231,6 +234,8 @@ const Concessions = () => {
       fetchConcessionsHistory();
     } catch (err) {
       console.error(err);
+    } finally {
+      setAssignLoading(false);
     }
   };
 
@@ -259,6 +264,7 @@ const Concessions = () => {
 
     if (!confirmed) return;
 
+    setActionLoadingId(concessionId);
     try {
       const res = await api.delete(`/concessions/${concessionId}`);
       toastSuccess(res.data.message || 'Concession cancelled successfully.');
@@ -266,6 +272,8 @@ const Concessions = () => {
       fetchConcessionsHistory();
     } catch (err) {
       console.error(err);
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
@@ -286,6 +294,7 @@ const Concessions = () => {
 
     if (!confirmed) return;
 
+    setActionLoadingId(concessionId);
     try {
       const res = await api.patch(`/concessions/${concessionId}/status`, { status: newStatus });
       toastSuccess(res.data.message || 'Concession status updated successfully.');
@@ -293,6 +302,8 @@ const Concessions = () => {
       fetchConcessionsHistory();
     } catch (err) {
       console.error(err);
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
@@ -400,6 +411,8 @@ const Concessions = () => {
             <Button
               onClick={handleOpenAssignModal}
               className="bg-orange-600 hover:bg-orange-700 text-white font-semibold shadow-sm transition-all rounded-xl px-5 py-2.5"
+              loading={assignLoading}
+              loadingText="Opening..."
             >
               Assign Less Amount
             </Button>
@@ -504,16 +517,22 @@ const Concessions = () => {
                               <button
                                 onClick={() => handleToggleStatus(item)}
                                 disabled={!isSuperAdmin}
-                                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-70 disabled:cursor-wait ${
                                   item.status === 'Active' ? 'bg-green-500' : 'bg-gray-300'
                                 } ${!isSuperAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 title={`Toggle to ${item.status === 'Active' ? 'Inactive' : 'Active'}`}
                               >
-                                <span
-                                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                    item.status === 'Active' ? 'translate-x-4' : 'translate-x-0'
-                                  }`}
-                                />
+                                {actionLoadingId === (item.concessionId || item._id) ? (
+                                  <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                  </span>
+                                ) : (
+                                  <span
+                                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                      item.status === 'Active' ? 'translate-x-4' : 'translate-x-0'
+                                    }`}
+                                  />
+                                )}
                               </button>
                               <span className={`text-xs font-bold ${item.status === 'Active' ? 'text-green-700' : 'text-gray-500'}`}>
                                 {item.status}
@@ -530,6 +549,8 @@ const Concessions = () => {
                                 onClick={() => handleDeleteConcession(item)}
                                 className="text-red-600 hover:text-red-800 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
                                 title="Cancel Concession"
+                                loading={actionLoadingId === (item.concessionId || item._id)}
+                                loadingText="Deleting..."
                               >
                                 <Trash2 size={16} />
                               </Button>
@@ -931,6 +952,8 @@ const Concessions = () => {
               onClick={handleAssignConcession}
               className="bg-orange-600 hover:bg-orange-700 text-white font-semibold shadow-sm rounded-xl px-6 py-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               disabled={!selectedStudentId || !modalFeeCategory || !modalLessAmount || parseFloat(modalLessAmount) <= 0 || parseFloat(modalLessAmount) > originalAmount || !modalReason.trim()}
+              loading={assignLoading}
+              loadingText="Saving..."
             >
               Assign Less Amount
             </Button>

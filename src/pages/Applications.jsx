@@ -22,6 +22,8 @@ const Applications = () => {
   const [selectedAppId, setSelectedAppId] = useState(null);
   const [assignSection, setAssignSection] = useState('');
   const [loading, setLoading] = useState(false);
+  const [newAppLoading, setNewAppLoading] = useState(false);
+  const [deleteLoadingId, setDeleteLoadingId] = useState(null);
   
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -63,6 +65,7 @@ const Applications = () => {
   }, [classesData]);
 
   const handleNewApplication = async () => {
+    setNewAppLoading(true);
     setIsModalOpen(true);
     try {
       const res = await api.get('/applications/next-numbers');
@@ -73,6 +76,8 @@ const Applications = () => {
       }));
     } catch (error) {
       console.error("Error fetching next numbers", error);
+    } finally {
+      setNewAppLoading(false);
     }
   };
 
@@ -211,7 +216,7 @@ const Applications = () => {
           <Button variant="outline" onClick={() => setIsCustomizeModalOpen(true)}>
             <Settings className="mr-2 h-4 w-4" /> Settings
           </Button>
-          <Button onClick={handleNewApplication}>
+          <Button onClick={handleNewApplication} loading={newAppLoading} loadingText="Preparing...">
             <Plus className="mr-2 h-4 w-4" /> New Application
           </Button>
         </div>
@@ -284,7 +289,11 @@ const Applications = () => {
                         </Button>
                       )}
                       {currentUser.role === 'SUPER_ADMIN' && (
-                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={async () => {
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={async () => {
                           const accepted = await confirm({
                             title: 'Delete Application',
                             description: 'Are you sure you want to delete this application?',
@@ -296,12 +305,19 @@ const Applications = () => {
                             return;
                           }
 
+                          setDeleteLoadingId(app._id || app.id);
                           try {
                             await api.delete(`/applications/${app._id || app.id}`);
                             invalidateApplications();
                             toastSuccess('Application deleted successfully.');
                           } catch(e) { toastError('Error deleting application'); }
-                        }}>
+                          finally {
+                            setDeleteLoadingId(null);
+                          }
+                        }}
+                        loading={deleteLoadingId === (app._id || app.id)}
+                        loadingText="Deleting..."
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       )}

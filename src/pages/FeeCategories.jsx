@@ -63,6 +63,11 @@ const FeeCategories = () => {
   const [isEditingBulkFees, setIsEditingBulkFees] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [createLoading, setCreateLoading] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
+  const [assignLoading, setAssignLoading] = useState(false);
+  const [bulkAssignLoading, setBulkAssignLoading] = useState(false);
+  const [categoryActionLoadingId, setCategoryActionLoadingId] = useState(null);
 
   const fetchData = async () => {
     await Promise.all([invalidateFeeCategories(), invalidateStudents(), invalidateClasses()]);
@@ -140,6 +145,7 @@ const FeeCategories = () => {
 
   const handleCreateCategory = async (e) => {
     e.preventDefault();
+    setCreateLoading(true);
     try {
       const isUniform = catName.trim().toLowerCase() === 'uniform';
       await api.post('/fees/categories', { 
@@ -163,6 +169,8 @@ const FeeCategories = () => {
     } catch (error) {
       console.error("Error creating category", error);
       toastError(error.response?.data?.error || "Error creating category");
+    } finally {
+      setCreateLoading(false);
     }
   };
 
@@ -180,6 +188,7 @@ const FeeCategories = () => {
   const handleUpdateCategory = async (e) => {
     e.preventDefault();
     if (!editingCat) return;
+    setEditLoading(true);
     try {
       const isUniform = editCatName.trim().toLowerCase() === 'uniform';
       await api.put(`/fees/categories/${editingCat._id}`, {
@@ -199,10 +208,14 @@ const FeeCategories = () => {
     } catch (error) {
       console.error("Error updating category", error);
       toastError(error.response?.data?.error || "Error updating category");
+    } finally {
+      setEditLoading(false);
     }
   };
 
   const handleToggleCategory = async (category) => {
+    const loadingKey = category._id;
+    setCategoryActionLoadingId(loadingKey);
     try {
       await api.put(`/fees/categories/${category._id}`, { 
         name: category.name, 
@@ -213,11 +226,14 @@ const FeeCategories = () => {
     } catch (error) {
       console.error("Error toggling category", error);
       toastError(error.response?.data?.error || 'Error updating category');
+    } finally {
+      setCategoryActionLoadingId(null);
     }
   };
 
   const handleAssignFee = async (e) => {
     e.preventDefault();
+    setAssignLoading(true);
     try {
       if (!selectedStudentId) {
         toastWarning("Please select a student.");
@@ -257,11 +273,14 @@ const FeeCategories = () => {
     } catch (error) {
       console.error("Error assigning fee", error);
       toastError("Error assigning fee. Please check details.");
+    } finally {
+      setAssignLoading(false);
     }
   };
 
   const handleBulkAssignFee = async (e) => {
     e.preventDefault();
+    setBulkAssignLoading(true);
     try {
       const feesPayload = Object.entries(selectedBulkCats)
         .filter(([_, isChecked]) => isChecked)
@@ -308,6 +327,31 @@ const FeeCategories = () => {
     } catch (error) {
       console.error("Error bulk assigning fee", error);
       toastError(error.response?.data?.error || "Error assigning fees. Please check details.");
+    } finally {
+      setBulkAssignLoading(false);
+    }
+  };
+
+  const handleDeleteCategory = async (category) => {
+    const accepted = await confirm({
+      title: 'Delete Category',
+      description: 'Are you sure you want to delete this category?',
+      confirmText: 'Delete',
+      tone: 'danger'
+    });
+
+    if (!accepted) {
+      return;
+    }
+
+    setCategoryActionLoadingId(category._id);
+    try {
+      await api.delete(`/fees/categories/${category._id}`);
+      fetchData();
+    } catch (e) {
+      toastError(e.response?.data?.error || 'Error deleting category');
+    } finally {
+      setCategoryActionLoadingId(null);
     }
   };
 
@@ -409,10 +453,11 @@ const FeeCategories = () => {
                     <TableCell>
                       <button 
                         onClick={() => handleToggleCategory(cat)}
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity ${
+                        disabled={categoryActionLoadingId === cat._id}
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity disabled:opacity-70 disabled:cursor-wait ${
                         cat.isEnabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                       }`}>
-                        {cat.isEnabled ? 'Active' : 'Disabled'}
+                        {categoryActionLoadingId === cat._id ? 'Updating...' : (cat.isEnabled ? 'Active' : 'Disabled')}
                       </button>
                     </TableCell>
                     <TableCell>{new Date(cat.createdAt).toLocaleDateString()}</TableCell>
@@ -428,25 +473,14 @@ const FeeCategories = () => {
                           <Edit className="h-4 w-4" />
                         </Button>
                         {currentUser.role === 'SUPER_ADMIN' && (
-                          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={async () => {
-                            const accepted = await confirm({
-                              title: 'Delete Category',
-                              description: 'Are you sure you want to delete this category?',
-                              confirmText: 'Delete',
-                              tone: 'danger'
-                            });
-
-                            if (!accepted) {
-                              return;
-                            }
-
-                            try {
-                              await api.delete(`/fees/categories/${cat._id}`);
-                              fetchData();
-                            } catch(e) { 
-                              toastError(e.response?.data?.error || 'Error deleting category'); 
-                            }
-                          }}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleDeleteCategory(cat)}
+                            loading={categoryActionLoadingId === cat._id}
+                            loadingText="Deleting..."
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         )}
@@ -549,7 +583,7 @@ const FeeCategories = () => {
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">
             <Button type="button" variant="ghost" onClick={() => { setIsNewCatModalOpen(false); setCatName(''); setCatMandatory(false); setCatIsStockItem(false); setCatInitialStock('0'); setCatTopStock('0'); setCatBottomStock('0'); }}>Cancel</Button>
-            <Button type="submit">Create Category</Button>
+            <Button type="submit" loading={createLoading} loadingText="Creating...">Create Category</Button>
           </div>
         </form>
       </Modal>
@@ -644,7 +678,7 @@ const FeeCategories = () => {
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">
             <Button type="button" variant="ghost" onClick={() => { setIsEditCatModalOpen(false); setEditingCat(null); setEditCatTopStock('0'); setEditCatBottomStock('0'); }}>Cancel</Button>
-            <Button type="submit">Save Changes</Button>
+            <Button type="submit" loading={editLoading} loadingText="Saving...">Save Changes</Button>
           </div>
         </form>
       </Modal>
@@ -813,8 +847,8 @@ const FeeCategories = () => {
               <div></div>
             )}
             <div className="flex gap-3">
-              <Button type="button" variant="ghost" onClick={() => setIsBulkAssignModalOpen(false)}>Cancel</Button>
-              {isEditingBulkFees && <Button type="submit">Assign to Class</Button>}
+              <Button type="button" variant="ghost" onClick={() => setIsBulkAssignModalOpen(false)} disabled={bulkAssignLoading}>Cancel</Button>
+              {isEditingBulkFees && <Button type="submit" loading={bulkAssignLoading} loadingText="Assigning...">Assign to Class</Button>}
             </div>
           </div>
         </form>
@@ -955,8 +989,8 @@ const FeeCategories = () => {
           )}
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">
-            <Button type="button" variant="ghost" onClick={() => { setIsAssignModalOpen(false); setSelectedStudentId(''); setSpecialFees({}); }}>Cancel</Button>
-            <Button type="submit" disabled={!selectedStudentId}>Save Special Fees</Button>
+            <Button type="button" variant="ghost" onClick={() => { setIsAssignModalOpen(false); setSelectedStudentId(''); setSpecialFees({}); }} disabled={assignLoading}>Cancel</Button>
+            <Button type="submit" loading={assignLoading} loadingText="Saving..." disabled={!selectedStudentId}>Save Special Fees</Button>
           </div>
         </form>
       </Modal>

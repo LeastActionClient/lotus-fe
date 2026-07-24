@@ -40,6 +40,7 @@ import {
 const AcademicYearPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
+  const [statusLoadingId, setStatusLoadingId] = useState(null);
   const [formData, setFormData] = useState({
     year: "",
     status: "Active",
@@ -96,6 +97,7 @@ const AcademicYearPage = () => {
 
   const handleStatusChange = async (id, currentStatus) => {
     const nextStatus = currentStatus === "Active" ? "Completed" : "Active";
+    setStatusLoadingId(id);
     try {
       await api.put(`/academic-years/${id}/status`, { status: nextStatus });
       toastSuccess(`Academic Year status updated to ${nextStatus}.`);
@@ -105,6 +107,8 @@ const AcademicYearPage = () => {
       toastError(
         error.response?.data?.error || "Failed to update Academic Year status",
       );
+    } finally {
+      setStatusLoadingId(null);
     }
   };
 
@@ -249,6 +253,8 @@ const AcademicYearPage = () => {
                                   handleStatusChange(ay._id, "Active")
                                 }
                                 className="text-amber-600 border-amber-200 hover:bg-amber-50 active:scale-95 transition-all duration-150"
+                                loading={statusLoadingId === ay._id}
+                                loadingText="Updating..."
                               >
                                 <AlertCircle className="h-4 w-4 mr-1" />{" "}
                                 <span className="hidden sm:inline">
@@ -270,6 +276,8 @@ const AcademicYearPage = () => {
                                     ? "Complete current active year first"
                                     : "Activate this session"
                                 }
+                                loading={statusLoadingId === ay._id}
+                                loadingText="Updating..."
                               >
                                 <PlayCircle className="h-4 w-4 mr-1" /> Activate
                               </Button>
@@ -330,15 +338,17 @@ const AcademicYearPage = () => {
               type="button"
               variant="ghost"
               onClick={() => setIsModalOpen(false)}
+              disabled={saveLoading}
             >
               Cancel
             </Button>
             <Button
               type="submit"
               className="bg-orange-600 hover:bg-orange-700 text-white shadow-md transition-all active:scale-95"
-              disabled={saveLoading}
+              loading={saveLoading}
+              loadingText="Saving..."
             >
-              {saveLoading ? "Saving..." : "Save"}
+              Save
             </Button>
           </div>
         </form>
