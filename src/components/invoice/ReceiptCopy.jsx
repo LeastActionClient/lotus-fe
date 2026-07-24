@@ -137,7 +137,7 @@ const ReceiptCopy = ({ payment }) => {
           <div className="mt-0.5 space-y-0.5 text-[10.5px] leading-tight text-slate-900">
             <div className="flex items-center justify-between gap-2">
               <span>Total Amount</span>
-              <span className="font-semibold">{formatCurrency(totals.totalAmount)}</span>
+              <span className="font-semibold">{formatCurrency(totals.paidAmount)}</span>
             </div>
           </div>
         </div>

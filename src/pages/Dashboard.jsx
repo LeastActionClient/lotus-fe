@@ -328,8 +328,8 @@ const Dashboard = () => {
 
           <div className="flex justify-end gap-3 border-t pt-4">
             <Button type="button" variant="outline" onClick={() => setIsPromoteModalOpen(false)}>Cancel</Button>
-            <Button type="submit" className="bg-orange-600 text-white hover:bg-orange-700" disabled={isPromoting}>
-              {isPromoting ? 'Promoting...' : 'Confirm Promotion'}
+            <Button type="submit" className="bg-orange-600 text-white hover:bg-orange-700" loading={isPromoting} loadingText="Promoting...">
+              Confirm Promotion
             </Button>
           </div>
         </form>

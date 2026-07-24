@@ -272,8 +272,8 @@ const Admins = () => {
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">
             <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Admin'}
+          <Button type="submit" loading={loading} loadingText="Creating...">
+              Create Admin
             </Button>
           </div>
         </form>

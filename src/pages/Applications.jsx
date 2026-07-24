@@ -361,8 +361,8 @@ const Applications = () => {
 
           <div className="flex justify-end gap-3 pt-6 border-t border-gray-200 mt-6">
             <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Submitting...' : 'Submit Application'}
+            <Button type="submit" loading={loading} loadingText="Submitting...">
+              Submit Application
             </Button>
           </div>
         </form>
@@ -383,7 +383,7 @@ const Applications = () => {
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">
             <Button type="button" variant="ghost" onClick={() => setIsCustomizeModalOpen(false)}>Cancel</Button>
-            <Button type="submit">Save Formats</Button>
+            <Button type="submit" loading={loading} loadingText="Saving...">Save Formats</Button>
           </div>
         </form>
       </Modal>

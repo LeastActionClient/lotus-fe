@@ -13,6 +13,7 @@ const InvoiceGenerated = () => {
   const navigate = useNavigate();
   const [payment, setPayment] = useState(location.state?.payment || null);
   const [loading, setLoading] = useState(!location.state?.payment);
+  const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -67,6 +68,7 @@ const InvoiceGenerated = () => {
   };
 
   const downloadInvoice = async () => {
+    setDownloading(true);
     try {
       const response = await api.get(`/payments/invoice/${id}`, {
         responseType: 'blob'
@@ -83,6 +85,8 @@ const InvoiceGenerated = () => {
     } catch (downloadError) {
       console.error('Error downloading invoice', downloadError);
       toastError('Failed to download invoice');
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -102,7 +106,7 @@ const InvoiceGenerated = () => {
           <Button variant="outline" onClick={() => navigate('/dashboard/payments')}>
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Payments
           </Button>
-          <Button variant="outline" onClick={downloadInvoice}>
+          <Button variant="outline" onClick={downloadInvoice} loading={downloading} loadingText="Downloading...">
             <Download className="mr-2 h-4 w-4" /> Download PDF
           </Button>
           <Button onClick={handlePrint}>

@@ -38,6 +38,8 @@ const Payments = () => {
   const [studentFees, setStudentFees] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [downloadingInvoiceId, setDownloadingInvoiceId] = useState(null);
+  const [deletingPaymentId, setDeletingPaymentId] = useState(null);
   const [filterCategory, setFilterCategory] = useState('All');
   const [filterTableClass, setFilterTableClass] = useState('All');
   const [filterTableSection, setFilterTableSection] = useState('All');
@@ -211,6 +213,7 @@ const Payments = () => {
   };
 
   const downloadInvoice = async (paymentId, invoiceNumber) => {
+    setDownloadingInvoiceId(paymentId);
     try {
       const response = await api.get(`/payments/invoice/${paymentId}`, {
         responseType: 'blob'
@@ -225,6 +228,8 @@ const Payments = () => {
     } catch (error) {
       console.error("Error downloading invoice", error);
       toastError("Failed to download invoice");
+    } finally {
+      setDownloadingInvoiceId((currentId) => (currentId === paymentId ? null : currentId));
     }
   };
 
@@ -567,12 +572,18 @@ const Payments = () => {
                         </Button>
                       )}
                       {(payment.invoice || payment.paymentType === 'APPLICATION') && (
-                        <Button variant="outline" size="sm" onClick={() => downloadInvoice(payment._id || payment.id, payment.invoice?.invoiceNumber || `invoice_${payment.application?.applicationId || payment._id}`)}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          loading={downloadingInvoiceId === (payment._id || payment.id)}
+                          loadingText="PDF"
+                          onClick={() => downloadInvoice(payment._id || payment.id, payment.invoice?.invoiceNumber || `invoice_${payment.application?.applicationId || payment._id}`)}
+                        >
                           <Download className="h-4 w-4 mr-2" /> PDF
                         </Button>
                       )}
                       {currentUser.role === 'SUPER_ADMIN' && (
-                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={async () => {
+                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" loading={deletingPaymentId === (payment._id || payment.id)} loadingText="Deleting..." onClick={async () => {
                           const accepted = await confirm({
                             title: 'Delete Payment',
                             description: 'Are you sure you want to delete this payment?',
@@ -584,12 +595,16 @@ const Payments = () => {
                             return;
                           }
 
+                          setDeletingPaymentId(payment._id || payment.id);
                           try {
                             await api.delete(`/payments/${payment._id || payment.id}`);
                             invalidatePayments();
                             invalidateStudents();
                             toastSuccess('Payment deleted successfully.');
                           } catch(e) { toastError('Error deleting payment'); }
+                          finally {
+                            setDeletingPaymentId((currentId) => (currentId === (payment._id || payment.id) ? null : currentId));
+                          }
                         }}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -840,8 +855,8 @@ const Payments = () => {
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">
             <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={loading || !selectedStudentId || paymentData.studentFeeIds.length === 0 || isFormInvalid}>
-              {loading ? 'Processing...' : 'Confirm Payment'}
+            <Button type="submit" loading={loading} loadingText="Processing..." disabled={!selectedStudentId || paymentData.studentFeeIds.length === 0 || isFormInvalid}>
+              Confirm Payment
             </Button>
           </div>
         </form>

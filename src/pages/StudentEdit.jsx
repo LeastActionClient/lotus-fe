@@ -17,6 +17,7 @@ const StudentEdit = () => {
   const currentUser = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || '{}');
 
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   
   const [categories, setCategories] = useState([]);
   const [classes, setClasses] = useState([]);
@@ -519,6 +520,7 @@ const StudentEdit = () => {
       return;
     }
 
+    setSaving(true);
     try {
       const selectedFeeCategoryIds = [...mandatoryCatIds, ...selectedCharges];
 
@@ -556,6 +558,8 @@ const StudentEdit = () => {
     } catch (error) {
       console.error("Error updating student", error);
       toastError(error.response?.data?.error || "Error saving student data.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -579,7 +583,7 @@ const StudentEdit = () => {
             <p className="text-gray-500 text-sm">Update details and manage fees for {formData.studentName}</p>
           </div>
         </div>
-        <Button onClick={handleSave} className="flex items-center gap-2">
+        <Button onClick={handleSave} className="flex items-center gap-2" loading={saving} loadingText="Saving...">
           <Save size={16} /> Save Changes
         </Button>
       </div>

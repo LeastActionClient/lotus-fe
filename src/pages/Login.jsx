@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { Eye, EyeOff } from 'lucide-react';
 import logo from '../assets/logo.png';
+import { Button } from '../components/ui/Button';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -98,13 +99,9 @@ const Login = () => {
               </button>
             </div>
           </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-70 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
-          >
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
+          <Button type="submit" loading={loading} loadingText="Logging in..." className="w-full">
+            Login
+          </Button>
         </form>
       </div>
       </div>

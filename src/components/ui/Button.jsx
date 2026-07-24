@@ -1,10 +1,11 @@
-import React, { ButtonHTMLAttributes } from 'react';
+import React from 'react';
 import { cn } from './Card';
+import { Spinner } from './Spinner';
 
 
 
 export const Button = React.forwardRef(
-  ({ className, variant = 'primary', size = 'md', ...props }, ref) => {
+  ({ className, variant = 'primary', size = 'md', loading = false, loadingText, disabled, children, ...props }, ref) => {
     const baseStyles = "inline-flex items-center justify-center rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-600 disabled:pointer-events-none disabled:opacity-50";
     
     const variants = {
@@ -21,12 +22,26 @@ export const Button = React.forwardRef(
       lg: "h-12 px-8 text-lg",
     };
 
+    const isDisabled = disabled || loading;
+    const content = loading
+      ? (
+        <span className="inline-flex items-center justify-center gap-2">
+          <Spinner size={16} className="text-current" />
+          <span>{loadingText || children}</span>
+        </span>
+      )
+      : children;
+
     return (
       <button
         ref={ref}
         className={cn(baseStyles, variants[variant], sizes[size], className)}
+        disabled={isDisabled}
+        aria-busy={loading || undefined}
         {...props}
-      />
+      >
+        {content}
+      </button>
     );
   }
 );
