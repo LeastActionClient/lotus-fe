@@ -1,7 +1,9 @@
 import axios from 'axios';
 import { toastError } from './toastService';
 
-const DEFAULT_TIMEOUT_MS = 30000;
+// Long-running school operations like bulk import and bulk fee assignment can
+// legitimately take longer than the default 30s, especially in production.
+const DEFAULT_TIMEOUT_MS = 120000;
 const DEFAULT_CACHE_TTL_MS = 20000;
 const MAX_RETRIES = 1;
 const RETRY_DELAY_MS = 300;
