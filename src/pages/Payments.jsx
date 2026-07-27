@@ -221,10 +221,13 @@ const Payments = () => {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `invoice_${invoiceNumber}.pdf`);
+      const safeInvoiceNumber = String(invoiceNumber || paymentId || 'invoice').replace(/[^a-zA-Z0-9._-]/g, '_');
+      const safePaymentId = String(paymentId || Date.now()).replace(/[^a-zA-Z0-9._-]/g, '_');
+      link.setAttribute('download', `invoice_${safeInvoiceNumber}_${safePaymentId}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
+      window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Error downloading invoice", error);
       toastError("Failed to download invoice");

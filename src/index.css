@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
 @theme {
@@ -6,7 +7,16 @@
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900   antialiased;
+    @apply bg-gray-50 text-gray-900 antialiased;
+    font-family: 'Poppins', 'Montserrat', sans-serif;
+  }
+}
+
+@layer utilities {
+  .print-color-exact,
+  .print-color-exact * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 }
 

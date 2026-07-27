@@ -155,12 +155,12 @@ export const calculateReceiptTotals = (groupedRows) =>
     }
   );
 
-export const formatCurrency = (value) => `Rs. ${toNumber(value).toFixed(2)}`;
+export const formatCurrency = (value) => `${toNumber(value).toFixed(2)}`;
 
 export const formatReceiptDate = (value) => {
   if (!value) return '-';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '-';
-  return date.toLocaleDateString();
+  return date.toLocaleDateString('en-GB');
 };
 

@@ -1,44 +1,44 @@
-import React from 'react';
-import ReceiptCopy from './ReceiptCopy';
+import React, { memo, useMemo } from 'react';
+import { calculateReceiptTotals, formatReceiptDate, groupFeeAllocations } from './invoiceUtils';
+import ReceiptHeader from './ReceiptHeader';
+import StudentInfo from './StudentInfo';
+import FeeTable from './FeeTable';
+import GrandTotal from './GrandTotal';
+import ReceiptFooter from './ReceiptFooter';
 
-const SHEET_OUTER_WIDTH_MM = 200;
-const SHEET_OUTER_HEIGHT_MM = 287;
-const SHEET_PADDING_MM = 3;
-const SHEET_GAP_MM = 2.5;
+const ReceiptSheet = memo(({ payment }) => {
+  const receiptData = useMemo(() => {
+    const groupedRows = groupFeeAllocations(payment);
+    const totals = calculateReceiptTotals(groupedRows);
 
-const toMm = (value) => `${value}mm`;
+    return {
+      groupedRows,
+      totals,
+      receiptDate: formatReceiptDate(payment?.paymentDate || payment?.invoice?.generatedDate || payment?.createdAt)
+    };
+  }, [payment]);
 
-const ReceiptSheet = ({ payment }) => {
-  const innerWidthMm = SHEET_OUTER_WIDTH_MM - SHEET_PADDING_MM * 2;
-  const innerHeightMm = SHEET_OUTER_HEIGHT_MM - SHEET_PADDING_MM * 2;
-  const cellWidthMm = (innerWidthMm - SHEET_GAP_MM) / 2;
-  const cellHeightMm = (innerHeightMm - SHEET_GAP_MM) / 2;
+  if (!payment) return null;
 
   return (
-    <div
-      className="receipt-sheet mx-auto grid w-full max-w-[200mm] grid-cols-2 gap-[2.5mm] overflow-hidden bg-white text-slate-900"
-      style={{
-        width: toMm(SHEET_OUTER_WIDTH_MM),
-        height: toMm(SHEET_OUTER_HEIGHT_MM),
-        padding: toMm(SHEET_PADDING_MM)
-      }}
-    >
-      {Array.from({ length: 1 }).map((_, index) => (
-        <div
-          key={index}
-          className="relative overflow-hidden rounded-[2px] border border-dashed border-slate-200 bg-white"
-          style={{
-            width: toMm(cellWidthMm),
-            height: toMm(cellHeightMm)
-          }}
-        >
-          <div className="h-full w-full">
-            <ReceiptCopy payment={payment} />
+    <div className="receipt-print-shell mx-auto flex w-full justify-center">
+      <section className="receipt-page print-color-exact flex h-[138mm] w-[95mm] flex-col overflow-hidden rounded-[12px] border border-[#ECECEC] bg-white shadow-sm">
+        <div className="flex flex-1 flex-col px-[4mm] pt-[4mm] pb-[3mm]">
+          <ReceiptHeader />
+          <StudentInfo payment={{ ...payment, receiptDate: receiptData.receiptDate }} />
+          <div className="flex-1">
+            <FeeTable groupedRows={receiptData.groupedRows} />
+          </div>
+          <div className="mt-2">
+            <GrandTotal amount={receiptData.totals.totalAmount} />
           </div>
         </div>
-      ))}
+        <ReceiptFooter />
+      </section>
     </div>
   );
-};
+});
+
+ReceiptSheet.displayName = 'ReceiptSheet';
 
 export default ReceiptSheet;

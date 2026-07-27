@@ -7,6 +7,78 @@ import { ArrowLeft, Download, Printer } from 'lucide-react';
 import InvoiceTemplate from '../components/invoice/InvoiceTemplate';
 import { toastError } from '../services/toastService';
 
+const RECEIPT_PRINT_STYLES = `
+  @page {
+    size: A6 portrait;
+    margin: 5mm;
+  }
+
+  @media print {
+    html,
+    body {
+      background: #ffffff !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      height: auto !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .dashboard-sidebar,
+    .dashboard-mobile-header,
+    .no-print,
+    .receipt-screen-controls {
+      display: none !important;
+    }
+
+    .dashboard-shell {
+      display: block !important;
+      background: #ffffff !important;
+    }
+
+    .dashboard-main {
+      height: auto !important;
+      overflow: visible !important;
+      background: #ffffff !important;
+    }
+
+    .dashboard-content-inner,
+    .invoice-generated-page {
+      padding: 0 !important;
+      margin: 0 !important;
+      background: #ffffff !important;
+    }
+
+    .receipt-preview-stage {
+      padding: 0 !important;
+    }
+
+    .receipt-print-shell {
+      width: 95mm !important;
+      max-width: 95mm !important;
+      margin: 0 auto !important;
+      padding: 0 !important;
+      background: transparent !important;
+    }
+
+    .receipt-page {
+      width: 95mm !important;
+      height: 138mm !important;
+      margin: 0 !important;
+      box-shadow: none !important;
+      overflow: hidden !important;
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
+    }
+
+    .receipt-page,
+    .receipt-page * {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+  }
+`;
+
 const InvoiceGenerated = () => {
   const { id } = useParams();
   const location = useLocation();
@@ -15,6 +87,23 @@ const InvoiceGenerated = () => {
   const [loading, setLoading] = useState(!location.state?.payment);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    const styleId = 'receipt-print-styles';
+    let styleNode = document.getElementById(styleId);
+
+    if (!styleNode) {
+      styleNode = document.createElement('style');
+      styleNode.id = styleId;
+      styleNode.type = 'text/css';
+      styleNode.appendChild(document.createTextNode(RECEIPT_PRINT_STYLES));
+      document.head.appendChild(styleNode);
+    }
+
+    return () => {
+      styleNode?.remove();
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -77,7 +166,9 @@ const InvoiceGenerated = () => {
       const link = document.createElement('a');
       link.href = url;
       const invoiceNumber = payment?.invoice?.invoiceNumber || id;
-      link.setAttribute('download', `invoice_${invoiceNumber}.pdf`);
+      const safeInvoiceNumber = String(invoiceNumber || id || 'invoice').replace(/[^a-zA-Z0-9._-]/g, '_');
+      const safePaymentId = String(id || Date.now()).replace(/[^a-zA-Z0-9._-]/g, '_');
+      link.setAttribute('download', `invoice_${safeInvoiceNumber}_${safePaymentId}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -93,7 +184,7 @@ const InvoiceGenerated = () => {
   if (loading) return <PageLoader />;
 
   return (
-    <div className="invoice-generated-page space-y-6">
+    <div className="invoice-generated-page receipt-preview-stage space-y-6">
       <div className="no-print flex flex-col gap-4 rounded-xl bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900">Invoice Generated</h1>
@@ -125,95 +216,6 @@ const InvoiceGenerated = () => {
       ) : (
         <InvoiceTemplate payment={payment} />
       )}
-
-      <style>{`
-        @page {
-          size: A4 portrait;
-          margin: 5mm;
-        }
-
-        @media print {
-
-          html, body {
-            background: #ffffff !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            height: auto !important;
-          }
-
-          .dashboard-sidebar,
-          .dashboard-mobile-header,
-          .no-print {
-            display: none !important;
-          }
-
-          .dashboard-shell {
-            display: block !important;
-            background: #ffffff !important;
-          }
-
-          .dashboard-main {
-            height: auto !important;
-            overflow: visible !important;
-            background: #ffffff !important;
-          }
-
-          .dashboard-content-inner {
-            padding: 0 !important;
-          }
-
-          .invoice-generated-page {
-            margin: 0 !important;
-            padding: 0 !important;
-          }
-
-          .receipt-page {
-            width: calc(210mm - 10mm) !important;
-            height: calc(297mm - 10mm) !important;
-            max-width: none !important;
-            min-height: calc(297mm - 10mm) !important;
-            margin: 0 auto !important;
-            border: none !important;
-            border-radius: 0 !important;
-            box-shadow: none !important;
-          }
-
-          .receipt-copy {
-            height: 100% !important;
-            min-height: 100% !important;
-            break-inside: avoid !important;
-            page-break-inside: avoid !important;
-            overflow: hidden !important;
-          }
-
-          .receipt-sheet {
-            width: calc(210mm - 10mm) !important;
-            height: calc(297mm - 10mm) !important;
-            max-width: none !important;
-            box-shadow: none !important;
-            border: none !important;
-          }
-
-          .invoice-sheet {
-            max-width: none !important;
-            width: 100% !important;
-            box-shadow: none !important;
-            border: none !important;
-          }
-
-          .invoice-sheet,
-          .invoice-sheet * {
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
-
-          .invoice-row,
-          .invoice-section {
-            break-inside: avoid;
-            page-break-inside: avoid;
-          }
-        }
-      `}</style>
     </div>
   );
 };
