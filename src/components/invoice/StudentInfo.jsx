@@ -3,7 +3,7 @@ import React, { memo } from 'react';
 const fieldLabelClass = 'w-[13.2mm] shrink-0 whitespace-nowrap text-[8.6px] font-medium leading-none tracking-normal text-[#555555]';
 const fieldValueClass = 'min-w-0 flex-1 truncate whitespace-nowrap text-[8px] font-semibold leading-none text-[#111111]';
 const fieldAccentClass = 'min-w-0 flex-1 truncate whitespace-nowrap text-[8px] font-semibold leading-none text-[#F58220]';
-const fieldCompactValueClass = 'min-w-0 flex-1 truncate whitespace-nowrap text-[8px] font-semibold leading-none text-[#F58220]';
+const fieldCompactValueClass = 'min-w-0 flex-1 truncate whitespace-nowrap text-[7.2px] font-semibold leading-none text-[#F58220]';
 
 const InfoBlock = ({ label, value, accent = false, align = 'left', compact = false }) => (
   <div className={`flex min-w-0 items-center gap-[0.9px] ${align === 'right' ? 'justify-end' : ''}`}>
