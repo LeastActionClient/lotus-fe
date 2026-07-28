@@ -10,7 +10,7 @@ const TableCell = ({ children, align = 'right', className = '' }) => (
 const FeeTable = memo(({ groupedRows }) => {
   return (
     <section className="mt-3 overflow-hidden rounded-[14px] border border-[#ECECEC] shadow-sm">
-      <table className="w-full table-fixed border-collapse text-[8.5px] leading-tight">
+      <table className="w-full table-fixed border-collapse text-[9.0px] leading-tight">
         <colgroup>
           <col className="w-[49%]" />
           <col className="w-[17%]" />

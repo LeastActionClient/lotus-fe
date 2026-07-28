@@ -1,13 +1,13 @@
 import React, { memo } from 'react';
 
-const fieldLabelClass = 'w-[15.2mm] shrink-0 text-[7.1px] font-medium leading-none tracking-normal text-[#555555]';
+const fieldLabelClass = 'w-[15.2mm] shrink-0 text-[8.6px] font-bold leading-none tracking-normal text-[#555555]';
 const fieldValueClass = 'min-w-0 flex-1 truncate text-[8.6px] font-semibold leading-none text-[#111111]';
 const fieldAccentClass = 'min-w-0 flex-1 truncate text-[8.6px] font-semibold leading-none text-[#F58220]';
 
 const InfoBlock = ({ label, value, accent = false, align = 'left' }) => (
   <div className={`flex min-w-0 items-center gap-[1.2px] ${align === 'right' ? 'justify-end' : ''}`}>
     <div className={fieldLabelClass}>{label}</div>
-    <div className="shrink-0 text-[8.2px] font-medium leading-none text-[#555555]">:</div>
+    <div className="shrink-0 text-[10.2px] font-bold leading-none text-[#555555]">:</div>
     <div className={accent ? fieldAccentClass : fieldValueClass} title={value}>
       {value || '-'}
     </div>
