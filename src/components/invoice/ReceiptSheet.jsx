@@ -23,13 +23,15 @@ const ReceiptSheet = memo(({ payment }) => {
   return (
     <div className="receipt-print-shell mx-auto flex w-full justify-center">
       <section className="receipt-page print-color-exact flex h-[138mm] w-[95mm] flex-col overflow-hidden rounded-[12px] border border-[#ECECEC] bg-white shadow-sm">
-        <div className="flex flex-1 flex-col px-[4mm] pt-[4mm] pb-[3mm]">
+        <div className="flex flex-1 flex-col px-[4mm] pt-[4mm] pb-[2.5mm]">
           <ReceiptHeader />
-          <StudentInfo payment={{ ...payment, receiptDate: receiptData.receiptDate }} />
-          <div className="flex-1">
+          <div className="pt-[1.4mm]">
+            <StudentInfo payment={{ ...payment, receiptDate: receiptData.receiptDate }} />
+          </div>
+          <div className="pt-[1.4mm]">
             <FeeTable groupedRows={receiptData.groupedRows} />
           </div>
-          <div className="mt-2">
+          <div className="pt-[1.2mm]">
             <GrandTotal amount={receiptData.totals.totalAmount} />
           </div>
         </div>
