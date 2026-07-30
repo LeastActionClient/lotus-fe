@@ -32,7 +32,7 @@ const ReceiptSheet = memo(({ payment }) => {
             <FeeTable groupedRows={receiptData.groupedRows} />
           </div>
           <div className="pt-[1.2mm]">
-            <GrandTotal amount={receiptData.totals.totalAmount} />
+            <GrandTotal amount={receiptData.totals.paidAmount} />
           </div>
         </div>
         <ReceiptFooter />
