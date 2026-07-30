@@ -11,6 +11,119 @@ import { Link, useNavigate } from 'react-router-dom';
 import { getStudentCategoryLabel, isRTEStudent } from '../utils/studentCategory';
 import { PageLoader } from '../components/ui/Spinner';
 import * as XLSX from 'xlsx';
+import Select from 'react-select';
+
+const CategoryMultiSelect = ({ categories, selectedIds, onChange }) => {
+  const categoryOptions = useMemo(() => {
+    return (categories || []).map(c => ({
+      value: String(c._id),
+      label: c.name
+    }));
+  }, [categories]);
+
+  const selectedOptions = useMemo(() => {
+    return categoryOptions.filter(opt => selectedIds.includes(opt.value));
+  }, [categoryOptions, selectedIds]);
+
+  const handleSelectAll = () => {
+    onChange(categoryOptions.map(opt => opt.value));
+  };
+
+  const handleClearAll = () => {
+    onChange([]);
+  };
+
+  return (
+    <div className="space-y-1">
+      <div className="flex justify-between items-center px-0.5">
+        <span className="text-xs text-gray-500 font-medium">
+          {selectedIds.length > 0 ? `${selectedIds.length} selected` : 'All Categories'}
+        </span>
+        <div className="flex items-center gap-2 text-[11px]">
+          <button
+            type="button"
+            onClick={handleSelectAll}
+            className="text-orange-600 hover:text-orange-800 font-bold hover:underline"
+          >
+            Select All ({categories.length})
+          </button>
+          <span className="text-gray-300">|</span>
+          <button
+            type="button"
+            onClick={handleClearAll}
+            className="text-gray-500 hover:text-gray-700 font-medium hover:underline"
+          >
+            Clear All
+          </button>
+        </div>
+      </div>
+
+      <Select
+        isMulti
+        isSearchable
+        closeMenuOnSelect={false}
+        hideSelectedOptions={false}
+        menuPortalTarget={document.body}
+        options={categoryOptions}
+        value={selectedOptions}
+        onChange={(selected) => {
+          const ids = selected ? selected.map(opt => opt.value) : [];
+          onChange(ids);
+        }}
+        placeholder="Type to search categories..."
+        className="text-sm"
+        classNamePrefix="category-select"
+        styles={{
+          menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+          control: (base, state) => ({
+            ...base,
+            minHeight: '40px',
+            borderRadius: '0.375rem',
+            borderColor: state.isFocused ? '#ea580c' : '#d1d5db',
+            boxShadow: state.isFocused ? '0 0 0 1px #ea580c' : 'none',
+            '&:hover': {
+              borderColor: '#ea580c'
+            }
+          }),
+          multiValue: (base) => ({
+            ...base,
+            backgroundColor: '#ffedd5',
+            borderRadius: '9999px',
+            border: '1px solid #fed7aa',
+            paddingLeft: '4px',
+            paddingRight: '4px'
+          }),
+          multiValueLabel: (base) => ({
+            ...base,
+            color: '#7c2d12',
+            fontWeight: '600',
+            fontSize: '12px'
+          }),
+          multiValueRemove: (base) => ({
+            ...base,
+            color: '#9a3412',
+            ':hover': {
+              backgroundColor: '#ea580c',
+              color: 'white',
+              borderRadius: '9999px'
+            }
+          }),
+          option: (base, state) => ({
+            ...base,
+            fontSize: '13px',
+            backgroundColor: state.isSelected
+              ? '#ea580c'
+              : state.isFocused
+              ? '#fff7ed'
+              : 'white',
+            color: state.isSelected ? 'white' : '#1f2937',
+            cursor: 'pointer'
+          })
+        }}
+      />
+    </div>
+  );
+};
 
 const PendingFees = () => {
   const [students, setStudents] = useState([]);
@@ -24,7 +137,7 @@ const PendingFees = () => {
   const [statusFilter, setStatusFilter] = useState('All');
   const [feeStatusFilter, setFeeStatusFilter] = useState('All');
   const [RTEFilter, setRTEFilter] = useState('All');
-  const [categoryFilter, setCategoryFilter] = useState('All');
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -70,12 +183,23 @@ const PendingFees = () => {
     return 'current';
   };
 
+  const getFeeCatId = (fee) => String(fee?.feeCategoryId?._id || fee?.feeCategoryId || '');
+
+  const isFeeCategorySelected = (fee, selectedIds = selectedCategoryIds) => {
+    if (!selectedIds || selectedIds.length === 0) return true;
+    const catId = getFeeCatId(fee);
+    return selectedIds.includes(catId);
+  };
+
   const getCurrentFees = (student) => (student.studentFees || []).filter(f => getFeeBucket(f, student) === 'current');
   const getPreviousFees = (student) => (student.studentFees || []).filter(f => getFeeBucket(f, student) === 'previous');
 
-  const getStudentTotalPending = (student) => {
-    if (student.totalDue !== undefined) return student.totalDue;
-    return (student.studentFees || []).reduce((sum, fee) => sum + (fee.remainingAmount || 0), 0);
+  const getStudentTotalPending = (student, selectedIds = selectedCategoryIds) => {
+    if (!selectedIds || selectedIds.length === 0) {
+      if (student.totalDue !== undefined) return student.totalDue;
+      return (student.studentFees || []).reduce((sum, fee) => sum + (fee.remainingAmount || 0), 0);
+    }
+    return getPreviousPending(student, selectedIds) + getCurrentPending(student, selectedIds);
   };
 
   const getStudentTotalPaid = (student) => {
@@ -93,14 +217,24 @@ const PendingFees = () => {
     }, 0);
   };
 
-  const getCurrentPending = (student) => {
-    if (student.currentPending !== undefined) return student.currentPending;
-    return getCurrentFees(student).reduce((sum, fee) => sum + (fee.remainingAmount || 0), 0);
+  const getCurrentPending = (student, selectedIds = selectedCategoryIds) => {
+    if (!selectedIds || selectedIds.length === 0) {
+      if (student.currentPending !== undefined) return student.currentPending;
+      return getCurrentFees(student).reduce((sum, fee) => sum + (fee.remainingAmount || 0), 0);
+    }
+    return getCurrentFees(student)
+      .filter(f => isFeeCategorySelected(f, selectedIds))
+      .reduce((sum, fee) => sum + (fee.remainingAmount || 0), 0);
   };
 
-  const getPreviousPending = (student) => {
-    if (student.previousPending !== undefined) return student.previousPending;
-    return getPreviousFees(student).reduce((sum, fee) => sum + (fee.remainingAmount || 0), 0);
+  const getPreviousPending = (student, selectedIds = selectedCategoryIds) => {
+    if (!selectedIds || selectedIds.length === 0) {
+      if (student.previousPending !== undefined) return student.previousPending;
+      return getPreviousFees(student).reduce((sum, fee) => sum + (fee.remainingAmount || 0), 0);
+    }
+    return getPreviousFees(student)
+      .filter(f => isFeeCategorySelected(f, selectedIds))
+      .reduce((sum, fee) => sum + (fee.remainingAmount || 0), 0);
   };
 
   const getCurrentPaid = (student) => {
@@ -168,12 +302,12 @@ const PendingFees = () => {
     setStatusFilter('All');
     setFeeStatusFilter('All');
     setRTEFilter('All');
-    setCategoryFilter('All');
+    setSelectedCategoryIds([]);
   };
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, classFilter, sectionFilter, statusFilter, feeStatusFilter, RTEFilter, categoryFilter]);
+  }, [searchQuery, classFilter, sectionFilter, statusFilter, feeStatusFilter, RTEFilter, selectedCategoryIds]);
 
   const availableSections = useMemo(() => {
     if (classFilter === 'All') return [];
@@ -205,29 +339,29 @@ const PendingFees = () => {
       if (RTEFilter === 'RTE' && !isRTEStudent(student)) return false;
       if (RTEFilter === 'Non-RTE' && isRTEStudent(student)) return false;
 
-      const pendingAmount = getStudentTotalPending(student);
+      const pendingAmount = getStudentTotalPending(student, []);
       if (feeStatusFilter === 'Pending' && pendingAmount <= 0) return false;
       if (feeStatusFilter === 'Paid' && pendingAmount > 0) return false;
 
-      if (categoryFilter !== 'All') {
+      if (selectedCategoryIds.length > 0) {
         const hasPendingSelectedCat = (student.studentFees || []).some(f =>
-          (f.feeCategoryId?._id || f.feeCategoryId) === categoryFilter && (f.remainingAmount || 0) > 0
+          isFeeCategorySelected(f, selectedCategoryIds) && (f.remainingAmount || 0) > 0
         );
         if (!hasPendingSelectedCat) return false;
       }
 
       return true;
     });
-  }, [students, searchQuery, classFilter, sectionFilter, statusFilter, feeStatusFilter, RTEFilter, categoryFilter]);
+  }, [students, searchQuery, classFilter, sectionFilter, statusFilter, feeStatusFilter, RTEFilter, selectedCategoryIds]);
 
   const allStudentsWithFees = useMemo(() => {
     return students.filter(student => getStudentTotalFee(student) > 0);
   }, [students]);
 
   const totalStudentsCount = allStudentsWithFees.length;
-  const totalPendingAmount = allStudentsWithFees.reduce((sum, student) => sum + getStudentTotalPending(student), 0);
-  const currentPendingAmount = allStudentsWithFees.reduce((sum, student) => sum + getCurrentPending(student), 0);
-  const previousPendingAmount = allStudentsWithFees.reduce((sum, student) => sum + getPreviousPending(student), 0);
+  const totalPendingAmount = allStudentsWithFees.reduce((sum, student) => sum + getStudentTotalPending(student, selectedCategoryIds), 0);
+  const currentPendingAmount = allStudentsWithFees.reduce((sum, student) => sum + getCurrentPending(student, selectedCategoryIds), 0);
+  const previousPendingAmount = allStudentsWithFees.reduce((sum, student) => sum + getPreviousPending(student, selectedCategoryIds), 0);
   const totalPaidAmount = allStudentsWithFees.reduce((sum, student) => sum + getStudentTotalPaid(student), 0);
   const RTEPaidAmount = allStudentsWithFees.filter(student => isRTEStudent(student)).reduce((sum, student) => sum + getStudentTotalPaid(student), 0);
   const generalPaidAmount = allStudentsWithFees.filter(student => !isRTEStudent(student)).reduce((sum, student) => sum + getStudentTotalPaid(student), 0);
@@ -246,7 +380,7 @@ const PendingFees = () => {
     const headers = ['Admission No', 'Student Name', 'Status', 'RTE Status', 'Class', 'Section', 'Total Fee', 'Paid Amount', 'Pending Amount'];
 
     const rows = filteredStudents.map(student => {
-      const totalPending = getStudentTotalPending(student);
+      const totalPending = getStudentTotalPending(student, selectedCategoryIds);
       const totalPaid = getStudentTotalPaid(student);
       const totalFee = getStudentTotalFee(student);
 
@@ -277,25 +411,19 @@ const PendingFees = () => {
 
   const handleExportExcel = () => {
     const excelData = filteredStudents.map(student => {
-      const previousPendingFees = getPreviousFees(student).filter(f => (f.remainingAmount || 0) > 0);
-      const currentPendingFees = getCurrentFees(student).filter(f => (f.remainingAmount || 0) > 0);
+      const previousPendingFees = getPreviousFees(student).filter(f => (f.remainingAmount || 0) > 0 && isFeeCategorySelected(f, selectedCategoryIds));
+      const currentPendingFees = getCurrentFees(student).filter(f => (f.remainingAmount || 0) > 0 && isFeeCategorySelected(f, selectedCategoryIds));
       const pendingCats = (student.studentFees || [])
-        .filter(f => f.remainingAmount > 0 && f.feeCategoryId)
+        .filter(f => f.remainingAmount > 0 && f.feeCategoryId && isFeeCategorySelected(f, selectedCategoryIds))
         .map(f => ({
-          id: f.feeCategoryId._id || f.feeCategoryId,
-          name: f.feeCategoryId.name || 'Unknown',
+          id: getFeeCatId(f),
+          name: formatFeeLabel(f),
           pendingAmount: f.remainingAmount
         }));
 
-      const filteredPendingCats = categoryFilter === 'All'
-        ? pendingCats
-        : pendingCats.filter(c => c.id === categoryFilter);
-
-      const pendingCategoriesStr = filteredPendingCats.map(c => c.name).join(', ');
-      const categoryWisePendingAmountsStr = filteredPendingCats.map(c => `Rs. ${c.pendingAmount}`).join(', ');
-      const displayPendingAmount = categoryFilter === 'All'
-        ? getStudentTotalPending(student)
-        : ((student.studentFees || []).find(f => (f.feeCategoryId?._id || f.feeCategoryId) === categoryFilter)?.remainingAmount || 0);
+      const pendingCategoriesStr = pendingCats.map(c => c.name).join(', ');
+      const categoryWisePendingAmountsStr = pendingCats.map(c => `Rs. ${c.pendingAmount}`).join(', ');
+      const displayPendingAmount = getStudentTotalPending(student, selectedCategoryIds);
 
       return {
         'Admission Number': student.admissionNumber || '',
@@ -304,8 +432,8 @@ const PendingFees = () => {
         'Class': student.currentClass || '',
         'Section': student.section || '',
         'Academic Year': student.currentEnrollment?.academicYear || student.academicYear || '',
-        'Prev Pending': `Rs. ${getPreviousPending(student).toFixed(2)}`,
-        'Curr Pending': `Rs. ${getCurrentPending(student).toFixed(2)}`,
+        'Prev Pending': `Rs. ${getPreviousPending(student, selectedCategoryIds).toFixed(2)}`,
+        'Curr Pending': `Rs. ${getCurrentPending(student, selectedCategoryIds).toFixed(2)}`,
         'Prev Pending Details': previousPendingFees.map(f => `${formatFeeLabel(f)}: Rs. ${(f.remainingAmount || 0).toFixed(2)}`).join(' | ') || 'None',
         'Curr Pending Details': currentPendingFees.map(f => `${formatFeeLabel(f)}: Rs. ${(f.remainingAmount || 0).toFixed(2)}`).join(' | ') || 'None',
         'Pending Categories': pendingCategoriesStr || 'None',
@@ -473,16 +601,11 @@ const PendingFees = () => {
 
               <div>
                 <Label>Category</Label>
-                <select
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                >
-                  <option value="All">All Categories</option>
-                  {categories.map(c => (
-                    <option key={c._id} value={c._id}>{c.name}</option>
-                  ))}
-                </select>
+                <CategoryMultiSelect
+                  categories={categories}
+                  selectedIds={selectedCategoryIds}
+                  onChange={setSelectedCategoryIds}
+                />
               </div>
             </div>
 
@@ -529,14 +652,14 @@ const PendingFees = () => {
                   </TableRow>
                 ) : (
                   paginatedStudents.map((student, index) => {
-                    const totalPending = getStudentTotalPending(student);
+                    const totalPending = getStudentTotalPending(student, selectedCategoryIds);
                     const totalPaid = getStudentTotalPaid(student);
                     const totalFee = getStudentTotalFee(student);
-                    const currentPending = getCurrentPending(student);
-                    const previousPending = getPreviousPending(student);
+                    const currentPending = getCurrentPending(student, selectedCategoryIds);
+                    const previousPending = getPreviousPending(student, selectedCategoryIds);
                     const hasPreviousFees = getPreviousFees(student).length > 0;
-                    const previousPendingFees = getPreviousFees(student).filter(f => (f.remainingAmount || 0) > 0);
-                    const currentPendingFees = getCurrentFees(student).filter(f => (f.remainingAmount || 0) > 0);
+                    const previousPendingFees = getPreviousFees(student).filter(f => (f.remainingAmount || 0) > 0 && isFeeCategorySelected(f, selectedCategoryIds));
+                    const currentPendingFees = getCurrentFees(student).filter(f => (f.remainingAmount || 0) > 0 && isFeeCategorySelected(f, selectedCategoryIds));
 
                     return (
                       <TableRow key={student._id}>
@@ -644,7 +767,7 @@ const PendingFees = () => {
                           </div>
                         </TableCell>
                         <TableCell className="whitespace-nowrap">
-                          {totalPending > 0 ? (
+                          {getStudentTotalPending(student, []) > 0 ? (
                             <Button
                               size="sm"
                               onClick={() => navigate('/dashboard/payments', { state: { studentId: student._id } })}

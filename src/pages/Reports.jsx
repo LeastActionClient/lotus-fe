@@ -1,10 +1,28 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Download } from 'lucide-react';
+import { Download, PieChart, TrendingUp, Calendar } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
-import { PieChart, TrendingUp, Calendar, LayoutList } from 'lucide-react';
 import { PageLoader } from '../components/ui/Spinner';
 import { useFeeCategoriesQuery, usePendingFeesQuery, useReportDataQuery } from '../hooks/useSchoolQueries';
+import * as XLSX from 'xlsx';
+
+const formatDateDDMMYYYY = (dateVal) => {
+  if (!dateVal) return '';
+  const d = new Date(dateVal);
+  if (isNaN(d.getTime())) return '';
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+const escapeCSVValue = (value) => {
+  const text = value === null || value === undefined ? '' : String(value);
+  if (/[",\n]/.test(text)) {
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+  return text;
+};
 
 const Reports = () => {
   const [timeframe, setTimeframe] = useState('daily');
@@ -56,18 +74,109 @@ const Reports = () => {
 
   const totalFilteredCollections = filteredCollections.reduce((sum, item) => sum + (item.amount || 0), 0);
 
+  const handleExportExcel = () => {
+    const data = filteredCollections.map(item => {
+      const studentObj = item.student || item.studentId || {};
+      const feeCategoryObj = item.studentFee?.feeCategory || item.studentFeeId?.feeCategoryId || {};
+      const recordedByObj = item.recordedBy || item.recordedById || item.processedById || {};
+
+      return {
+        'Date': formatDateDDMMYYYY(item.paymentDate),
+        'Class': studentObj.currentClass || item.className || '',
+        'Sec': studentObj.section || item.section || '',
+        'Admission number': studentObj.admissionNumber || '',
+        'Fee category': feeCategoryObj.name || (item.paymentType === 'APPLICATION' ? 'Application Fee' : ''),
+        'Amount': item.amount !== undefined ? item.amount.toFixed(2) : '0.00',
+        'Method': item.paymentMethod || 'Cash',
+        'Collected by': recordedByObj.username || ''
+      };
+    });
+
+    const overallTotal = filteredCollections.reduce((sum, item) => sum + (item.amount || 0), 0);
+    const methodTotals = {};
+    filteredCollections.forEach(item => {
+      const method = (item.paymentMethod || 'Cash').trim();
+      methodTotals[method] = (methodTotals[method] || 0) + (item.amount || 0);
+    });
+
+    // Blank separator row
+    data.push({
+      'Date': '',
+      'Class': '',
+      'Sec': '',
+      'Admission number': '',
+      'Fee category': '',
+      'Amount': '',
+      'Method': '',
+      'Collected by': ''
+    });
+
+    // Conclusion Row - Total Collection
+    data.push({
+      'Date': '--- CONCLUSION ---',
+      'Class': '',
+      'Sec': '',
+      'Admission number': '',
+      'Fee category': 'TOTAL COLLECTION',
+      'Amount': overallTotal.toFixed(2),
+      'Method': 'FULL AMOUNT',
+      'Collected by': ''
+    });
+
+    // Method Breakdown Rows
+    Object.keys(methodTotals).forEach(method => {
+      data.push({
+        'Date': '',
+        'Class': '',
+        'Sec': '',
+        'Admission number': '',
+        'Fee category': `${method} Total`,
+        'Amount': methodTotals[method].toFixed(2),
+        'Method': method,
+        'Collected by': ''
+      });
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Collections');
+    const filenameTimeframe = timeframe === 'custom' ? `${startDate}_to_${endDate}` : timeframe;
+    XLSX.writeFile(workbook, `${filenameTimeframe}_collection_report_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
+
   const downloadCSV = () => {
-    const headers = ['Date', 'Student Name', 'Admission No', 'Fee Category', 'Amount', 'Collected By'];
-    const rows = filteredCollections.map(item => [
-      new Date(item.paymentDate).toLocaleDateString(),
-      item.student?.studentName || item.studentId?.studentName || '',
-      item.student?.admissionNumber || item.studentId?.admissionNumber || '',
-      item.studentFee?.feeCategory?.name || item.studentFeeId?.feeCategoryId?.name || '',
-      item.amount?.toFixed(2) || '0.00',
-      item.recordedBy?.username || item.recordedById?.username || ''
-    ]);
+    const headers = ['Date', 'Class', 'Sec', 'Admission number', 'Fee category', 'Amount', 'Method', 'Collected by'];
+    const rows = filteredCollections.map(item => {
+      const studentObj = item.student || item.studentId || {};
+      const feeCategoryObj = item.studentFee?.feeCategory || item.studentFeeId?.feeCategoryId || {};
+      const recordedByObj = item.recordedBy || item.recordedById || item.processedById || {};
+
+      return [
+        formatDateDDMMYYYY(item.paymentDate),
+        studentObj.currentClass || item.className || '',
+        studentObj.section || item.section || '',
+        studentObj.admissionNumber || '',
+        feeCategoryObj.name || (item.paymentType === 'APPLICATION' ? 'Application Fee' : ''),
+        item.amount !== undefined ? item.amount.toFixed(2) : '0.00',
+        item.paymentMethod || 'Cash',
+        recordedByObj.username || ''
+      ].map(escapeCSVValue);
+    });
+
+    const overallTotal = filteredCollections.reduce((sum, item) => sum + (item.amount || 0), 0);
+    const methodTotals = {};
+    filteredCollections.forEach(item => {
+      const method = (item.paymentMethod || 'Cash').trim();
+      methodTotals[method] = (methodTotals[method] || 0) + (item.amount || 0);
+    });
+
+    rows.push(['', '', '', '', '', '', '', ''].map(escapeCSVValue));
+    rows.push(['--- CONCLUSION ---', '', '', '', 'TOTAL COLLECTION', overallTotal.toFixed(2), 'FULL AMOUNT', ''].map(escapeCSVValue));
+    Object.keys(methodTotals).forEach(method => {
+      rows.push(['', '', '', '', `${method} Total`, methodTotals[method].toFixed(2), method, ''].map(escapeCSVValue));
+    });
     
-    const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const csvContent = [headers.map(escapeCSVValue).join(','), ...rows.map(e => e.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -123,6 +232,9 @@ const Reports = () => {
                 <option value="custom">Custom Range</option>
               </select>
               
+              <Button size="sm" onClick={handleExportExcel} className="bg-green-600 hover:bg-green-700 text-white shadow-sm">
+                <Download className="h-4 w-4 mr-1" /> Excel
+              </Button>
               <Button size="sm" variant="outline" onClick={downloadCSV}>
                 <Download className="h-4 w-4 mr-1" /> CSV
               </Button>
@@ -173,10 +285,10 @@ const Reports = () => {
                   <div key={i} className="flex justify-between items-center border-b border-gray-100 pb-2">
                     <div className="flex flex-col">
                       <span className="font-medium">
-                        {new Date(item.paymentDate).toLocaleDateString()} - {item.student?.studentName || item.studentId?.studentName}
+                        {formatDateDDMMYYYY(item.paymentDate)} - {item.student?.studentName || item.studentId?.studentName}
                       </span>
                       <span className="text-xs text-gray-500">
-                        {item.studentFee?.feeCategory?.name || item.studentFeeId?.feeCategoryId?.name} | Admission No: {item.student?.admissionNumber || item.studentId?.admissionNumber} | Collected by: {item.recordedBy?.username || item.recordedById?.username || ''}
+                        {item.studentFee?.feeCategory?.name || item.studentFeeId?.feeCategoryId?.name || (item.paymentType === 'APPLICATION' ? 'Application Fee' : '')} | Admission No: {item.student?.admissionNumber || item.studentId?.admissionNumber} | Collected by: {item.recordedBy?.username || item.recordedById?.username || item.processedById?.username || ''}
                       </span>
                     </div>
                     <div className="flex justify-between w-28 font-bold text-emerald-600 select-none">

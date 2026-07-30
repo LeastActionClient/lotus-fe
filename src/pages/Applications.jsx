@@ -32,8 +32,13 @@ const Applications = () => {
   const [formData, setFormData] = useState({
     applicationNo: '',
     studentName: '',
-    parentName: '',
     applyingClass: '',
+    fatherName: '',
+    fatherPhone: '',
+    motherName: '',
+    motherPhone: '',
+    guardianName: '',
+    guardianPhone: '',
     feePaid: false,
     adminNo: ''
   });
@@ -123,13 +128,13 @@ const Applications = () => {
     const { name, value } = e.target;
     
     let processedValue = value;
-    const englishNameFields = ['studentName', 'parentName', 'fatherName', 'motherName', 'religion', 'caste', 'specific', 'community'];
+    const englishNameFields = ['studentName', 'parentName', 'fatherName', 'motherName', 'guardianName', 'religion', 'caste', 'specific', 'community'];
     if (englishNameFields.includes(name)) {
       processedValue = value.replace(/[^a-zA-Z\s.]/g, '');
     } else if (name === 'studentNameTamil') {
       processedValue = value.replace(/[0-9]/g, '');
-    } else if (['aadharNo', 'fatherPhone', 'motherPhone'].includes(name)) {
-      processedValue = value.replace(/\D/g, '');
+    } else if (['aadharNo', 'fatherPhone', 'motherPhone', 'guardianPhone'].includes(name)) {
+      processedValue = value.replace(/\D/g, '').slice(0, 10);
     }
 
     setFormData(prev => ({ ...prev, [name]: processedValue }));
@@ -137,6 +142,19 @@ const Applications = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (formData.fatherPhone && !/^[6-9]\d{9}$/.test(formData.fatherPhone)) {
+      toastError("Father Phone Number must be 10 digits starting with 6, 7, 8, or 9.");
+      return;
+    }
+    if (formData.motherPhone && !/^[6-9]\d{9}$/.test(formData.motherPhone)) {
+      toastError("Mother Phone Number must be 10 digits starting with 6, 7, 8, or 9.");
+      return;
+    }
+    if (formData.guardianPhone && !/^[6-9]\d{9}$/.test(formData.guardianPhone)) {
+      toastError("Guardian Phone Number must be 10 digits starting with 6, 7, 8, or 9.");
+      return;
+    }
+
     setLoading(true);
     try {
       await api.post('/applications', formData);
@@ -144,8 +162,13 @@ const Applications = () => {
       setFormData({
         applicationNo: '',
         studentName: '',
-        parentName: '',
         applyingClass: '',
+        fatherName: '',
+        fatherPhone: '',
+        motherName: '',
+        motherPhone: '',
+        guardianName: '',
+        guardianPhone: '',
         feePaid: false,
         adminNo: ''
       });
@@ -332,18 +355,18 @@ const Applications = () => {
       </Card>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="KASTHURI NURSERY & PRIMARY SCHOOL APPLICATION FORM" className="max-w-4xl">
-        <form onSubmit={handleSubmit} className="space-y-6 pt-2">
+        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           {/* Main Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="applicationNo">Application No. <span className="text-red-500">*</span></Label>
-              <Input id="applicationNo" name="applicationNo" value={formData.applicationNo} onChange={handleInputChange} required readOnly className="bg-gray-100" />
+              <Input id="applicationNo" name="applicationNo" value={formData.applicationNo} onChange={handleInputChange} required readOnly className="bg-gray-100 font-bold" />
             </div>
             
             <div className="space-y-2">
               <Label htmlFor="applyingClass">Admission for <span className="text-red-500">*</span></Label>
               <select id="applyingClass" name="applyingClass" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600" value={formData.applyingClass} onChange={handleInputChange} required>
-                <option value="">Select...</option>
+                <option value="">Select Class...</option>
                 {sortedClasses.map((cls) => (
                   <option key={cls._id || cls.id} value={cls.name}>
                     {cls.name}
@@ -354,28 +377,63 @@ const Applications = () => {
 
             <div className="space-y-2">
               <Label htmlFor="studentName">Student Name <span className="text-red-500">*</span></Label>
-              <Input id="studentName" name="studentName" value={formData.studentName} onChange={handleInputChange} pattern="^[a-zA-Z\s.]+$" title="Only alphabets, spaces, and dots are allowed" required />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="parentName">Parents name / Guardian name <span className="text-red-500">*</span></Label>
-              <Input id="parentName" name="parentName" value={formData.parentName} onChange={handleInputChange} pattern="^[a-zA-Z\s.]+$" title="Only alphabets, spaces, and dots are allowed" required />
+              <Input id="studentName" name="studentName" value={formData.studentName} onChange={handleInputChange} pattern="^[a-zA-Z\s.]+$" title="Only alphabets, spaces, and dots are allowed" placeholder="Enter student name" required />
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 pb-2">
+          {/* Parent & Guardian Details */}
+          <div className="p-4 border border-gray-200 rounded-lg bg-gray-50/50 space-y-4">
+            <h3 className="text-sm font-bold text-gray-900 border-b border-gray-200 pb-2 flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-orange-600"></span>
+              Parent Details
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="fatherName">Father Name <span className="text-gray-400 font-normal">(Optional)</span></Label>
+                <Input id="fatherName" name="fatherName" value={formData.fatherName} onChange={handleInputChange} pattern="^[a-zA-Z\s.]+$" title="Only alphabets, spaces, and dots are allowed" placeholder="Enter father name" />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="fatherPhone">Father Phone Number <span className="text-gray-400 font-normal">(Optional)</span></Label>
+                <Input id="fatherPhone" name="fatherPhone" type="text" maxLength={10} value={formData.fatherPhone} onChange={handleInputChange} placeholder="10 digit mobile number (starts with 6-9)" />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="motherName">Mother Name <span className="text-gray-400 font-normal">(Optional)</span></Label>
+                <Input id="motherName" name="motherName" value={formData.motherName} onChange={handleInputChange} pattern="^[a-zA-Z\s.]+$" title="Only alphabets, spaces, and dots are allowed" placeholder="Enter mother name" />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="motherPhone">Mother Phone Number <span className="text-gray-400 font-normal">(Optional)</span></Label>
+                <Input id="motherPhone" name="motherPhone" type="text" maxLength={10} value={formData.motherPhone} onChange={handleInputChange} placeholder="10 digit mobile number (starts with 6-9)" />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="guardianName">Guardian Name <span className="text-gray-400 font-normal">(Optional)</span></Label>
+                <Input id="guardianName" name="guardianName" value={formData.guardianName} onChange={handleInputChange} pattern="^[a-zA-Z\s.]+$" title="Only alphabets, spaces, and dots are allowed" placeholder="Enter guardian name" />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="guardianPhone">Guardian Phone Number <span className="text-gray-400 font-normal">(Optional)</span></Label>
+                <Input id="guardianPhone" name="guardianPhone" type="text" maxLength={10} value={formData.guardianPhone} onChange={handleInputChange} placeholder="10 digit mobile number (starts with 6-9)" />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2 pt-2">
             <input 
               type="checkbox" 
               id="feePaid" 
               name="feePaid" 
               checked={formData.feePaid} 
               onChange={(e) => setFormData({...formData, feePaid: e.target.checked})} 
-              className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-600"
+              className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-600 cursor-pointer"
             />
-            <Label htmlFor="feePaid" className="text-sm font-medium text-gray-700">Application Fee Paid</Label>
+            <Label htmlFor="feePaid" className="text-sm font-medium text-gray-700 cursor-pointer select-none">Application Fee Paid</Label>
           </div>
 
-          <div className="flex justify-end gap-3 pt-6 border-t border-gray-200 mt-6">
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">
             <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Cancel</Button>
             <Button type="submit" loading={loading} loadingText="Submitting...">
               Submit Application
