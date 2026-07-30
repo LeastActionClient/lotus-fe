@@ -33,7 +33,15 @@ const RECEIPT_PRINT_STYLES = `
 
     .dashboard-shell {
       display: block !important;
+      height: auto !important;
+      overflow: visible !important;
       background: #ffffff !important;
+    }
+
+    .dashboard-shell > div {
+      display: block !important;
+      height: auto !important;
+      overflow: visible !important;
     }
 
     .dashboard-main {
@@ -53,7 +61,29 @@ const RECEIPT_PRINT_STYLES = `
       padding: 0 !important;
     }
 
+    .receipt-document {
+      display: block !important;
+      gap: 0 !important;
+      width: 100% !important;
+    }
+
+    .receipt-page-wrapper {
+      display: block !important;
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
+      break-after: page !important;
+      page-break-after: always !important;
+      margin: 0 !important;
+      width: 100% !important;
+    }
+
+    .receipt-page-wrapper:last-child {
+      break-after: auto !important;
+      page-break-after: auto !important;
+    }
+
     .receipt-print-shell {
+      display: block !important;
       width: 95mm !important;
       max-width: 95mm !important;
       margin: 0 auto !important;
@@ -62,13 +92,17 @@ const RECEIPT_PRINT_STYLES = `
     }
 
     .receipt-page {
+      display: flex !important;
+      flex-direction: column !important;
       width: 95mm !important;
       height: 138mm !important;
+      box-sizing: border-box !important;
       margin: 0 !important;
       box-shadow: none !important;
-      overflow: hidden !important;
+      overflow: visible !important;
       break-inside: avoid !important;
       page-break-inside: avoid !important;
+      page-break-after: auto !important;
     }
 
     .receipt-page,

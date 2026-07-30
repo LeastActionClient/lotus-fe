@@ -1,12 +1,12 @@
 import React from 'react';
-import ReceiptSheet from './ReceiptSheet';
+import PDFRenderer from './PDFRenderer';
 
 const InvoiceTemplate = ({ payment }) => {
   if (!payment) return null;
 
   return (
     <div className="mx-auto w-full overflow-x-auto">
-      <ReceiptSheet payment={payment} />
+      <PDFRenderer payment={payment} />
     </div>
   );
 };
