@@ -3,9 +3,12 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import api from '../services/api';
 import { PageLoader } from '../components/ui/Spinner';
 import { Button } from '../components/ui/Button';
-import { ArrowLeft, Download, Printer } from 'lucide-react';
+import { ArrowLeft, Download, Printer, Trash2 } from 'lucide-react';
 import InvoiceTemplate from '../components/invoice/InvoiceTemplate';
-import { toastError } from '../services/toastService';
+import { toastError, toastSuccess } from '../services/toastService';
+import { useConfirm } from '../components/ui/ConfirmDialog';
+import { useQueryInvalidator } from '../hooks/useSchoolQueries';
+import { getStoredUser } from '../utils/auth';
 
 const RECEIPT_PRINT_STYLES = `
   @page {
@@ -117,9 +120,14 @@ const InvoiceGenerated = () => {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const confirm = useConfirm();
+  const { invalidatePayments, invalidatePaymentInvoice } = useQueryInvalidator();
+  const currentUser = getStoredUser();
+  const isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
   const [payment, setPayment] = useState(location.state?.payment || null);
   const [loading, setLoading] = useState(!location.state?.payment);
   const [downloading, setDownloading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -215,6 +223,33 @@ const InvoiceGenerated = () => {
     }
   };
 
+  const handleDelete = async () => {
+    const accepted = await confirm({
+      title: 'Delete Payment',
+      description: 'Are you sure you want to delete this payment?',
+      confirmText: 'Delete',
+      tone: 'danger'
+    });
+
+    if (!accepted) {
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      await api.delete(`/payments/${id}`);
+      invalidatePayments();
+      invalidatePaymentInvoice(id);
+      toastSuccess('Payment deleted successfully.');
+      navigate('/dashboard/payments', { replace: true });
+    } catch (deleteError) {
+      console.error('Error deleting payment', deleteError);
+      toastError('Error deleting payment');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) return <PageLoader />;
 
   return (
@@ -231,6 +266,17 @@ const InvoiceGenerated = () => {
           <Button variant="outline" onClick={() => navigate('/dashboard/payments')}>
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Payments
           </Button>
+          {isSuperAdmin && (
+            <Button
+              variant="outline"
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              onClick={handleDelete}
+              loading={deleting}
+              loadingText="Deleting..."
+            >
+              <Trash2 className="mr-2 h-4 w-4" /> Delete
+            </Button>
+          )}
           <Button variant="outline" onClick={downloadInvoice} loading={downloading} loadingText="Downloading...">
             <Download className="mr-2 h-4 w-4" /> Download PDF
           </Button>

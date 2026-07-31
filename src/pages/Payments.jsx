@@ -15,9 +15,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { toastError, toastSuccess, toastWarning } from '../services/toastService';
 import { useConfirm } from '../components/ui/ConfirmDialog';
 import { useFeeCategoriesQuery, usePaymentsQuery, useQueryInvalidator, useStudentQuery, useStudentsQuery, useClassesQuery } from '../hooks/useSchoolQueries';
+import { getStoredUser } from '../utils/auth';
 
 const Payments = () => {
-  const currentUser = JSON.parse(localStorage.getItem('user') || JSON.parse(sessionStorage.getItem('user')) );
+  const currentUser = getStoredUser();
   const confirm = useConfirm();
   const location = useLocation();
   const navigate = useNavigate();
@@ -43,6 +44,7 @@ const Payments = () => {
   const [filterCategory, setFilterCategory] = useState('All');
   const [filterTableClass, setFilterTableClass] = useState('All');
   const [filterTableSection, setFilterTableSection] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -454,11 +456,39 @@ const Payments = () => {
     return getPaymentCategoryDescriptors(payment).some((category) => category.name === filterCategory);
   };
 
+  const matchesSearchFilter = (payment) => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return true;
+
+    const searchableValues = [
+      payment.invoice?.invoiceNumber,
+      payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString() : '',
+      payment.paymentDate,
+      payment.paymentMethod,
+      payment.amount,
+      payment.recordedBy?.username,
+      payment.student?.studentName,
+      payment.student?.admissionNumber,
+      payment.student?.currentClass,
+      payment.student?.section,
+      payment.application?.studentName,
+      payment.application?.applicationId,
+      payment.application?.applyingClass,
+      payment.application?.section,
+      getPaymentCategoryDescriptors(payment).map((category) => category.title).join(' '),
+    ];
+
+    return searchableValues.some((value) =>
+      String(value ?? '').toLowerCase().includes(query)
+    );
+  };
+
   const filteredPayments = payments.filter(p => {
     const matchCategory = matchesCategoryFilter(p);
     const matchClass = filterTableClass === 'All' || p.studentId?.currentClass === filterTableClass;
     const matchSection = filterTableSection === 'All' || p.studentId?.section === filterTableSection;
-    return matchCategory && matchClass && matchSection;
+    const matchSearch = matchesSearchFilter(p);
+    return matchCategory && matchClass && matchSection && matchSearch;
   });
 
   const totalPages = Math.max(1, Math.ceil(filteredPayments.length / itemsPerPage));
@@ -498,7 +528,7 @@ const Payments = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterCategory, filterTableClass, filterTableSection, payments.length]);
+  }, [filterCategory, filterTableClass, filterTableSection, searchQuery, payments.length]);
 
   const pageLoading = paymentsLoading || studentsLoading || feeCategoriesLoading;
   if (pageLoading) return <PageLoader />;
@@ -554,7 +584,14 @@ const Payments = () => {
           ))}
         </div>
         
-        <div className="flex space-x-2 pb-2">
+        <div className="flex flex-col gap-2 pb-2 sm:flex-row sm:items-center">
+          <Input
+            type="search"
+            placeholder="Search invoice, student, class, method..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="min-w-[260px] bg-white"
+          />
           <select 
             className="border border-gray-300 rounded-md px-3 py-1.5 text-sm bg-white min-w-[120px]" 
             value={filterTableClass} 
@@ -572,6 +609,16 @@ const Payments = () => {
             <option value="All">All Sections</option>
             {uniqueTableSections.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
+          {searchQuery && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSearchQuery('')}
+              className="bg-white"
+            >
+              Clear
+            </Button>
+          )}
         </div>
       </div>
 
