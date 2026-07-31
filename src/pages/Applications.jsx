@@ -253,7 +253,10 @@ const Applications = () => {
                 <TableHead>App ID</TableHead>
                 <TableHead>Student Name</TableHead>
                 <TableHead>Class</TableHead>
-                <TableHead>Parent Name</TableHead>
+                <TableHead>Father Name</TableHead>
+                <TableHead>Father Phone</TableHead>
+                <TableHead>Mother Name</TableHead>
+                <TableHead>Mother Phone</TableHead>
                 <TableHead>Processed By</TableHead>
                 <TableHead>App Fee</TableHead>
                 <TableHead>Status</TableHead>
@@ -263,7 +266,7 @@ const Applications = () => {
             <TableBody>
               {applications.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center h-32 text-gray-500">
+                  <TableCell colSpan={11} className="text-center h-32 text-gray-500">
                     No applications found.
                   </TableCell>
                 </TableRow>
@@ -273,8 +276,11 @@ const Applications = () => {
                     <TableCell className="font-mono text-sm">{app.applicationId}</TableCell>
                     <TableCell className="font-medium">{app.studentName}</TableCell>
                     <TableCell>{/^\d+$/.test(app.applyingClass) ? `${app.applyingClass} STD` : app.applyingClass}</TableCell>
-                    <TableCell>{app.parentName || app.fatherName}</TableCell>
-                    <TableCell>{app.processedById?.username}</TableCell>
+                    <TableCell>{app.fatherName || '-'}</TableCell>
+                    <TableCell>{app.fatherPhone || '-'}</TableCell>
+                    <TableCell>{app.motherName || '-'}</TableCell>
+                    <TableCell>{app.motherPhone || '-'}</TableCell>
+                    <TableCell>{app.processedById?.username || '-'}</TableCell>
                     <TableCell>
                       {app.status === 'APPROVED' ? (
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${

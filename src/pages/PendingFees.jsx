@@ -129,6 +129,7 @@ const PendingFees = () => {
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [academicYears, setAcademicYears] = useState([]);
   const navigate = useNavigate();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -137,6 +138,7 @@ const PendingFees = () => {
   const [statusFilter, setStatusFilter] = useState('All');
   const [feeStatusFilter, setFeeStatusFilter] = useState('All');
   const [RTEFilter, setRTEFilter] = useState('All');
+  const [academicYearFilter, setAcademicYearFilter] = useState('All');
   const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -146,6 +148,7 @@ const PendingFees = () => {
     fetchStudents();
     fetchClasses();
     fetchCategories();
+    fetchAcademicYears();
   }, []);
 
   const normalizeText = (value) => `${value ?? ''}`.trim().toLowerCase();
@@ -295,6 +298,27 @@ const PendingFees = () => {
     }
   };
 
+  const fetchAcademicYears = async () => {
+    try {
+      const res = await api.get('/academic-years');
+      setAcademicYears(res.data || []);
+    } catch (error) {
+      console.error('Error fetching academic years', error);
+    }
+  };
+
+  const availableAcademicYears = useMemo(() => {
+    const yearsSet = new Set();
+    (academicYears || []).forEach(ay => {
+      if (ay.year) yearsSet.add(ay.year);
+    });
+    (students || []).forEach(s => {
+      const yr = s.academicYear || s.currentEnrollment?.academicYear;
+      if (yr) yearsSet.add(yr);
+    });
+    return Array.from(yearsSet).sort((a, b) => b.localeCompare(a));
+  }, [academicYears, students]);
+
   const clearFilters = () => {
     setSearchQuery('');
     setClassFilter('All');
@@ -302,12 +326,13 @@ const PendingFees = () => {
     setStatusFilter('All');
     setFeeStatusFilter('All');
     setRTEFilter('All');
+    setAcademicYearFilter('All');
     setSelectedCategoryIds([]);
   };
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, classFilter, sectionFilter, statusFilter, feeStatusFilter, RTEFilter, selectedCategoryIds]);
+  }, [searchQuery, classFilter, sectionFilter, statusFilter, feeStatusFilter, RTEFilter, academicYearFilter, selectedCategoryIds]);
 
   const availableSections = useMemo(() => {
     if (classFilter === 'All') return [];
@@ -329,6 +354,13 @@ const PendingFees = () => {
 
       if (classFilter !== 'All' && student.currentClass !== classFilter) return false;
       if (sectionFilter !== 'All' && student.section !== sectionFilter) return false;
+
+      if (academicYearFilter !== 'All') {
+        const studentYear = student.academicYear || student.currentEnrollment?.academicYear;
+        const normFilter = normalizeText(academicYearFilter);
+        const normYear = normalizeText(studentYear);
+        if (!normYear || normYear !== normFilter) return false;
+      }
 
       if (statusFilter === 'Active') {
         if (student.studentStatus && student.studentStatus !== 'Active') return false;
@@ -352,7 +384,7 @@ const PendingFees = () => {
 
       return true;
     });
-  }, [students, searchQuery, classFilter, sectionFilter, statusFilter, feeStatusFilter, RTEFilter, selectedCategoryIds]);
+  }, [students, searchQuery, classFilter, sectionFilter, statusFilter, feeStatusFilter, RTEFilter, academicYearFilter, selectedCategoryIds]);
 
   const allStudentsWithFees = useMemo(() => {
     return students.filter(student => getStudentTotalFee(student) > 0);
@@ -410,20 +442,30 @@ const PendingFees = () => {
   };
 
   const handleExportExcel = () => {
-    const excelData = filteredStudents.map(student => {
-      const previousPendingFees = getPreviousFees(student).filter(f => (f.remainingAmount || 0) > 0 && isFeeCategorySelected(f, selectedCategoryIds));
-      const currentPendingFees = getCurrentFees(student).filter(f => (f.remainingAmount || 0) > 0 && isFeeCategorySelected(f, selectedCategoryIds));
-      const pendingCats = (student.studentFees || [])
-        .filter(f => f.remainingAmount > 0 && f.feeCategoryId && isFeeCategorySelected(f, selectedCategoryIds))
-        .map(f => ({
-          id: getFeeCatId(f),
-          name: formatFeeLabel(f),
-          pendingAmount: f.remainingAmount
-        }));
+    const catNamesSet = new Set();
+    (categories || []).forEach(cat => {
+      if (cat.name) catNamesSet.add(cat.name);
+    });
+    filteredStudents.forEach(student => {
+      (student.studentFees || []).forEach(f => {
+        const lbl = formatFeeLabel(f);
+        if (lbl && lbl !== 'Unknown') catNamesSet.add(lbl);
+      });
+    });
+    const allCategoryNames = Array.from(catNamesSet);
 
-      const pendingCategoriesStr = pendingCats.map(c => c.name).join(', ');
-      const categoryWisePendingAmountsStr = pendingCats.map(c => `Rs. ${c.pendingAmount}`).join(', ');
+    const excelData = filteredStudents.map(student => {
       const displayPendingAmount = getStudentTotalPending(student, selectedCategoryIds);
+
+      const categoryColumns = {};
+      allCategoryNames.forEach(catName => {
+        const feesForCat = (student.studentFees || []).filter(f => {
+          const lbl = formatFeeLabel(f);
+          return lbl === catName && isFeeCategorySelected(f, selectedCategoryIds);
+        });
+        const catPending = feesForCat.reduce((sum, f) => sum + (f.remainingAmount || 0), 0);
+        categoryColumns[catName] = catPending > 0 ? `Rs. ${catPending.toFixed(2)}` : 'Rs. 0.00';
+      });
 
       return {
         'Admission Number': student.admissionNumber || '',
@@ -434,10 +476,7 @@ const PendingFees = () => {
         'Academic Year': student.currentEnrollment?.academicYear || student.academicYear || '',
         'Prev Pending': `Rs. ${getPreviousPending(student, selectedCategoryIds).toFixed(2)}`,
         'Curr Pending': `Rs. ${getCurrentPending(student, selectedCategoryIds).toFixed(2)}`,
-        'Prev Pending Details': previousPendingFees.map(f => `${formatFeeLabel(f)}: Rs. ${(f.remainingAmount || 0).toFixed(2)}`).join(' | ') || 'None',
-        'Curr Pending Details': currentPendingFees.map(f => `${formatFeeLabel(f)}: Rs. ${(f.remainingAmount || 0).toFixed(2)}`).join(' | ') || 'None',
-        'Pending Categories': pendingCategoriesStr || 'None',
-        'Category-wise Pending Amounts': categoryWisePendingAmountsStr || '0',
+        ...categoryColumns,
         'Total Fee': `Rs. ${getStudentTotalFee(student).toFixed(2)}`,
         'Paid Amount': `Rs. ${getStudentTotalPaid(student).toFixed(2)}`,
         'Total Pending': `Rs. ${displayPendingAmount.toFixed(2)}`
@@ -454,27 +493,16 @@ const PendingFees = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center">
-            {feeStatusFilter === 'Paid' ? (
-              <CheckCircle className="mr-3 text-green-600" size={32} />
-            ) : (
-              <AlertCircle className="mr-3 text-red-600" size={32} />
-            )}
-            Fee Status List
-          </h1>
-          <p className="text-gray-500 mt-2">All students (Active & Old) and their fee balances.</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={handleExportExcel} className="bg-green-600 hover:bg-green-700 text-white shadow-sm">
-            Export Excel
-          </Button>
-          <Button variant="outline" onClick={downloadCSV}>
-            <Download className="mr-2 h-4 w-4" />
-            Export CSV
-          </Button>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center">
+          {feeStatusFilter === 'Paid' ? (
+            <CheckCircle className="mr-3 text-green-600" size={32} />
+          ) : (
+            <AlertCircle className="mr-3 text-red-600" size={32} />
+          )}
+          Fee Status List
+        </h1>
+        <p className="text-gray-500 mt-2">All students (Active & Old) and their fee balances.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -600,6 +628,20 @@ const PendingFees = () => {
               </div>
 
               <div>
+                <Label>Academic Year</Label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600 font-medium"
+                  value={academicYearFilter}
+                  onChange={(e) => setAcademicYearFilter(e.target.value)}
+                >
+                  <option value="All">All Academic Years</option>
+                  {availableAcademicYears.map(yr => (
+                    <option key={yr} value={yr}>{yr}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
                 <Label>Category</Label>
                 <CategoryMultiSelect
                   categories={categories}
@@ -614,10 +656,6 @@ const PendingFees = () => {
                 Export Excel
               </Button>
               <Button variant="outline" onClick={clearFilters}>Clear Filters</Button>
-              <Button variant="outline" onClick={downloadCSV}>
-                <Download className="mr-2 h-4 w-4" />
-                Export CSV
-              </Button>
             </div>
           </div>
         </CardContent>
@@ -625,28 +663,29 @@ const PendingFees = () => {
 
       <Card>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
+          <div className="overflow-x-auto w-full">
+            <Table className="min-w-[1240px] text-xs">
               <TableHeader>
-                <TableRow>
-                  <TableHead>Admission No</TableHead>
-                  <TableHead>Student Name</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Course Type</TableHead>
-                  <TableHead>Class & Section</TableHead>
-                  <TableHead className="text-right">Total Fee</TableHead>
-                  <TableHead className="text-right">Prev Paid</TableHead>
-                  <TableHead className="text-right">Curr Paid</TableHead>
-                  <TableHead className="text-right">Prev Pending</TableHead>
-                  <TableHead className="text-right">Curr Pending</TableHead>
-                  <TableHead className="text-right font-bold">Total Due</TableHead>
-                  <TableHead>Action</TableHead>
+                <TableRow className="bg-gray-50/80">
+                  <TableHead className="px-2.5 py-3 text-xs font-semibold text-gray-700 whitespace-nowrap">Admission No</TableHead>
+                  <TableHead className="px-2.5 py-3 text-xs font-semibold text-gray-700 whitespace-nowrap">Student Name</TableHead>
+                  <TableHead className="px-2.5 py-3 text-xs font-semibold text-gray-700 whitespace-nowrap">Status</TableHead>
+                  <TableHead className="px-2.5 py-3 text-xs font-semibold text-gray-700 whitespace-nowrap">Course Type</TableHead>
+                  <TableHead className="px-2.5 py-3 text-xs font-semibold text-gray-700 whitespace-nowrap">Class & Section</TableHead>
+                  <TableHead className="px-2.5 py-3 text-xs font-semibold text-gray-700 whitespace-nowrap">Academic Year</TableHead>
+                  <TableHead className="px-2.5 py-3 text-xs font-semibold text-gray-700 text-right whitespace-nowrap">Total Fee</TableHead>
+                  <TableHead className="px-2.5 py-3 text-xs font-semibold text-gray-700 text-right whitespace-nowrap">Prev Paid</TableHead>
+                  <TableHead className="px-2.5 py-3 text-xs font-semibold text-gray-700 text-right whitespace-nowrap">Curr Paid</TableHead>
+                  <TableHead className="px-2.5 py-3 text-xs font-semibold text-gray-700 text-right whitespace-nowrap">Prev Pending</TableHead>
+                  <TableHead className="px-2.5 py-3 text-xs font-semibold text-gray-700 text-right whitespace-nowrap">Curr Pending</TableHead>
+                  <TableHead className="px-2.5 py-3 text-xs font-bold text-gray-900 text-right whitespace-nowrap">Total Due</TableHead>
+                  <TableHead className="px-3 py-3 text-xs font-semibold text-gray-700 text-center whitespace-nowrap">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredStudents.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={12} className="text-center h-32 text-gray-500">
+                    <TableCell colSpan={13} className="text-center h-32 text-gray-500 text-xs">
                       No students match your filters.
                     </TableCell>
                   </TableRow>
@@ -662,47 +701,50 @@ const PendingFees = () => {
                     const currentPendingFees = getCurrentFees(student).filter(f => (f.remainingAmount || 0) > 0 && isFeeCategorySelected(f, selectedCategoryIds));
 
                     return (
-                      <TableRow key={student._id}>
-                        <TableCell className="font-medium text-gray-900">{student.admissionNumber}</TableCell>
-                        <TableCell>
+                      <TableRow key={student._id} className="hover:bg-gray-50/60">
+                        <TableCell className="px-2.5 py-2.5 text-xs font-semibold text-gray-900 whitespace-nowrap">{student.admissionNumber}</TableCell>
+                        <TableCell className="px-2.5 py-2.5 text-xs whitespace-nowrap">
                           <Link to={`/dashboard/students/edit/${student._id}`} className="text-orange-600 hover:underline font-medium">
                             {student.studentName}
                           </Link>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-2.5 py-2.5 text-xs whitespace-nowrap">
                           {(!student.studentStatus || student.studentStatus === 'Active') ? (
-                            <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                            <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-medium text-green-800">
                               Active
                             </span>
                           ) : (
-                            <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+                            <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-800">
                               {student.studentStatus}
                             </span>
                           )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-2.5 py-2.5 text-xs whitespace-nowrap">
                           {isRTEStudent(student) ? (
-                            <span className="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-bold text-purple-800 shadow-sm border border-purple-200">
+                            <span className="inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-[11px] font-bold text-purple-800 shadow-sm border border-purple-200">
                               RTE
                             </span>
                           ) : (
-                            <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                            <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
                               General
                             </span>
                           )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-2.5 py-2.5 text-xs whitespace-nowrap">
                           {student.currentClass} {student.section ? `- ${student.section}` : ''}
                           {previousPending > 0 && (
-                            <span className="ml-2 inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
+                            <span className="ml-1.5 inline-flex items-center rounded-full bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium text-purple-700">
                               Carried Forward
                             </span>
                           )}
                         </TableCell>
-                        <TableCell className="text-right font-medium">Rs. {totalFee.toFixed(2)}</TableCell>
-                        <TableCell className="text-right text-emerald-600">Rs. {getPreviousPaid(student).toFixed(2)}</TableCell>
-                        <TableCell className="text-right text-emerald-600">Rs. {getCurrentPaid(student).toFixed(2)}</TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="px-2.5 py-2.5 text-xs font-medium text-gray-700 whitespace-nowrap">
+                          {student.academicYear || student.currentEnrollment?.academicYear || '-'}
+                        </TableCell>
+                        <TableCell className="px-2.5 py-2.5 text-xs text-right font-medium whitespace-nowrap">Rs. {totalFee.toFixed(2)}</TableCell>
+                        <TableCell className="px-2.5 py-2.5 text-xs text-right text-emerald-600 whitespace-nowrap">Rs. {getPreviousPaid(student).toFixed(2)}</TableCell>
+                        <TableCell className="px-2.5 py-2.5 text-xs text-right text-emerald-600 whitespace-nowrap">Rs. {getCurrentPaid(student).toFixed(2)}</TableCell>
+                        <TableCell className="px-2.5 py-2.5 text-xs text-right whitespace-nowrap">
                           {hasPreviousFees ? (
                             <div className="relative group inline-block">
                               <span className={`font-medium cursor-pointer border-b border-dashed ${
@@ -723,7 +765,7 @@ const PendingFees = () => {
                             <span className="text-gray-300">-</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="px-2.5 py-2.5 text-xs text-right whitespace-nowrap">
                           <div className="relative group inline-block">
                             <span className={`font-medium cursor-pointer border-b border-dashed ${
                               currentPending > 0
@@ -740,7 +782,7 @@ const PendingFees = () => {
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="text-right font-bold">
+                        <TableCell className="px-2.5 py-2.5 text-xs text-right font-bold whitespace-nowrap">
                           <div className="relative group inline-block">
                             <span className={`font-bold cursor-pointer border-b border-dashed ${
                               totalPending > 0
@@ -766,18 +808,18 @@ const PendingFees = () => {
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="whitespace-nowrap">
+                        <TableCell className="px-3 py-2.5 text-xs text-center whitespace-nowrap">
                           {getStudentTotalPending(student, []) > 0 ? (
                             <Button
                               size="sm"
                               onClick={() => navigate('/dashboard/payments', { state: { studentId: student._id } })}
-                              className="bg-orange-600 hover:bg-orange-700 text-white whitespace-nowrap px-3"
+                              className="bg-orange-600 hover:bg-orange-700 text-white font-medium text-xs px-3 py-1 h-7 whitespace-nowrap shadow-sm"
                             >
                               Pay Pending
                             </Button>
                           ) : (
-                            <span className="text-sm font-semibold text-green-600 px-3 flex items-center gap-1 whitespace-nowrap">
-                              <CheckCircle size={16} /> Paid
+                            <span className="text-xs font-semibold text-green-600 px-2 flex items-center justify-center gap-1 whitespace-nowrap">
+                              <CheckCircle size={14} /> Paid
                             </span>
                           )}
                         </TableCell>
