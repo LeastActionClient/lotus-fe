@@ -17,7 +17,7 @@ import { useConfirm } from '../components/ui/ConfirmDialog';
 import { useFeeCategoriesQuery, usePaymentsQuery, useQueryInvalidator, useStudentQuery, useStudentsQuery, useClassesQuery } from '../hooks/useSchoolQueries';
 
 const Payments = () => {
-  const currentUser = JSON.parse(localStorage.getItem('user') || Json.parse(sessionStorage.getItem('user')) );
+  const currentUser = JSON.parse(localStorage.getItem('user') || JSON.parse(sessionStorage.getItem('user')) );
   const confirm = useConfirm();
   const location = useLocation();
   const navigate = useNavigate();
