@@ -282,53 +282,85 @@ const StudentEdit = () => {
     return 0;
   };
 
+  const getCategoryAmount = React.useCallback((catIdStr) => {
+    if (!catIdStr) return 0;
+    // 1. Check if student already has a StudentFee record for this category
+    const existingFee = (originalStudent?.studentFees || []).find(f => {
+      const rawCatId = f.feeCategoryId?._id || f.feeCategoryId;
+      return rawCatId ? rawCatId.toString() === catIdStr : false;
+    });
+    if (existingFee && existingFee.totalAmount !== undefined && existingFee.totalAmount !== null && Number(existingFee.totalAmount) > 0) {
+      return Number(existingFee.totalAmount);
+    }
+    // 2. Check defaultFees from Class/Section
+    const feeConfig = defaultFees[catIdStr];
+    const defAmt = getFeeAmount(feeConfig);
+    if (defAmt > 0) return defAmt;
+
+    // 3. Fallback to FeeCategory model's own amount field if present
+    const cat = categories.find(c => c._id?.toString() === catIdStr);
+    return Number(cat?.amount || 0);
+  }, [originalStudent, defaultFees, categories]);
+
   // Calculations
   const baseFeeAmount = React.useMemo(() => {
-    const hasCurrentClassFees = (originalStudent?.studentFees || []).some(f => f.className === formData.currentClass);
-    if (!originalStudent || formData.currentClass !== originalStudent.currentClass || formData.section !== originalStudent.section || !hasCurrentClassFees) {
-      const mandatoryCats = categories.filter(cat => cat.isEnabled && cat.mandatory && cat.name.toLowerCase() !== 'uniform' && getFeeAmount(defaultFees[cat._id]) > 0);
-      return mandatoryCats.reduce((sum, cat) => sum + getFeeAmount(defaultFees[cat._id]), 0);
-    }
-    const actualMandatoryFees = (originalStudent.studentFees || []).filter(f => {
-      // Only include mandatory fees belonging to the current class
+    // 1. Check if student already has existing mandatory fee records for current class (e.g. Book fee assigned to RTE or class mandatory fees)
+    const actualMandatoryFees = (originalStudent?.studentFees || []).filter(f => {
       const feeClass = f.className || '';
       if (feeClass && feeClass !== formData.currentClass) return false;
 
       const rawCatId = f.feeCategoryId?._id || f.feeCategoryId;
-      const catId = rawCatId ? rawCatId.toString() : '';
-      const cat = categories.find(c => c._id?.toString() === catId);
+      const catIdStr = rawCatId ? rawCatId.toString() : '';
+      const cat = categories.find(c => c._id?.toString() === catIdStr);
       return cat && cat.isEnabled && cat.mandatory && cat.name.toLowerCase() !== 'uniform';
     });
-    return actualMandatoryFees.reduce((sum, f) => sum + (f.totalAmount || 0), 0);
-  }, [formData.currentClass, formData.section, originalStudent, categories, defaultFees]);
+
+    const sumActual = actualMandatoryFees.reduce((sum, f) => sum + (f.totalAmount || 0), 0);
+    if (actualMandatoryFees.length > 0 && formData.currentClass === originalStudent?.currentClass) {
+      return sumActual;
+    }
+
+    // If student is RTE and has no mandatory fees assigned, base fee is 0
+    if (formData.isRTE) {
+      return 0;
+    }
+
+    // 2. Fall back to summing mandatory categories using getCategoryAmount for General students
+    const mandatoryCats = categories.filter(cat => cat.isEnabled && cat.mandatory && cat.name.toLowerCase() !== 'uniform');
+    return mandatoryCats.reduce((sum, cat) => sum + getCategoryAmount(cat._id?.toString()), 0);
+  }, [formData.isRTE, formData.currentClass, formData.section, originalStudent, categories, defaultFees, getCategoryAmount]);
 
   const mandatoryCatIds = React.useMemo(() => {
-    const hasCurrentClassFees = (originalStudent?.studentFees || []).some(f => f.className === formData.currentClass);
-    if (!originalStudent || formData.currentClass !== originalStudent.currentClass || formData.section !== originalStudent.section || !hasCurrentClassFees) {
-      return categories
-        .filter(cat => cat.isEnabled && cat.mandatory && cat.name.toLowerCase() !== 'uniform' && getFeeAmount(defaultFees[cat._id]) > 0)
-        .map(cat => cat._id?.toString());
+    const actualMandatoryFees = (originalStudent?.studentFees || []).filter(f => {
+      const feeClass = f.className || '';
+      if (feeClass && feeClass !== formData.currentClass) return false;
+
+      const rawCatId = f.feeCategoryId?._id || f.feeCategoryId;
+      const catIdStr = rawCatId ? rawCatId.toString() : '';
+      const cat = categories.find(c => c._id?.toString() === catIdStr);
+      return cat && cat.isEnabled && cat.mandatory && cat.name.toLowerCase() !== 'uniform';
+    });
+
+    if (actualMandatoryFees.length > 0 && formData.currentClass === originalStudent?.currentClass) {
+      return actualMandatoryFees.map(f => (f.feeCategoryId?._id || f.feeCategoryId)?.toString()).filter(Boolean);
     }
-    return (originalStudent.studentFees || [])
-      .filter(f => {
-        // Only include mandatory fees belonging to the current class
-        const feeClass = f.className || '';
-        if (feeClass && feeClass !== formData.currentClass) return false;
 
-        const rawCatId = f.feeCategoryId?._id || f.feeCategoryId;
-        const catId = rawCatId ? rawCatId.toString() : '';
-        const cat = categories.find(c => c._id?.toString() === catId);
-        return cat && cat.isEnabled && cat.mandatory && cat.name.toLowerCase() !== 'uniform';
-      })
-      .map(f => (f.feeCategoryId?._id || f.feeCategoryId)?.toString())
+    if (formData.isRTE) {
+      return [];
+    }
+
+    return categories
+      .filter(cat => cat.isEnabled && cat.mandatory && cat.name.toLowerCase() !== 'uniform' && getCategoryAmount(cat._id?.toString()) > 0)
+      .map(cat => cat._id?.toString())
       .filter(Boolean);
-  }, [formData.currentClass, formData.section, originalStudent, categories, defaultFees]);
+  }, [formData.isRTE, formData.currentClass, formData.section, originalStudent, categories, defaultFees, getCategoryAmount]);
 
-  const optionalCats = categories.filter(cat => cat.isEnabled && !cat.mandatory && cat.name.toLowerCase() !== 'uniform' && getFeeAmount(defaultFees[cat._id]) > 0);
+  const optionalCats = categories.filter(cat => cat.isEnabled && !cat.mandatory && cat.name.toLowerCase() !== 'uniform');
   const chargesOptions = optionalCats.map(cat => {
-    const amt = getFeeAmount(defaultFees[cat._id]);
-    const isOutStock = cat.isStockItem && (cat.currentStock || 0) <= 0 && !selectedCharges.includes(cat._id?.toString());
-    let labelText = `${cat.name} (₹${amt})`;
+    const catIdStr = cat._id?.toString();
+    const amt = getCategoryAmount(catIdStr);
+    const isOutStock = cat.isStockItem && (cat.currentStock || 0) <= 0 && !selectedCharges.includes(catIdStr);
+    let labelText = `${cat.name}${amt > 0 ? ` (₹${amt})` : ''}`;
     if (cat.isStockItem) {
       if (isOutStock) {
         labelText = `${cat.name} - Out of Stock`;
@@ -337,7 +369,7 @@ const StudentEdit = () => {
       }
     }
     return {
-      value: cat._id?.toString(),
+      value: catIdStr,
       label: labelText,
       disabled: isOutStock
     };
@@ -358,7 +390,7 @@ const StudentEdit = () => {
   const uniformTotal = topTotal + bottomTotal;
 
   const normalChargesTotal = selectedCharges.reduce((sum, catId) => {
-    return sum + getFeeAmount(defaultFees[catId]);
+    return sum + getCategoryAmount(catId?.toString());
   }, 0);
 
   const chargesTotal = normalChargesTotal + uniformTotal;
@@ -883,12 +915,12 @@ const StudentEdit = () => {
                   
                   {/* Selected charges */}
                   {selectedCharges.map(catId => {
-                    const cat = categories.find(c => c._id === catId);
+                    const catIdStr = catId?.toString();
+                    const cat = categories.find(c => c._id?.toString() === catIdStr);
                     if (!cat || cat.name.toLowerCase() === 'uniform') return null;
-                    const feeConfig = defaultFees[catId];
-                    const amt = typeof feeConfig === 'number' ? feeConfig : Number(feeConfig?.amount || 0);
+                    const amt = getCategoryAmount(catIdStr);
                     return (
-                      <div key={catId} className="flex justify-between text-xs text-gray-600 pl-2">
+                      <div key={catIdStr} className="flex justify-between text-xs text-gray-600 pl-2">
                         <span>{cat.name}</span>
                         <span>₹ {amt.toFixed(2)}</span>
                       </div>

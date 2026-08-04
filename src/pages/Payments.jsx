@@ -105,6 +105,17 @@ const Payments = () => {
 
     const previousTermFees = (allFees || []).filter(otherFee => {
       if ((otherFee._id || otherFee.id) === (fee._id || fee.id)) return false;
+
+      const feeYear = fee.academicYear || '';
+      const otherYear = otherFee.academicYear || '';
+      const feeClass = fee.className || '';
+      const otherClass = otherFee.className || '';
+
+      const sameYear = (!feeYear || !otherYear) || (feeYear === otherYear);
+      const sameClass = (!feeClass || !otherClass) || (feeClass === otherClass);
+
+      if (!sameYear || !sameClass) return false;
+
       const otherCatName = otherFee.feeCategory?.name || otherFee.feeCategoryId?.name || '';
       const otherTermInfo = parseTermInfo(otherCatName);
       return otherTermInfo.isTerm &&
@@ -134,9 +145,102 @@ const Payments = () => {
     return { isLocked: false, message: '' };
   };
 
+  const selectedStudent = selectedStudentData || students.find(s => (s._id || s.id) === selectedStudentId);
+  
+  const isPreviousYearFee = (f, student) => {
+    if (!student) return false;
+    return (f.academicYear && student.academicYear && f.academicYear !== student.academicYear) || 
+           (!f.academicYear && f.className && student.currentClass && f.className !== student.currentClass);
+  };
+
+  const getDynamicRemaining = (f) => {
+    if (!f) return 0;
+    if (typeof f.remainingAmount === 'number') return f.remainingAmount;
+    const less = f.concessionStatus === 'Active' ? (f.lessAmount || 0) : 0;
+    return Math.max(0, (f.totalAmount || 0) - less - (f.paidAmount || 0));
+  };
+
+  const getCategorySortScore = (categoryName) => {
+    const name = String(categoryName || '').trim().toLowerCase();
+
+    // 1. Non-term One-time / Book / Admission / Annual / Registration fees come first
+    if (name.includes('book') || name.includes('admission') || name.includes('annual') || name.includes('registration')) {
+      return 10;
+    }
+
+    // 2. Check term number (Term 1, Term 2, Term 3...)
+    const match = name.match(/term\s*(\d+)/i) || name.match(/\bt(\d+)\b/i) || name.match(/(\d+)(?:st|nd|rd|th)?\s*term/i);
+    if (match) {
+      const termNum = parseInt(match[1], 10);
+      let subScore = 50;
+
+      if (name === `term ${termNum}` || name === `term-${termNum}` || name === `term${termNum}` || name === `term ${termNum} fee`) {
+        subScore = 10;
+      } else if (name.includes('tuition')) {
+        subScore = 20;
+      } else if (name.includes('abacus')) {
+        subScore = 30;
+      } else {
+        subScore = 40;
+      }
+
+      return (termNum * 100) + subScore;
+    }
+
+    // 3. Other categories come at the bottom
+    return 10000;
+  };
+
+  const sortStudentFees = (feesList, student) => {
+    if (!feesList || feesList.length === 0) return [];
+
+    return [...feesList].sort((a, b) => {
+      const aIsPrev = isPreviousYearFee(a, student);
+      const bIsPrev = isPreviousYearFee(b, student);
+
+      if (aIsPrev && !bIsPrev) return -1;
+      if (!aIsPrev && bIsPrev) return 1;
+
+      const yearComp = (a.academicYear || '').localeCompare(b.academicYear || '');
+      if (yearComp !== 0) return yearComp;
+
+      const classComp = (a.className || '').localeCompare(b.className || '', undefined, { numeric: true });
+      if (classComp !== 0) return classComp;
+
+      const aCatName = a.feeCategory?.name || a.feeCategoryId?.name || '';
+      const bCatName = b.feeCategory?.name || b.feeCategoryId?.name || '';
+
+      const aScore = getCategorySortScore(aCatName);
+      const bScore = getCategorySortScore(bCatName);
+
+      if (aScore !== bScore) {
+        return aScore - bScore;
+      }
+
+      return aCatName.localeCompare(bCatName);
+    });
+  };
+
+  const previousYearPendingFees = studentFees.filter(f => isPreviousYearFee(f, selectedStudent) && getDynamicRemaining(f) > 0);
+  const hasPreviousYearPending = previousYearPendingFees.length > 0;
+  const allPreviousYearFeesSelected = hasPreviousYearPending 
+    ? previousYearPendingFees.every(f => paymentData.studentFeeIds.includes(f._id || f.id))
+    : true;
+
   const filterUnlockedIds = (candidateIds, currentAmounts) => {
+    const candPrevSelected = hasPreviousYearPending
+      ? previousYearPendingFees.every(f => candidateIds.includes(f._id || f.id))
+      : true;
+
     return candidateIds.filter(id => {
       const fee = studentFees.find(sf => (sf._id || sf.id) === id);
+      if (!fee) return false;
+      const isPrev = isPreviousYearFee(fee, selectedStudent);
+
+      if (!isPrev && hasPreviousYearPending && !candPrevSelected) {
+        return false;
+      }
+
       const info = getTermLockInfo(fee, studentFees, candidateIds, currentAmounts);
       return !info.isLocked;
     });
@@ -146,7 +250,7 @@ const Payments = () => {
     if (selectedStudentId && selectedStudentData) {
       const student = selectedStudentData;
       if (student.studentFees) {
-        const pendingFees = student.studentFees.filter((f) => {
+        const rawPendingFees = student.studentFees.filter((f) => {
           const isFullyPaid = (f.paidAmount || 0) > 0 && (f.remainingAmount === 0);
           return !isFullyPaid;
         }).map((f) => ({
@@ -154,6 +258,8 @@ const Payments = () => {
           lessAmount: f.lessAmount || 0,
           concessionStatus: f.concessionStatus || 'None'
         }));
+
+        const pendingFees = sortStudentFees(rawPendingFees, student);
 
         setStudentFees(pendingFees);
 
@@ -165,8 +271,15 @@ const Payments = () => {
         setPayingAmounts(initialAmounts);
 
         const allPendingIds = pendingFees.map(f => f._id || f.id);
+        const prevPending = pendingFees.filter(f => isPreviousYearFee(f, student) && (f.remainingAmount !== undefined ? f.remainingAmount : Math.max(0, (f.totalAmount || 0) - (f.lessAmount || 0) - (f.paidAmount || 0))) > 0);
+        const hasPrevPending = prevPending.length > 0;
+        const allPrevSelected = hasPrevPending ? prevPending.every(f => allPendingIds.includes(f._id || f.id)) : true;
+
         const unlockedInitialIds = allPendingIds.filter(id => {
           const fee = pendingFees.find(sf => (sf._id || sf.id) === id);
+          if (!fee) return false;
+          const isPrev = isPreviousYearFee(fee, student);
+          if (!isPrev && hasPrevPending && !allPrevSelected) return false;
           return !getTermLockInfo(fee, pendingFees, allPendingIds, initialAmounts).isLocked;
         });
 
@@ -192,13 +305,6 @@ const Payments = () => {
     }
   }, [selectedStudentId, selectedStudentData]);
 
-  const getDynamicRemaining = (f) => {
-    if (!f) return 0;
-    if (typeof f.remainingAmount === 'number') return f.remainingAmount;
-    const less = f.concessionStatus === 'Active' ? (f.lessAmount || 0) : 0;
-    return Math.max(0, (f.totalAmount || 0) - less - (f.paidAmount || 0));
-  };
-
   const isFormInvalid = paymentData.studentFeeIds.some(id => {
     const fee = studentFees.find(sf => (sf._id || sf.id) === id);
     const lockInfo = getTermLockInfo(fee, studentFees, paymentData.studentFeeIds, payingAmounts);
@@ -216,14 +322,6 @@ const Payments = () => {
   });
 
   const getFeeRemainingDisplay = (f) => (f ? getDynamicRemaining(f) : 0);
-
-  const selectedStudent = selectedStudentData || students.find(s => (s._id || s.id) === selectedStudentId);
-  const isPreviousYearFee = (f, student) => {
-    if (!student) return false;
-    return (f.academicYear && student.academicYear && f.academicYear !== student.academicYear) || 
-           (!f.academicYear && f.className && student.currentClass && f.className !== student.currentClass);
-  };
-  const hasPreviousYearPending = studentFees.some(f => isPreviousYearFee(f, selectedStudent) && f.remainingAmount > 0);
 
   const handlePayment = async (e) => {
     e.preventDefault();
@@ -820,7 +918,8 @@ const Payments = () => {
               const isPrev = isPreviousYearFee(f, selectedStudent);
               const lockInfo = getTermLockInfo(f, studentFees, paymentData.studentFeeIds, payingAmounts);
               const isLocked = lockInfo.isLocked;
-              const isDisabled = (hasPreviousYearPending && !isPrev && !paymentData.studentFeeIds.includes(feeId)) || isLocked;
+              const isUntouchedSheet = !isPrev && hasPreviousYearPending && !allPreviousYearFeesSelected;
+              const isDisabled = isLocked || isUntouchedSheet;
               
               const classLabel = f.className && f.academicYear
                 ? `[${f.className} - ${f.academicYear}]`
@@ -828,20 +927,34 @@ const Payments = () => {
                   ? `[${f.className}]`
                   : '';
               
-              const isChecked = paymentData.studentFeeIds.includes(feeId) && !isLocked;
+              const isChecked = paymentData.studentFeeIds.includes(feeId) && !isLocked && !isUntouchedSheet;
               const dynamicRemaining = getDynamicRemaining(f);
               const payingVal = payingAmounts[feeId] ?? '';
               const payingNum = parseFloat(payingVal) || 0;
               const remainingAfter = Math.max(0, dynamicRemaining - payingNum);
 
               return (
-                <div key={feeId} className={`p-3 border rounded-lg space-y-3 transition-all ${
-                  isLocked 
-                    ? 'bg-gray-100/80 border-gray-200 opacity-60' 
-                    : isChecked 
-                      ? 'border-orange-200 bg-orange-50/10' 
-                      : 'border-gray-200'
-                } ${isDisabled && !isLocked ? 'opacity-50' : ''}`}>
+                <div key={feeId} className={`relative p-3.5 border rounded-xl space-y-3 transition-all duration-300 ${
+                  isUntouchedSheet 
+                    ? 'bg-slate-100/90 border-slate-300/80 shadow-inner' 
+                    : isLocked 
+                      ? 'bg-gray-100/80 border-gray-200 opacity-60' 
+                      : isChecked 
+                        ? 'border-orange-200 bg-orange-50/10 shadow-xs' 
+                        : 'border-gray-200 hover:border-gray-300'
+                }`}>
+                  {/* Untouched Sheet Gesture Overlay */}
+                  {isUntouchedSheet && (
+                    <div className="absolute inset-0 bg-white/75 backdrop-blur-[1.5px] z-10 flex flex-col sm:flex-row items-center justify-between p-3 rounded-xl border-2 border-dashed border-purple-300/90 gap-2 select-none pointer-events-auto cursor-not-allowed shadow-xs">
+                      <div className="flex items-center gap-2 text-purple-950 bg-purple-50/95 px-3 py-1.5 rounded-lg border border-purple-200/90 shadow-xs text-xs font-bold">
+                        <Lock className="h-4 w-4 text-purple-600 animate-pulse shrink-0" />
+                        <span>Select all previous class pending fees first before paying current year fees</span>
+                      </div>
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-black tracking-widest uppercase text-purple-700 bg-purple-100/90 border border-purple-300/80 shrink-0 shadow-2xs">
+                        Untouched Sheet
+                      </span>
+                    </div>
+                  )}
                   <div className="flex items-start space-x-2.5">
                     <input
                       type="checkbox"

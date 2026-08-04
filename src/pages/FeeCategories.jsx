@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { Card, CardContent } from '../components/ui/Card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
-import { FileCheck, Plus, Users, User, Trash2, Edit } from 'lucide-react';
+import { FileCheck, Plus, Users, User, Trash2, Edit, UserPlus, Search, Lock, UserCheck } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
@@ -27,7 +27,7 @@ const FeeCategories = () => {
   const { invalidateFeeCategories, invalidateStudents, invalidateClasses } = useQueryInvalidator();
   
   const [isNewCatModalOpen, setIsNewCatModalOpen] = useState(false);
-  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [isAssignRTEModalOpen, setIsAssignRTEModalOpen] = useState(false);
   const [isBulkAssignModalOpen, setIsBulkAssignModalOpen] = useState(false);
   
   const [catName, setCatName] = useState('');
@@ -36,6 +36,19 @@ const FeeCategories = () => {
   const [catInitialStock, setCatInitialStock] = useState('0');
   const [catTopStock, setCatTopStock] = useState('0');
   const [catBottomStock, setCatBottomStock] = useState('0');
+
+  // For Assign RTE Students
+  const [rteFilterYear, setRteFilterYear] = useState('');
+  const [rteFilterClass, setRteFilterClass] = useState('');
+  const [rteFilterSection, setRteFilterSection] = useState('');
+  const [rteSearch, setRteSearch] = useState('');
+  const [rteStudentList, setRteStudentList] = useState([]);
+  const [rteStudentListLoading, setRteStudentListLoading] = useState(false);
+  const [selectedRTEStudentIds, setSelectedRTEStudentIds] = useState([]);
+  const [selectedRTECategories, setSelectedRTECategories] = useState({});
+  const [rteCategoryAmounts, setRteCategoryAmounts] = useState({});
+  const [rteCategorySearch, setRteCategorySearch] = useState('');
+  const [rteSubmitLoading, setRteSubmitLoading] = useState(false);
 
   // For Edit Fee Category
   const [isEditCatModalOpen, setIsEditCatModalOpen] = useState(false);
@@ -47,6 +60,20 @@ const FeeCategories = () => {
   const [editCatTopStock, setEditCatTopStock] = useState('0');
   const [editCatBottomStock, setEditCatBottomStock] = useState('0');
   
+  // For Assign Students to Category (Student-wise Fee Assignment)
+  const [isAssignStudentsModalOpen, setIsAssignStudentsModalOpen] = useState(false);
+  const [assignCategory, setAssignCategory] = useState(null);
+  const [assignFilterYear, setAssignFilterYear] = useState('');
+  const [assignFilterClass, setAssignFilterClass] = useState('');
+  const [assignFilterSection, setAssignFilterSection] = useState('');
+  const [assignSearch, setAssignSearch] = useState('');
+  const [studentList, setStudentList] = useState([]);
+  const [studentListLoading, setStudentListLoading] = useState(false);
+  const [selectedStudentIds, setSelectedStudentIds] = useState([]);
+  const [assignFeeAmount, setAssignFeeAmount] = useState('');
+  const [assignSubmitLoading, setAssignSubmitLoading] = useState(false);
+  const [removingFeeId, setRemovingFeeId] = useState(null);
+
   // For Assign to Student (Special Fee)
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [specialFees, setSpecialFees] = useState({});
@@ -85,6 +112,227 @@ const FeeCategories = () => {
     if (classesData) setClasses(classesData);
   }, [classesData]);
 
+  const openAssignStudentsModal = (category) => {
+    setAssignCategory(category);
+    setAssignFilterClass('');
+    setAssignFilterSection('');
+    setAssignFilterYear('');
+    setAssignSearch('');
+    setSelectedStudentIds([]);
+    setAssignFeeAmount('');
+    setIsAssignStudentsModalOpen(true);
+  };
+
+  const fetchCategoryStudents = async (catId) => {
+    if (!catId) return;
+    setStudentListLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (assignFilterClass) params.append('className', assignFilterClass);
+      if (assignFilterSection) params.append('section', assignFilterSection);
+      if (assignFilterYear) params.append('academicYear', assignFilterYear);
+      if (assignSearch) params.append('search', assignSearch);
+
+      const res = await api.get(`/fees/category-assignments/${catId}?${params.toString()}`);
+      setStudentList(res.data.students || []);
+    } catch (error) {
+      console.error("Error fetching category students:", error);
+      toastError("Error loading student list");
+    } finally {
+      setStudentListLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isAssignStudentsModalOpen && assignCategory) {
+      fetchCategoryStudents(assignCategory._id);
+    }
+  }, [
+    isAssignStudentsModalOpen, 
+    assignCategory, 
+    assignFilterClass, 
+    assignFilterSection, 
+    assignFilterYear, 
+    assignSearch
+  ]);
+
+  const handleBatchAssignStudents = async (e) => {
+    e.preventDefault();
+    if (!assignCategory) return;
+    if (selectedStudentIds.length === 0) {
+      toastWarning("Please select at least one student.");
+      return;
+    }
+    const amt = parseFloat(assignFeeAmount);
+    if (!amt || amt <= 0) {
+      toastWarning("Please enter a valid fee amount greater than 0.");
+      return;
+    }
+
+    setAssignSubmitLoading(true);
+    try {
+      const res = await api.post('/fees/assign-category-students', {
+        feeCategoryId: assignCategory._id,
+        studentIds: selectedStudentIds,
+        amount: amt
+      });
+
+      toastSuccess(res.data.message || "Assigned fees successfully!");
+      setSelectedStudentIds([]);
+      fetchData();
+      fetchCategoryStudents(assignCategory._id);
+    } catch (error) {
+      console.error("Error assigning fees to students", error);
+      toastError(error.response?.data?.error || "Error assigning fees.");
+    } finally {
+      setAssignSubmitLoading(false);
+    }
+  };
+
+  const handleRemoveStudentAssignment = async (studentFeeId, paidAmount) => {
+    if (paidAmount > 0) {
+      toastError("This fee has payment history and cannot be removed.");
+      return;
+    }
+    setRemovingFeeId(studentFeeId);
+    try {
+      await api.delete(`/fees/remove-student-assignment/${studentFeeId}`);
+      toastSuccess("Fee assignment removed successfully!");
+      fetchData();
+      if (assignCategory) {
+        fetchCategoryStudents(assignCategory._id);
+      }
+    } catch (error) {
+      console.error("Error removing fee assignment:", error);
+      toastError(error.response?.data?.error || "Error removing fee assignment.");
+    } finally {
+      setRemovingFeeId(null);
+    }
+  };
+
+  const openAssignRTEModal = () => {
+    setRteFilterClass('');
+    setRteFilterSection('');
+    setRteFilterYear('');
+    setRteSearch('');
+    setRteStudentList([]);
+    setSelectedRTEStudentIds([]);
+    setSelectedRTECategories({});
+    setRteCategoryAmounts({});
+    setRteCategorySearch('');
+    setIsAssignRTEModalOpen(true);
+  };
+
+  const fetchRTEStudents = async () => {
+    setRteStudentListLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (rteFilterClass) params.append('className', rteFilterClass);
+      if (rteFilterSection) params.append('section', rteFilterSection);
+      if (rteFilterYear) params.append('academicYear', rteFilterYear);
+      if (rteSearch) params.append('search', rteSearch);
+
+      const res = await api.get(`/fees/rte-students?${params.toString()}`);
+      setRteStudentList(res.data || []);
+    } catch (error) {
+      console.error("Error fetching RTE students:", error);
+      toastError("Error loading RTE student list");
+    } finally {
+      setRteStudentListLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isAssignRTEModalOpen) {
+      fetchRTEStudents();
+    }
+  }, [isAssignRTEModalOpen, rteFilterClass, rteFilterSection, rteFilterYear, rteSearch]);
+
+  useEffect(() => {
+    if (!isAssignRTEModalOpen || selectedRTEStudentIds.length === 0 || rteStudentList.length === 0) return;
+
+    const selectedStudents = rteStudentList.filter(s => selectedRTEStudentIds.includes(s._id));
+    if (selectedStudents.length === 0) return;
+
+    const newCatSelections = {};
+    const newCatAmounts = {};
+
+    categories.forEach(cat => {
+      const catIdStr = cat._id?.toString();
+      
+      let foundFeeAmt = null;
+      let countAssigned = 0;
+
+      for (const student of selectedStudents) {
+        const matchingFee = (student.studentFees || []).find(f => {
+          const rawCatId = f.feeCategoryId?._id || f.feeCategoryId;
+          return rawCatId ? rawCatId.toString() === catIdStr : false;
+        });
+
+        if (matchingFee && matchingFee.totalAmount !== undefined && matchingFee.totalAmount !== null && Number(matchingFee.totalAmount) > 0) {
+          countAssigned++;
+          if (foundFeeAmt === null) {
+            foundFeeAmt = Number(matchingFee.totalAmount);
+          }
+        }
+      }
+
+      if (countAssigned > 0) {
+        newCatSelections[cat._id] = true;
+        if (foundFeeAmt !== null) {
+          newCatAmounts[cat._id] = String(foundFeeAmt);
+        }
+      }
+    });
+
+    if (Object.keys(newCatSelections).length > 0) {
+      setSelectedRTECategories(prev => ({ ...newCatSelections, ...prev }));
+      setRteCategoryAmounts(prev => ({ ...newCatAmounts, ...prev }));
+    }
+  }, [selectedRTEStudentIds, rteStudentList, categories, isAssignRTEModalOpen]);
+
+  const handleAssignRTEFee = async (e) => {
+    e.preventDefault();
+    if (selectedRTEStudentIds.length === 0) {
+      toastWarning("Please select at least one RTE student.");
+      return;
+    }
+
+    const categoryAmountsPayload = Object.entries(selectedRTECategories)
+      .filter(([_, isChecked]) => isChecked)
+      .map(([catId]) => ({
+        feeCategoryId: catId,
+        amount: parseFloat(rteCategoryAmounts[catId] || 0)
+      }));
+
+    if (categoryAmountsPayload.length === 0) {
+      toastWarning("Please select at least one fee category.");
+      return;
+    }
+
+    const hasInvalidAmount = categoryAmountsPayload.some(ca => isNaN(ca.amount) || ca.amount <= 0);
+    if (hasInvalidAmount) {
+      toastWarning("Please enter a valid amount greater than ₹0 for all selected fee categories.");
+      return;
+    }
+
+    setRteSubmitLoading(true);
+    try {
+      const res = await api.post('/fees/assign-rte-students', {
+        studentIds: selectedRTEStudentIds,
+        categoryAmounts: categoryAmountsPayload
+      });
+      toastSuccess(res.data.message || "Fee assigned to RTE students successfully!");
+      setIsAssignRTEModalOpen(false);
+      fetchData();
+    } catch (error) {
+      console.error("Error assigning fees to RTE students:", error);
+      toastError(error.response?.data?.error || "Error assigning fees to RTE students.");
+    } finally {
+      setRteSubmitLoading(false);
+    }
+  };
+
   const initializeBulkAssign = (clsName, secName) => {
     let defaultFees = {};
     const clsObj = classes.find(c => c.name === clsName);
@@ -105,7 +353,7 @@ const FeeCategories = () => {
     const initialSelected = {};
 
     categories.forEach(cat => {
-      if (!cat.isEnabled || ['Base Fee', 'Included Charges', 'Activities', 'Full Fees'].includes(cat.name)) {
+      if (!cat.isEnabled || !cat.mandatory || ['Base Fee', 'Included Charges', 'Activities', 'Full Fees'].includes(cat.name)) {
         return;
       }
       
@@ -357,18 +605,6 @@ const FeeCategories = () => {
 
   const selectedClassObjBulk = classes.find(c => c.name === bulkAssignData.className);
 
-  const uniqueClassesStudent = [...new Set(students.map(s => s.currentClass).filter(Boolean))].sort();
-  const uniqueSectionsStudent = [...new Set(students.filter(s => !selectedClassForStudent || s.currentClass === selectedClassForStudent).map(s => s.section).filter(Boolean))].sort();
-
-  const studentOptions = students
-    .filter(s => !selectedClassForStudent || s.currentClass === selectedClassForStudent)
-    .filter(s => !selectedSectionForStudent || s.section === selectedSectionForStudent)
-    .map(s => ({
-      value: s._id,
-      label: `${s.admissionNumber} - ${s.studentName} (Class: ${s.currentClass}, Sec: ${s.section || 'N/A'})`
-    }));
-
-  const selectedStudent = students.find(s => s._id === selectedStudentId);
   const visibleCategories = categories.filter(c => !['Base Fee', 'Included Charges', 'Activities', 'Full Fees'].includes(c.name));
   const totalPages = Math.max(1, Math.ceil(visibleCategories.length / itemsPerPage));
   const paginatedCategories = visibleCategories.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -394,8 +630,8 @@ const FeeCategories = () => {
           <Button variant="secondary" onClick={() => setIsBulkAssignModalOpen(true)}>
             <Users className="mr-2 h-4 w-4" /> Assign Fee to Class
           </Button>
-          <Button variant="outline" onClick={() => setIsAssignModalOpen(true)}>
-            <User className="mr-2 h-4 w-4" /> Assign Special Fee
+          <Button variant="outline" onClick={openAssignRTEModal} className="border-purple-200 text-purple-700 hover:bg-purple-50 font-semibold">
+            <UserCheck className="mr-2 h-4 w-4 text-purple-600" /> Assign RTE Students
           </Button>
           <Button onClick={() => setIsNewCatModalOpen(true)}>
             <Plus className="mr-2 h-4 w-4" /> New Category
@@ -462,11 +698,23 @@ const FeeCategories = () => {
                     </TableCell>
                     <TableCell>{new Date(cat.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
+                      <div className="flex items-center justify-end gap-1.5">
+                        {!cat.mandatory && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-purple-700 border-purple-200 hover:bg-purple-50 hover:border-purple-300 flex items-center gap-1 font-bold text-xs h-8 shadow-xs"
+                            onClick={() => openAssignStudentsModal(cat)}
+                            title="Assign Students to this Category"
+                          >
+                            <UserPlus className="h-3.5 w-3.5" />
+                            <span>Assign Students</span>
+                          </Button>
+                        )}
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-8 w-8 p-0"
                           onClick={() => openEditCategoryModal(cat)}
                           title="Edit Category"
                         >
@@ -476,10 +724,10 @@ const FeeCategories = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
                             onClick={() => handleDeleteCategory(cat)}
                             loading={categoryActionLoadingId === cat._id}
-                            loadingText="Deleting..."
+                            loadingText=""
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -736,12 +984,12 @@ const FeeCategories = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {categories.filter(c => c.isEnabled && !['Base Fee', 'Included Charges', 'Activities', 'Full Fees'].includes(c.name)).length === 0 ? (
+                  {categories.filter(c => c.isEnabled && c.mandatory && !['Base Fee', 'Included Charges', 'Activities', 'Full Fees'].includes(c.name)).length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center text-gray-500">No active fee categories available.</TableCell>
+                      <TableCell colSpan={3} className="text-center text-gray-500">No mandatory fee categories available.</TableCell>
                     </TableRow>
                   ) : (
-                    categories.filter(c => c.isEnabled && !['Base Fee', 'Included Charges', 'Activities', 'Full Fees'].includes(c.name)).map(cat => {
+                    categories.filter(c => c.isEnabled && c.mandatory && !['Base Fee', 'Included Charges', 'Activities', 'Full Fees'].includes(c.name)).map(cat => {
                       const isUniform = cat.name.toLowerCase() === 'uniform';
                       return (
                         <React.Fragment key={cat._id}>
@@ -854,143 +1102,574 @@ const FeeCategories = () => {
         </form>
       </Modal>
 
-      <Modal isOpen={isAssignModalOpen} onClose={() => { setIsAssignModalOpen(false); setSelectedStudentId(''); setSpecialFees({}); setSelectedClassForStudent(''); setSelectedSectionForStudent(''); }} title="Assign Special Fee (Discount) to Student" size="lg">
-        <form onSubmit={handleAssignFee} className="space-y-4 pt-2">
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="specialClassFilter">Filter by Class (Optional)</Label>
-              <select 
-                id="specialClassFilter" 
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
-                value={selectedClassForStudent}
-                onChange={(e) => {
-                  setSelectedClassForStudent(e.target.value);
-                  setSelectedSectionForStudent('');
-                  setSelectedStudentId('');
-                  setSpecialFees({});
-                }}
-              >
-                <option value="">-- All Classes --</option>
-                {uniqueClassesStudent.map(cls => (
-                  <option key={cls} value={cls}>{cls}</option>
-                ))}
-              </select>
+      {/* Assign Students to Fee Category Modal */}
+      <Modal 
+        isOpen={isAssignStudentsModalOpen} 
+        onClose={() => { 
+          setIsAssignStudentsModalOpen(false); 
+          setAssignCategory(null);
+          setStudentList([]);
+          setSelectedStudentIds([]);
+          setAssignFeeAmount('');
+        }} 
+        title="Assign Students to Fee Category"
+        className="max-w-4xl"
+      >
+        {assignCategory && (
+          <div className="space-y-4 pt-1">
+            {/* Top Category Details Banner */}
+            <div className="bg-purple-50/80 border border-purple-200 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+              <div className="space-y-1">
+                <div className="text-xs font-bold uppercase tracking-wider text-purple-700">Selected Fee Category</div>
+                <div className="text-lg font-black text-purple-950 flex items-center gap-2">
+                  <span>{assignCategory.name}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                  assignCategory.mandatory ? 'bg-orange-100 text-orange-800 border border-orange-300' : 'bg-blue-100 text-blue-800 border border-blue-300'
+                }`}>
+                  {assignCategory.mandatory ? 'Mandatory Fee' : 'Optional Fee'}
+                </span>
+                <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                  assignCategory.isEnabled ? 'bg-green-100 text-green-800 border border-green-300' : 'bg-red-100 text-red-800 border border-red-300'
+                }`}>
+                  {assignCategory.isEnabled ? 'Active Category' : 'Disabled Category'}
+                </span>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="specialSectionFilter">Filter by Section (Optional)</Label>
-              <select 
-                id="specialSectionFilter" 
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
-                value={selectedSectionForStudent}
-                onChange={(e) => {
-                  setSelectedSectionForStudent(e.target.value);
-                  setSelectedStudentId('');
-                  setSpecialFees({});
-                }}
-              >
-                <option value="">-- All Sections --</option>
-                {uniqueSectionsStudent.map(sec => (
-                  <option key={sec} value={sec}>{sec}</option>
-                ))}
-              </select>
+
+            {/* Filters Section */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-gray-50 p-3 rounded-xl border border-gray-200">
+              <div>
+                <Label className="text-xs font-bold text-gray-700 mb-1 block">Class</Label>
+                <select
+                  value={assignFilterClass}
+                  onChange={(e) => {
+                    setAssignFilterClass(e.target.value);
+                    setAssignFilterSection('');
+                  }}
+                  className="w-full h-9 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="">-- All Classes --</option>
+                  {classes.map(c => (
+                    <option key={c._id || c.name} value={c.name}>Class {c.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <Label className="text-xs font-bold text-gray-700 mb-1 block">Section</Label>
+                <select
+                  value={assignFilterSection}
+                  onChange={(e) => setAssignFilterSection(e.target.value)}
+                  className="w-full h-9 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium focus:ring-2 focus:ring-purple-500"
+                  disabled={!assignFilterClass}
+                >
+                  <option value="">-- All Sections --</option>
+                  {assignFilterClass && classes.find(c => c.name === assignFilterClass)?.sections?.map(s => (
+                    <option key={s._id || s.name} value={s.name}>Section {s.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <Label className="text-xs font-bold text-gray-700 mb-1 block">Search Student</Label>
+                <div className="relative">
+                  <Input
+                    type="text"
+                    placeholder="Search name or adm no..."
+                    value={assignSearch}
+                    onChange={(e) => setAssignSearch(e.target.value)}
+                    className="h-9 text-xs pl-8"
+                  />
+                  <Search className="h-3.5 w-3.5 text-gray-400 absolute left-2.5 top-2.5" />
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="specialStudentSelect">Search & Select Student</Label>
-            <Select
-              id="specialStudentSelect"
-              options={studentOptions}
-              value={studentOptions.find(o => o.value === selectedStudentId) || null}
-              onChange={(option) => {
-                const studentId = option ? option.value : '';
-                setSelectedStudentId(studentId);
-                
-                if (studentId) {
-                  const student = students.find(s => s._id === studentId);
-                  if (student && student.studentFees) {
-                    const initialFees = {};
-                    student.studentFees.forEach(f => {
-                      const catId = f.feeCategory?._id || f.feeCategoryId?._id || f.feeCategoryId;
-                      if (catId) {
-                        initialFees[catId] = f.totalAmount.toString();
-                      }
-                    });
-                    setSpecialFees(initialFees);
-                  } else {
-                    setSpecialFees({});
-                  }
-                } else {
-                  setSpecialFees({});
-                }
-              }}
-              placeholder="Type to search student name or admission number..."
-              isClearable
-              isSearchable={true}
-              required
-              styles={{
-                control: (base) => ({
-                  ...base,
-                  minHeight: '40px',
-                  borderRadius: '0.375rem',
-                  borderColor: '#d1d5db'
-                })
-              }}
-            />
-          </div>
+            {/* Selection Controls Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-8 font-semibold"
+                  onClick={() => {
+                    const assignableIds = studentList
+                      .filter(s => !(s.paidAmount > 0))
+                      .map(s => s._id);
+                    setSelectedStudentIds(assignableIds);
+                  }}
+                >
+                  Select All
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs h-8 text-gray-600 font-semibold"
+                  onClick={() => setSelectedStudentIds([])}
+                >
+                  Clear Selection
+                </Button>
+              </div>
 
-          {selectedStudent && (
-            <div className="space-y-3 mt-4">
-              <Label>Enter Discounted Fee Amounts</Label>
-              <div className="border border-gray-200 rounded-md overflow-hidden max-h-80 overflow-y-auto">
+              <div className="text-xs font-bold text-purple-900 bg-purple-100 px-3 py-1 rounded-full border border-purple-200">
+                Selected: <span className="text-purple-700 font-extrabold">{selectedStudentIds.length}</span> of {studentList.length} Students
+              </div>
+            </div>
+
+            {/* Students Table */}
+            <div className="max-h-72 overflow-y-auto border border-gray-200 rounded-xl bg-white shadow-inner">
+              {studentListLoading ? (
+                <div className="p-8 text-center text-gray-500 font-medium text-xs">Loading matching students...</div>
+              ) : studentList.length === 0 ? (
+                <div className="p-8 text-center text-gray-500 font-medium text-xs">
+                  No matching students found for selected class/section.
+                </div>
+              ) : (
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="sticky top-0 bg-gray-100 z-10 shadow-2xs">
                     <TableRow>
-                      <TableHead>Category Name</TableHead>
-                      <TableHead>Original Amount</TableHead>
-                      <TableHead className="w-1/3">New Special Amount (₹)</TableHead>
+                      <TableHead className="w-10">
+                        <input
+                          type="checkbox"
+                          checked={
+                            studentList.length > 0 && 
+                            studentList.filter(s => !(s.paidAmount > 0)).every(s => selectedStudentIds.includes(s._id))
+                          }
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              const ids = studentList.filter(s => !(s.paidAmount > 0)).map(s => s._id);
+                              setSelectedStudentIds(ids);
+                            } else {
+                              setSelectedStudentIds([]);
+                            }
+                          }}
+                          className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                        />
+                      </TableHead>
+                      <TableHead>Adm No</TableHead>
+                      <TableHead>Student Name</TableHead>
+                      <TableHead>Class & Sec</TableHead>
+                      <TableHead>Fee Status</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {categories.filter(c => c.isEnabled && !['Base Fee', 'Included Charges', 'Activities', 'Full Fees'].includes(c.name)).length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-center text-gray-500">No active fee categories available.</TableCell>
-                      </TableRow>
-                    ) : (
-                      categories.filter(c => c.isEnabled && !['Base Fee', 'Included Charges', 'Activities', 'Full Fees'].includes(c.name)).map(cat => {
-                        const existingFee = selectedStudent.studentFees?.find(f => {
-                          const catId = f.feeCategory?._id || f.feeCategoryId?._id || f.feeCategoryId;
-                          return catId === cat._id;
-                        });
-                        return (
-                          <TableRow key={cat._id}>
-                            <TableCell className="font-medium">{cat.name}</TableCell>
-                            <TableCell className="text-gray-600">
-                              {existingFee ? `Rs. ${existingFee.totalAmount}` : 'Not Assigned'}
-                            </TableCell>
-                            <TableCell>
-                              <Input 
-                                type="number" 
-                                min="0" step="0.01"
-                                placeholder={existingFee ? 'Enter new total' : 'Assign fee'}
-                                value={specialFees[cat._id] || ''}
-                                onChange={(e) => setSpecialFees({...specialFees, [cat._id]: e.target.value})}
-                              />
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
-                    )}
+                    {studentList.map((student) => {
+                      const isSelected = selectedStudentIds.includes(student._id);
+                      const isPaid = student.paidAmount > 0;
+                      return (
+                        <TableRow 
+                          key={student._id}
+                          className={isSelected ? 'bg-purple-50/50' : ''}
+                        >
+                          <TableCell>
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              disabled={isPaid}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedStudentIds(prev => [...prev, student._id]);
+                                } else {
+                                  setSelectedStudentIds(prev => prev.filter(id => id !== student._id));
+                                }
+                              }}
+                              className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer disabled:cursor-not-allowed"
+                            />
+                          </TableCell>
+                          <TableCell className="font-mono text-xs font-bold text-gray-700">
+                            {student.admissionNumber}
+                          </TableCell>
+                          <TableCell className="font-bold text-gray-900 text-xs">
+                            {student.studentName}
+                          </TableCell>
+                          <TableCell className="text-xs font-semibold text-gray-700">
+                            {student.currentClass} - {student.section || 'A'}
+                          </TableCell>
+                          <TableCell>
+                            {isPaid ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                Paid (₹{student.paidAmount})
+                              </span>
+                            ) : student.isAssigned ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                Assigned (₹{student.totalAmount})
+                              </span>
+                            ) : (
+                              <span className="text-gray-400 text-xs font-medium">Not Assigned</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {student.isAssigned && (
+                              isPaid ? (
+                                <span className="inline-flex items-center gap-1 text-[11px] text-gray-400 font-semibold" title="This fee has payment history and cannot be removed.">
+                                  <Lock className="h-3.5 w-3.5 text-gray-400" /> Locked
+                                </span>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 h-7 px-2 text-xs"
+                                  onClick={() => handleRemoveStudentAssignment(student.studentFeeId, student.paidAmount)}
+                                  loading={removingFeeId === student.studentFeeId}
+                                  loadingText=""
+                                  title="Remove Assignment"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              )
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
+              )}
+            </div>
+
+            {/* Fee Amount & Assign Submit Footer */}
+            <form onSubmit={handleBatchAssignStudents} className="pt-2 border-t border-gray-200 space-y-3">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-purple-50/60 p-3 rounded-xl border border-purple-200">
+                <div className="w-full sm:w-64 space-y-1">
+                  <Label htmlFor="assignFeeAmount" className="text-xs font-bold text-purple-950">
+                    Fee Amount (₹) <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="assignFeeAmount"
+                    type="number"
+                    min="1"
+                    step="1"
+                    placeholder="Enter amount (e.g. 1000)"
+                    value={assignFeeAmount}
+                    onChange={(e) => setAssignFeeAmount(e.target.value)}
+                    className="h-9 font-bold text-sm bg-white"
+                    required
+                  />
+                </div>
+
+                <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                      setIsAssignStudentsModalOpen(false);
+                      setAssignCategory(null);
+                      setStudentList([]);
+                      setSelectedStudentIds([]);
+                      setAssignFeeAmount('');
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    loading={assignSubmitLoading}
+                    loadingText="Assigning Fees..."
+                    disabled={selectedStudentIds.length === 0 || !assignFeeAmount || parseFloat(assignFeeAmount) <= 0}
+                    className="bg-purple-700 hover:bg-purple-800 text-white font-bold"
+                  >
+                    <UserPlus className="h-4 w-4 mr-1.5" />
+                    Assign Fee to {selectedStudentIds.length} Student(s)
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </div>
+        )}
+      </Modal>
+
+      {/* Assign Fee to RTE Students Modal */}
+      <Modal 
+        isOpen={isAssignRTEModalOpen} 
+        onClose={() => setIsAssignRTEModalOpen(false)} 
+        title="Assign Fee to RTE Students"
+        className="max-w-4xl"
+      >
+        <form onSubmit={handleAssignRTEFee} className="space-y-4 pt-1">
+          {/* Top Informative Banner */}
+          <div className="bg-purple-50 border border-purple-200 rounded-xl p-3.5 flex items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-100 rounded-lg text-purple-700 font-bold">
+                <UserCheck className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="text-xs font-extrabold uppercase tracking-wider text-purple-700">RTE Fee Assignment Module</div>
+                <div className="text-sm font-bold text-purple-950">Assign fee categories directly to enrolled RTE students</div>
               </div>
             </div>
-          )}
+            <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-800 border border-purple-200">
+              RTE Students Only
+            </span>
+          </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">
-            <Button type="button" variant="ghost" onClick={() => { setIsAssignModalOpen(false); setSelectedStudentId(''); setSpecialFees({}); }} disabled={assignLoading}>Cancel</Button>
-            <Button type="submit" loading={assignLoading} loadingText="Saving..." disabled={!selectedStudentId}>Save Special Fees</Button>
+          {/* Filters Bar */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-gray-50 p-3 rounded-xl border border-gray-200">
+            <div>
+              <Label className="text-xs font-bold text-gray-700 mb-1 block">Class</Label>
+              <select
+                value={rteFilterClass}
+                onChange={(e) => {
+                  setRteFilterClass(e.target.value);
+                  setRteFilterSection('');
+                }}
+                className="w-full h-9 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="">-- All Classes --</option>
+                {classes.map(c => (
+                  <option key={c._id || c.name} value={c.name}>Class {c.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <Label className="text-xs font-bold text-gray-700 mb-1 block">Section</Label>
+              <select
+                value={rteFilterSection}
+                onChange={(e) => setRteFilterSection(e.target.value)}
+                className="w-full h-9 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium focus:ring-2 focus:ring-purple-500"
+                disabled={!rteFilterClass}
+              >
+                <option value="">-- All Sections --</option>
+                {rteFilterClass && classes.find(c => c.name === rteFilterClass)?.sections?.map(s => (
+                  <option key={s._id || s.name} value={s.name}>Section {s.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <Label className="text-xs font-bold text-gray-700 mb-1 block">Search RTE Student</Label>
+              <div className="relative">
+                <Input
+                  type="text"
+                  placeholder="Search name or adm no..."
+                  value={rteSearch}
+                  onChange={(e) => setRteSearch(e.target.value)}
+                  className="h-9 text-xs pl-8 bg-white"
+                />
+                <Search className="h-3.5 w-3.5 text-gray-400 absolute left-2.5 top-2.5" />
+              </div>
+            </div>
+          </div>
+
+          {/* Student Selection Controls */}
+          <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs h-8 font-semibold"
+                onClick={() => setSelectedRTEStudentIds(rteStudentList.map(s => s._id))}
+              >
+                Select All
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-xs h-8 text-gray-600 font-semibold"
+                onClick={() => setSelectedRTEStudentIds([])}
+              >
+                Clear Selection
+              </Button>
+            </div>
+
+            <div className="text-xs font-bold text-purple-900 bg-purple-100 px-3 py-1 rounded-full border border-purple-200">
+              Selected RTE Students: <span className="text-purple-700 font-extrabold">{selectedRTEStudentIds.length}</span> of {rteStudentList.length}
+            </div>
+          </div>
+
+          {/* RTE Students Table */}
+          <div className="max-h-56 overflow-y-auto border border-gray-200 rounded-xl bg-white shadow-inner">
+            {rteStudentListLoading ? (
+              <div className="p-6 text-center text-gray-500 font-medium text-xs">Loading RTE students...</div>
+            ) : rteStudentList.length === 0 ? (
+              <div className="p-6 text-center text-gray-500 font-medium text-xs">
+                No RTE students found for selected class/section filters.
+              </div>
+            ) : (
+              <Table>
+                <TableHeader className="sticky top-0 bg-gray-100 z-10 shadow-2xs">
+                  <TableRow>
+                    <TableHead className="w-10">
+                      <input
+                        type="checkbox"
+                        checked={
+                          rteStudentList.length > 0 && 
+                          rteStudentList.every(s => selectedRTEStudentIds.includes(s._id))
+                        }
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedRTEStudentIds(rteStudentList.map(s => s._id));
+                          } else {
+                            setSelectedRTEStudentIds([]);
+                          }
+                        }}
+                        className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                      />
+                    </TableHead>
+                    <TableHead>Adm No</TableHead>
+                    <TableHead>Student Name</TableHead>
+                    <TableHead>Class</TableHead>
+                    <TableHead>Section</TableHead>
+                    <TableHead>Academic Year</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rteStudentList.map((student) => {
+                    const isSelected = selectedRTEStudentIds.includes(student._id);
+                    return (
+                      <TableRow key={student._id} className={isSelected ? 'bg-purple-50/50' : ''}>
+                        <TableCell>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedRTEStudentIds(prev => [...prev, student._id]);
+                              } else {
+                                setSelectedRTEStudentIds(prev => prev.filter(id => id !== student._id));
+                              }
+                            }}
+                            className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                          />
+                        </TableCell>
+                        <TableCell className="font-mono text-xs font-bold text-gray-700">
+                          {student.admissionNumber}
+                        </TableCell>
+                        <TableCell className="font-bold text-gray-900 text-xs">
+                          {student.studentName}
+                        </TableCell>
+                        <TableCell className="text-xs font-semibold text-gray-700">
+                          Class {student.currentClass}
+                        </TableCell>
+                        <TableCell className="text-xs font-semibold text-gray-700">
+                          {student.section || 'A'}
+                        </TableCell>
+                        <TableCell className="text-xs text-gray-600 font-mono">
+                          {student.academicYear || '2026-2027'}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+
+          {/* Fee Categories & Amounts Section */}
+          <div className="space-y-3 pt-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Label className="text-xs font-extrabold uppercase tracking-wider text-purple-900">
+                Select Fee Categories & Enter Amount (₹) <span className="text-red-500">*</span>
+              </Label>
+              <div className="relative w-full sm:w-60">
+                <Input
+                  type="text"
+                  placeholder="Filter category name..."
+                  value={rteCategorySearch}
+                  onChange={(e) => setRteCategorySearch(e.target.value)}
+                  className="h-8 text-xs pl-7 bg-white"
+                />
+                <Search className="h-3 w-3 text-gray-400 absolute left-2.5 top-2.5" />
+              </div>
+            </div>
+
+            <div className="border border-gray-200 rounded-xl overflow-hidden max-h-52 overflow-y-auto bg-white shadow-xs">
+              <Table>
+                <TableHeader className="sticky top-0 bg-gray-100 z-10 shadow-2xs">
+                  <TableRow>
+                    <TableHead className="w-10"></TableHead>
+                    <TableHead>Fee Category</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead className="w-48 text-right">Category Amount (₹)</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {categories
+                    .filter(c => c.isEnabled && !['Base Fee', 'Included Charges', 'Activities', 'Full Fees'].includes(c.name))
+                    .filter(c => !rteCategorySearch || c.name.toLowerCase().includes(rteCategorySearch.toLowerCase()))
+                    .map(cat => {
+                      const isChecked = !!selectedRTECategories[cat._id];
+                      return (
+                        <TableRow key={cat._id} className={isChecked ? 'bg-purple-50/40' : ''}>
+                          <TableCell className="w-10">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                setSelectedRTECategories(prev => ({
+                                  ...prev,
+                                  [cat._id]: e.target.checked
+                                }));
+                              }}
+                              className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                            />
+                          </TableCell>
+                          <TableCell className="font-bold text-gray-900 text-xs">
+                            {cat.name}
+                          </TableCell>
+                          <TableCell>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
+                              cat.mandatory ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {cat.mandatory ? 'Mandatory' : 'Optional'}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Input
+                              type="number"
+                              min="1"
+                              step="1"
+                              placeholder="₹ Amount"
+                              value={rteCategoryAmounts[cat._id] || ''}
+                              disabled={!isChecked}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setRteCategoryAmounts(prev => ({
+                                  ...prev,
+                                  [cat._id]: val
+                                }));
+                              }}
+                              className="h-8 text-xs font-bold text-right bg-white w-36 ml-auto"
+                            />
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+
+          {/* Modal Actions Footer */}
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-200">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setIsAssignRTEModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              loading={rteSubmitLoading}
+              loadingText="Assigning RTE Fees..."
+              disabled={
+                selectedRTEStudentIds.length === 0 || 
+                Object.values(selectedRTECategories).filter(Boolean).length === 0
+              }
+              className="bg-purple-700 hover:bg-purple-800 text-white font-bold"
+            >
+              <UserCheck className="h-4 w-4 mr-1.5" />
+              Assign Fee to {selectedRTEStudentIds.length} RTE Student(s)
+            </Button>
           </div>
         </form>
       </Modal>

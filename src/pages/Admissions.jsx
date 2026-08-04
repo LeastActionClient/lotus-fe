@@ -47,6 +47,27 @@ const Admissions = () => {
   const [file, setFile] = useState(null);
   const [activeYear, setActiveYear] = useState('');
 
+  const sortedClasses = React.useMemo(() => {
+    return [...classes].sort((a, b) => {
+      const preSchoolOrder = { 'prekg': 1, 'lkg': 2, 'ukg': 3 };
+      const aNorm = String(a.name).trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+      const bNorm = String(b.name).trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+      const isPreA = preSchoolOrder[aNorm];
+      const isPreB = preSchoolOrder[bNorm];
+      if (isPreA && isPreB) return isPreA - isPreB;
+      if (isPreA) return -1;
+      if (isPreB) return 1;
+      const numA = parseInt(aNorm, 10);
+      const numB = parseInt(bNorm, 10);
+      const isNumA = !isNaN(numA);
+      const isNumB = !isNaN(numB);
+      if (isNumA && isNumB) return numA - numB;
+      if (isNumA) return 1;
+      if (isNumB) return -1;
+      return aNorm.localeCompare(bNorm);
+    });
+  }, [classes]);
+
   useEffect(() => {
     fetchStudents();
     fetchClasses().then((fetchedClasses) => {
@@ -123,7 +144,9 @@ const Admissions = () => {
         fatherPhone: app.fatherPhone || '',
         motherPhone: app.motherPhone || '',
         address: app.address || '',
-        admissionNumber: ''
+        admissionNumber: '',
+        currentClass: finalClassName,
+        section: ''
       }));
       
       setIsManualModalOpen(true);
@@ -149,6 +172,7 @@ const Admissions = () => {
       dateOfBirth: '', gender: '', bloodGroup: '', aadhaarNumber: '', religion: '', community: '', caste: '', RTE: '', nationality: '', 
       fatherOccupation: '', motherOccupation: '', guardian: '', guardianName: '', city: '', state: '', pincode: '', whatsappNumber: '', emisNumber: '', emisNo: '',
       isRTE: false,
+      currentClass: selectedClass || '',
       section: selectedSection || '',
       applicationId: ''
     });
@@ -260,8 +284,9 @@ const Admissions = () => {
 
   const handleManualSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedClass) {
-      toastWarning("Please select a class first in the main screen.");
+    const targetClass = manualForm.currentClass || selectedClass;
+    if (!targetClass) {
+      toastWarning("Please select a class.");
       return;
     }
 
@@ -292,7 +317,7 @@ const Admissions = () => {
         guardianName: (manualForm.guardian || manualForm.guardianName || '').trim(),
         whatsappNumber: (manualForm.whatsappNumber || '').trim(),
         RTE: manualForm.isRTE ? 'RTE' : 'General', 
-        currentClass: selectedClass, 
+        currentClass: targetClass, 
         section: manualForm.section || selectedSection 
       });
       setIsManualModalOpen(false);
@@ -302,14 +327,15 @@ const Admissions = () => {
         dateOfBirth: '', gender: '', bloodGroup: '', aadhaarNumber: '', religion: '', community: '', caste: '', RTE: '', nationality: '', 
         fatherOccupation: '', motherOccupation: '', guardian: '', guardianName: '', city: '', state: '', pincode: '', whatsappNumber: '', emisNumber: '', emisNo: '',
         isRTE: false,
+        currentClass: '',
         section: '',
         applicationId: ''
       });
       fetchStudents();
       const createdAdmissionNumber = res.data?.admissionNumber || res.data?.data?.admissionNumber;
       toastSuccess(createdAdmissionNumber
-        ? `Student added successfully. Admission No: ${createdAdmissionNumber}`
-        : (manualForm.applicationId ? "Student added successfully and application approved." : "Student added successfully!"));
+        ? `Student added successfully to Class ${targetClass}. Admission No: ${createdAdmissionNumber}`
+        : (manualForm.applicationId ? `Student added successfully to Class ${targetClass} and application approved.` : `Student added successfully to Class ${targetClass}!`));
     } catch (error) {
       toastError(error.response?.data?.error || "Error adding student.");
     } finally {
@@ -998,35 +1024,89 @@ const Admissions = () => {
           {manualForm.applicationId ? (
             <div className="bg-blue-50 p-3 rounded-md border border-blue-100 flex flex-col sm:flex-row sm:items-center justify-between sticky top-0 z-10 shadow-sm gap-2">
               <div className="flex items-center">
-                <Users className="text-blue-600 mr-2 h-5 w-5" />
+                <Users className="text-blue-600 mr-2 h-5 w-5 shrink-0" />
                 <span className="text-sm font-medium text-blue-900">
-                  Application Admission | Applied Class: {selectedClass}
+                  Application Admission | Applied Class: {manualForm.currentClass || selectedClass}
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <Label className="whitespace-nowrap text-sm text-blue-900 font-semibold">Section <span className="text-red-500">*</span></Label>
-                <select
-                  required
-                  className="flex h-8 w-32 rounded-md border border-gray-300 bg-white px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
-                  value={manualForm.section || ''}
-                  onChange={(e) => setManualForm({...manualForm, section: e.target.value})}
-                >
-                  <option value="">Select Section</option>
-                  {classes.find(c => c.name === selectedClass)?.sections?.map((s) => (
-                    <option key={s._id || s.id} value={s.name}>{s.name}</option>
-                  ))}
-                </select>
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Label className="whitespace-nowrap text-sm text-blue-900 font-semibold">Class <span className="text-red-500">*</span></Label>
+                  <select
+                    required
+                    className="flex h-8 rounded-md border border-gray-300 bg-white px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                    value={manualForm.currentClass || selectedClass || ''}
+                    onChange={(e) => {
+                      const newClass = e.target.value;
+                      setManualForm(prev => {
+                        const classObj = classes.find(c => c.name === newClass);
+                        const validSections = classObj?.sections?.map(s => s.name) || [];
+                        const hasValidSection = validSections.includes(prev.section);
+                        return {
+                          ...prev,
+                          currentClass: newClass,
+                          section: hasValidSection ? prev.section : ''
+                        };
+                      });
+                    }}
+                  >
+                    <option value="">Select Class</option>
+                    {sortedClasses.map((c) => (
+                      <option key={c._id || c.id} value={c.name}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="whitespace-nowrap text-sm text-blue-900 font-semibold">Section <span className="text-red-500">*</span></Label>
+                  <select
+                    required
+                    className="flex h-8 w-32 rounded-md border border-gray-300 bg-white px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                    value={manualForm.section || ''}
+                    onChange={(e) => setManualForm({...manualForm, section: e.target.value})}
+                  >
+                    <option value="">Select Section</option>
+                    {classes.find(c => c.name === (manualForm.currentClass || selectedClass))?.sections?.map((s) => (
+                      <option key={s._id || s.id} value={s.name}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
           ) : (
-            <div className="bg-orange-50 p-3 rounded-md border border-orange-100 flex items-center justify-between sticky top-0 z-10 shadow-sm">
+            <div className="bg-orange-50 p-3 rounded-md border border-orange-100 flex flex-col sm:flex-row sm:items-center justify-between sticky top-0 z-10 shadow-sm gap-2">
               <div className="flex items-center">
-                <Users className="text-orange-600 mr-2 h-5 w-5" />
+                <Users className="text-orange-600 mr-2 h-5 w-5 shrink-0" />
                 <span className="text-sm font-medium text-orange-900">
-                  Adding to Class: {selectedClass} {selectedSection && `(Section ${selectedSection})`}
+                  Adding to Class: {manualForm.currentClass || selectedClass}
                 </span>
               </div>
-              {!selectedSection && (
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Label className="whitespace-nowrap text-sm text-orange-900 font-semibold">Class <span className="text-red-500">*</span></Label>
+                  <select
+                    required
+                    className="flex h-8 rounded-md border border-gray-300 bg-white px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600 focus:border-transparent"
+                    value={manualForm.currentClass || selectedClass || ''}
+                    onChange={(e) => {
+                      const newClass = e.target.value;
+                      setManualForm(prev => {
+                        const classObj = classes.find(c => c.name === newClass);
+                        const validSections = classObj?.sections?.map(s => s.name) || [];
+                        const hasValidSection = validSections.includes(prev.section);
+                        return {
+                          ...prev,
+                          currentClass: newClass,
+                          section: hasValidSection ? prev.section : ''
+                        };
+                      });
+                    }}
+                  >
+                    <option value="">Select Class</option>
+                    {sortedClasses.map((c) => (
+                      <option key={c._id || c.id} value={c.name}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
                 <div className="flex items-center gap-2">
                   <Label className="whitespace-nowrap text-sm text-orange-900 font-semibold">Section</Label>
                   <select
@@ -1035,12 +1115,12 @@ const Admissions = () => {
                     onChange={(e) => setManualForm({...manualForm, section: e.target.value})}
                   >
                     <option value="">No Section</option>
-                    {classes.find(c => c.name === selectedClass)?.sections?.map((s) => (
+                    {classes.find(c => c.name === (manualForm.currentClass || selectedClass))?.sections?.map((s) => (
                       <option key={s._id || s.id} value={s.name}>{s.name}</option>
                     ))}
                   </select>
                 </div>
-              )}
+              </div>
             </div>
           )}
           
