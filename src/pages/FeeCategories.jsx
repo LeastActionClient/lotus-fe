@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { Card, CardContent } from '../components/ui/Card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
-import { FileCheck, Plus, Users, User, Trash2, Edit, UserPlus, Search, Lock, UserCheck } from 'lucide-react';
+import { FileCheck, Plus, Users, User, Trash2, Edit, UserPlus, Search, Lock, UserCheck, CheckCircle } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
@@ -13,7 +13,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { PageLoader } from '../components/ui/Spinner';
 import { toastError, toastSuccess, toastWarning } from '../services/toastService';
 import { useConfirm } from '../components/ui/ConfirmDialog';
-import { useClassesQuery, useFeeCategoriesQuery, useQueryInvalidator, useStudentsQuery } from '../hooks/useSchoolQueries';
+import { useClassesQuery, useFeeCategoriesQuery, useQueryInvalidator, useStudentsQuery, useAcademicYearsQuery } from '../hooks/useSchoolQueries';
 
 const FeeCategories = () => {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -25,6 +25,26 @@ const FeeCategories = () => {
   const { data: studentsData = [], isLoading: studentsLoading } = useStudentsQuery();
   const { data: classesData = [], isLoading: classesLoading } = useClassesQuery();
   const { invalidateFeeCategories, invalidateStudents, invalidateClasses } = useQueryInvalidator();
+  const { data: academicYearsData = [] } = useAcademicYearsQuery();
+
+  // For Bulk Optional Fee Category Assignment
+  const [selectedOptionalCatIds, setSelectedOptionalCatIds] = useState([]);
+  const [isBulkOptionalModalOpen, setIsBulkOptionalModalOpen] = useState(false);
+  const [bulkOptionalFilterYear, setBulkOptionalFilterYear] = useState('');
+  const [bulkOptionalFilterClass, setBulkOptionalFilterClass] = useState('');
+  const [bulkOptionalFilterSection, setBulkOptionalFilterSection] = useState('');
+  const [bulkOptionalSearch, setBulkOptionalSearch] = useState('');
+  const [bulkOptionalStatus, setBulkOptionalStatus] = useState('all');
+  const [bulkOptionalRteType, setBulkOptionalRteType] = useState('all');
+  const [bulkOptionalStudentList, setBulkOptionalStudentList] = useState([]);
+  const [bulkOptionalStudentListLoading, setBulkOptionalStudentListLoading] = useState(false);
+  const [selectedBulkOptionalStudentIds, setSelectedBulkOptionalStudentIds] = useState([]);
+  const [bulkOptionalCategoryAmounts, setBulkOptionalCategoryAmounts] = useState({});
+  const [bulkOptionalSubmitLoading, setBulkOptionalSubmitLoading] = useState(false);
+
+  // Summary Modal state
+  const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
+  const [summaryData, setSummaryData] = useState(null);
   
   const [isNewCatModalOpen, setIsNewCatModalOpen] = useState(false);
   const [isAssignRTEModalOpen, setIsAssignRTEModalOpen] = useState(false);
@@ -95,6 +115,108 @@ const FeeCategories = () => {
   const [assignLoading, setAssignLoading] = useState(false);
   const [bulkAssignLoading, setBulkAssignLoading] = useState(false);
   const [categoryActionLoadingId, setCategoryActionLoadingId] = useState(null);
+
+  const openBulkOptionalModal = () => {
+    if (selectedOptionalCatIds.length === 0) {
+      toastWarning("Please select at least one optional fee category.");
+      return;
+    }
+    const initialAmounts = {};
+    selectedOptionalCatIds.forEach(catId => {
+      const cat = categories.find(c => c._id === catId);
+      if (cat && cat.amount) {
+        initialAmounts[catId] = String(cat.amount);
+      } else {
+        initialAmounts[catId] = '';
+      }
+    });
+    setBulkOptionalCategoryAmounts(initialAmounts);
+    setBulkOptionalFilterYear('');
+    setBulkOptionalFilterClass('');
+    setBulkOptionalFilterSection('');
+    setBulkOptionalSearch('');
+    setBulkOptionalStatus('all');
+    setBulkOptionalRteType('all');
+    setSelectedBulkOptionalStudentIds([]);
+    setIsBulkOptionalModalOpen(true);
+  };
+
+  const fetchStudentsForBulkOptional = async () => {
+    setBulkOptionalStudentListLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (bulkOptionalFilterClass) params.append('className', bulkOptionalFilterClass);
+      if (bulkOptionalFilterSection) params.append('section', bulkOptionalFilterSection);
+      if (bulkOptionalFilterYear) params.append('academicYear', bulkOptionalFilterYear);
+      if (bulkOptionalSearch) params.append('search', bulkOptionalSearch);
+      if (bulkOptionalStatus && bulkOptionalStatus !== 'all') params.append('studentStatus', bulkOptionalStatus);
+      if (bulkOptionalRteType && bulkOptionalRteType !== 'all') params.append('rteType', bulkOptionalRteType);
+
+      const res = await api.get(`/fees/students-for-assignment?${params.toString()}`);
+      setBulkOptionalStudentList(res.data || []);
+    } catch (error) {
+      console.error("Error fetching students for bulk assignment:", error);
+      toastError("Error loading student list");
+    } finally {
+      setBulkOptionalStudentListLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isBulkOptionalModalOpen) {
+      fetchStudentsForBulkOptional();
+    }
+  }, [
+    isBulkOptionalModalOpen,
+    bulkOptionalFilterClass,
+    bulkOptionalFilterSection,
+    bulkOptionalFilterYear,
+    bulkOptionalSearch,
+    bulkOptionalStatus,
+    bulkOptionalRteType
+  ]);
+
+  const handleBatchAssignSelectedCategories = async (e) => {
+    e.preventDefault();
+    if (selectedOptionalCatIds.length === 0) {
+      toastWarning("Please select at least one fee category.");
+      return;
+    }
+    if (selectedBulkOptionalStudentIds.length === 0) {
+      toastWarning("Please select at least one student.");
+      return;
+    }
+
+    const categoryAmountsPayload = selectedOptionalCatIds.map(catId => ({
+      feeCategoryId: catId,
+      amount: parseFloat(bulkOptionalCategoryAmounts[catId] || 0)
+    }));
+
+    const hasInvalidAmount = categoryAmountsPayload.some(ca => isNaN(ca.amount) || ca.amount <= 0);
+    if (hasInvalidAmount) {
+      toastWarning("Please enter a valid amount greater than zero for all selected fee categories.");
+      return;
+    }
+
+    setBulkOptionalSubmitLoading(true);
+    try {
+      const res = await api.post('/fees/assign-multiple-categories-students', {
+        categoryAmounts: categoryAmountsPayload,
+        studentIds: selectedBulkOptionalStudentIds
+      });
+
+      setIsBulkOptionalModalOpen(false);
+      setSelectedOptionalCatIds([]);
+      setSelectedBulkOptionalStudentIds([]);
+      toastSuccess(res.data.message || "Assigned selected fee categories successfully!");
+      fetchData();
+    } catch (error) {
+      console.error("Error assigning selected categories to students:", error);
+      toastError(error.response?.data?.error || "Error assigning categories to students.");
+    } finally {
+      setBulkOptionalSubmitLoading(false);
+    }
+  };
 
   const fetchData = async () => {
     await Promise.all([invalidateFeeCategories(), invalidateStudents(), invalidateClasses()]);
@@ -620,13 +742,22 @@ const FeeCategories = () => {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900  flex items-center">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center">
             <FileCheck className="mr-3 text-orange-600" size={32} />
             Fee Categories
           </h1>
-          <p className="text-gray-500  mt-2">Manage fee types and assignments</p>
+          <p className="text-gray-500 mt-2">Manage fee types and assignments</p>
         </div>
         <div className="flex flex-wrap gap-3">
+          <Button 
+            variant="outline" 
+            disabled={selectedOptionalCatIds.length === 0} 
+            onClick={openBulkOptionalModal} 
+            className="border-purple-300 text-purple-700 hover:bg-purple-50 font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
+          >
+            <UserPlus className="mr-2 h-4 w-4 text-purple-600" />
+            Assign Selected Categories {selectedOptionalCatIds.length > 0 ? `(${selectedOptionalCatIds.length})` : ''}
+          </Button>
           <Button variant="secondary" onClick={() => setIsBulkAssignModalOpen(true)}>
             <Users className="mr-2 h-4 w-4" /> Assign Fee to Class
           </Button>
@@ -644,6 +775,25 @@ const FeeCategories = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10 text-center">
+                  <input
+                    type="checkbox"
+                    checked={
+                      paginatedCategories.filter(c => !c.mandatory).length > 0 &&
+                      paginatedCategories.filter(c => !c.mandatory).every(c => selectedOptionalCatIds.includes(c._id))
+                    }
+                    onChange={(e) => {
+                      const pageOptionalIds = paginatedCategories.filter(c => !c.mandatory).map(c => c._id);
+                      if (e.target.checked) {
+                        setSelectedOptionalCatIds(prev => Array.from(new Set([...prev, ...pageOptionalIds])));
+                      } else {
+                        setSelectedOptionalCatIds(prev => prev.filter(id => !pageOptionalIds.includes(id)));
+                      }
+                    }}
+                    className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                    title="Select all optional fee categories on this page"
+                  />
+                </TableHead>
                 <TableHead>Category Name</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Stock</TableHead>
@@ -655,13 +805,29 @@ const FeeCategories = () => {
             <TableBody>
               {visibleCategories.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center h-32 text-gray-500">
+                  <TableCell colSpan={7} className="text-center h-32 text-gray-500">
                     No fee categories found.
                   </TableCell>
                 </TableRow>
               ) : (
                 paginatedCategories.map((cat) => (
-                  <TableRow key={cat._id}>
+                  <TableRow key={cat._id} className={selectedOptionalCatIds.includes(cat._id) ? 'bg-purple-50/40' : ''}>
+                    <TableCell className="w-10 text-center">
+                      {!cat.mandatory ? (
+                        <input
+                          type="checkbox"
+                          checked={selectedOptionalCatIds.includes(cat._id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedOptionalCatIds(prev => [...prev, cat._id]);
+                            } else {
+                              setSelectedOptionalCatIds(prev => prev.filter(id => id !== cat._id));
+                            }
+                          }}
+                          className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                        />
+                      ) : null}
+                    </TableCell>
                     <TableCell className="font-medium text-gray-900 ">{cat.name}</TableCell>
                     <TableCell>
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -699,18 +865,6 @@ const FeeCategories = () => {
                     <TableCell>{new Date(cat.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1.5">
-                        {!cat.mandatory && (
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="text-purple-700 border-purple-200 hover:bg-purple-50 hover:border-purple-300 flex items-center gap-1 font-bold text-xs h-8 shadow-xs"
-                            onClick={() => openAssignStudentsModal(cat)}
-                            title="Assign Students to this Category"
-                          >
-                            <UserPlus className="h-3.5 w-3.5" />
-                            <span>Assign Students</span>
-                          </Button>
-                        )}
                         <Button 
                           variant="ghost" 
                           size="sm" 
@@ -720,10 +874,10 @@ const FeeCategories = () => {
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        {currentUser.role === 'SUPER_ADMIN' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
+                        {cat.mandatory ? null : (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
                             className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
                             onClick={() => handleDeleteCategory(cat)}
                             loading={categoryActionLoadingId === cat._id}
@@ -742,6 +896,247 @@ const FeeCategories = () => {
           <Pagination page={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
         </CardContent>
       </Card>
+
+      {/* Assign Selected Optional Fee Categories Modal */}
+      <Modal 
+        isOpen={isBulkOptionalModalOpen} 
+        onClose={() => setIsBulkOptionalModalOpen(false)} 
+        title="Assign Selected Optional Fee Categories"
+        className="max-w-4xl"
+      >
+        <form onSubmit={handleBatchAssignSelectedCategories} className="space-y-4 pt-1">
+          {/* Selected Categories & Individual Amounts Section */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-extrabold uppercase tracking-wider text-purple-900">
+                Selected Categories & Enter Amount (₹) <span className="text-red-500">*</span>
+              </Label>
+              <span className="text-xs font-bold text-purple-700 bg-purple-100 px-2.5 py-0.5 rounded-full border border-purple-200">
+                {selectedOptionalCatIds.length} Category(ies) Selected
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-48 overflow-y-auto p-3 bg-purple-50/50 border border-purple-200 rounded-xl shadow-inner">
+              {selectedOptionalCatIds.map(catId => {
+                const cat = categories.find(c => c._id === catId);
+                if (!cat) return null;
+                return (
+                  <div key={catId} className="bg-white p-3 rounded-lg border border-purple-200 flex items-center justify-between gap-3 shadow-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="text-purple-600 font-bold text-sm">✓</span>
+                      <div>
+                        <div className="font-bold text-xs text-gray-900">{cat.name}</div>
+                        <span className="text-[10px] font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                          Optional
+                        </span>
+                      </div>
+                    </div>
+                    <div className="w-36">
+                      <Input
+                        type="number"
+                        min="1"
+                        step="1"
+                        placeholder="Amount"
+                        value={bulkOptionalCategoryAmounts[catId] || ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setBulkOptionalCategoryAmounts(prev => ({ ...prev, [catId]: val }));
+                        }}
+                        className="h-8 text-xs font-bold text-right bg-white"
+                        required
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Filters Bar */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-gray-50 p-3 rounded-xl border border-gray-200">
+            <div>
+              <Label className="text-xs font-bold text-gray-700 mb-1 block">Class</Label>
+              <select
+                value={bulkOptionalFilterClass}
+                onChange={(e) => {
+                  setBulkOptionalFilterClass(e.target.value);
+                  setBulkOptionalFilterSection('');
+                }}
+                className="w-full h-9 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="">-- All Classes --</option>
+                {classes.map(c => (
+                  <option key={c._id || c.name} value={c.name}>Class {c.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <Label className="text-xs font-bold text-gray-700 mb-1 block">Section</Label>
+              <select
+                value={bulkOptionalFilterSection}
+                onChange={(e) => setBulkOptionalFilterSection(e.target.value)}
+                className="w-full h-9 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium focus:ring-2 focus:ring-purple-500"
+                disabled={!bulkOptionalFilterClass}
+              >
+                <option value="">-- All Sections --</option>
+                {bulkOptionalFilterClass && classes.find(c => c.name === bulkOptionalFilterClass)?.sections?.map(s => (
+                  <option key={s._id || s.name} value={s.name}>Section {s.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <Label className="text-xs font-bold text-gray-700 mb-1 block">Student Search</Label>
+              <div className="relative">
+                <Input
+                  type="text"
+                  placeholder="Name / Adm No..."
+                  value={bulkOptionalSearch}
+                  onChange={(e) => setBulkOptionalSearch(e.target.value)}
+                  className="h-9 text-xs pl-8 bg-white"
+                />
+                <Search className="h-3.5 w-3.5 text-gray-400 absolute left-2.5 top-2.5" />
+              </div>
+            </div>
+          </div>
+
+          {/* Student Selection Controls */}
+          <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs h-8 font-semibold"
+                onClick={() => setSelectedBulkOptionalStudentIds(bulkOptionalStudentList.map(s => s._id))}
+              >
+                Select All
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-xs h-8 text-gray-600 font-semibold"
+                onClick={() => setSelectedBulkOptionalStudentIds([])}
+              >
+                Clear Selection
+              </Button>
+            </div>
+
+            <div className="text-xs font-bold text-purple-900 bg-purple-100 px-3 py-1 rounded-full border border-purple-200">
+              Selected Students: <span className="text-purple-700 font-extrabold">{selectedBulkOptionalStudentIds.length}</span> of {bulkOptionalStudentList.length}
+            </div>
+          </div>
+
+          {/* Students Table */}
+          <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-xl bg-white shadow-inner">
+            {bulkOptionalStudentListLoading ? (
+              <div className="p-6 text-center text-gray-500 font-medium text-xs">Loading matching students...</div>
+            ) : bulkOptionalStudentList.length === 0 ? (
+              <div className="p-6 text-center text-gray-500 font-medium text-xs">
+                No matching students found for selected filters.
+              </div>
+            ) : (
+              <Table>
+                <TableHeader className="sticky top-0 bg-gray-100 z-10 shadow-2xs">
+                  <TableRow>
+                    <TableHead className="w-10">
+                      <input
+                        type="checkbox"
+                        checked={
+                          bulkOptionalStudentList.length > 0 &&
+                          bulkOptionalStudentList.every(s => selectedBulkOptionalStudentIds.includes(s._id))
+                        }
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedBulkOptionalStudentIds(bulkOptionalStudentList.map(s => s._id));
+                          } else {
+                            setSelectedBulkOptionalStudentIds([]);
+                          }
+                        }}
+                        className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                      />
+                    </TableHead>
+                    <TableHead>Adm No</TableHead>
+                    <TableHead>Student Name</TableHead>
+                    <TableHead>Class</TableHead>
+                    <TableHead>Section</TableHead>
+                    <TableHead>Course Type</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {bulkOptionalStudentList.map((student) => {
+                    const isSelected = selectedBulkOptionalStudentIds.includes(student._id);
+                    return (
+                      <TableRow key={student._id} className={isSelected ? 'bg-purple-50/50' : ''}>
+                        <TableCell>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedBulkOptionalStudentIds(prev => [...prev, student._id]);
+                              } else {
+                                setSelectedBulkOptionalStudentIds(prev => prev.filter(id => id !== student._id));
+                              }
+                            }}
+                            className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                          />
+                        </TableCell>
+                        <TableCell className="font-mono text-xs font-bold text-gray-700">
+                          {student.admissionNumber}
+                        </TableCell>
+                        <TableCell className="font-bold text-gray-900 text-xs">
+                          {student.studentName}
+                        </TableCell>
+                        <TableCell className="text-xs font-semibold text-gray-700">
+                          {student.currentClass}
+                        </TableCell>
+                        <TableCell className="text-xs font-semibold text-gray-700">
+                          {student.section || 'A'}
+                        </TableCell>
+                        <TableCell>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
+                            student.courseType === 'RTE' ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-gray-100 text-gray-800 border border-gray-200'
+                          }`}>
+                            {student.courseType}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+
+          {/* Modal Footer Actions */}
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-200">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setIsBulkOptionalModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              loading={bulkOptionalSubmitLoading}
+              loadingText="Assigning Categories..."
+              disabled={
+                selectedOptionalCatIds.length === 0 ||
+                selectedBulkOptionalStudentIds.length === 0 ||
+                selectedOptionalCatIds.some(catId => !bulkOptionalCategoryAmounts[catId] || parseFloat(bulkOptionalCategoryAmounts[catId]) <= 0)
+              }
+              className="bg-purple-700 hover:bg-purple-800 text-white font-bold"
+            >
+              <UserPlus className="h-4 w-4 mr-1.5" />
+              Assign Selected Categories
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Create Fee Category Modal */}
       <Modal isOpen={isNewCatModalOpen} onClose={() => { setIsNewCatModalOpen(false); setCatName(''); setCatMandatory(false); setCatIsStockItem(false); setCatInitialStock('0'); }} title="Create Fee Category">

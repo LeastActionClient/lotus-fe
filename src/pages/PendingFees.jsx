@@ -442,23 +442,43 @@ const PendingFees = () => {
   };
 
   const handleExportExcel = () => {
-    const catNamesSet = new Set();
-    (categories || []).forEach(cat => {
-      if (cat.name) catNamesSet.add(cat.name);
-    });
-    filteredStudents.forEach(student => {
-      (student.studentFees || []).forEach(f => {
-        const lbl = formatFeeLabel(f);
-        if (lbl && lbl !== 'Unknown') catNamesSet.add(lbl);
+    let targetCategoryNames = [];
+
+    if (selectedCategoryIds && selectedCategoryIds.length > 0) {
+      const selectedSet = new Set();
+      (categories || []).forEach(cat => {
+        if (cat && cat._id && selectedCategoryIds.includes(String(cat._id))) {
+          if (cat.name) selectedSet.add(cat.name);
+        }
       });
-    });
-    const allCategoryNames = Array.from(catNamesSet);
+      filteredStudents.forEach(student => {
+        (student.studentFees || []).forEach(f => {
+          if (isFeeCategorySelected(f, selectedCategoryIds)) {
+            const lbl = formatFeeLabel(f);
+            if (lbl && lbl !== 'Unknown') selectedSet.add(lbl);
+          }
+        });
+      });
+      targetCategoryNames = Array.from(selectedSet);
+    } else {
+      const catNamesSet = new Set();
+      (categories || []).forEach(cat => {
+        if (cat.name) catNamesSet.add(cat.name);
+      });
+      filteredStudents.forEach(student => {
+        (student.studentFees || []).forEach(f => {
+          const lbl = formatFeeLabel(f);
+          if (lbl && lbl !== 'Unknown') catNamesSet.add(lbl);
+        });
+      });
+      targetCategoryNames = Array.from(catNamesSet);
+    }
 
     const excelData = filteredStudents.map(student => {
       const displayPendingAmount = getStudentTotalPending(student, selectedCategoryIds);
 
       const categoryColumns = {};
-      allCategoryNames.forEach(catName => {
+      targetCategoryNames.forEach(catName => {
         const feesForCat = (student.studentFees || []).filter(f => {
           const lbl = formatFeeLabel(f);
           return lbl === catName && isFeeCategorySelected(f, selectedCategoryIds);

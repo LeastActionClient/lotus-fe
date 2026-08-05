@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Users, FileText, UserPlus, IndianRupee, FileCheck, PieChart, LogOut, Printer, Menu, X, Calendar, Percent } from 'lucide-react';
+import { Home, Users, FileText, UserPlus, IndianRupee, FileCheck, PieChart, LogOut, Printer, Menu, X, Calendar, Percent, Contact } from 'lucide-react';
 
 import logo from '../assets/logo.png';
 

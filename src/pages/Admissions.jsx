@@ -9,6 +9,7 @@ import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import Pagination from '../components/ui/Pagination';
 import { isRTEStudent } from '../utils/studentCategory';
+import { getImageUrl } from '../utils/imageUrl';
 import { PageLoader } from '../components/ui/Spinner';
 import { toastError, toastSuccess, toastWarning } from '../services/toastService';
 
@@ -42,10 +43,49 @@ const Admissions = () => {
     studentName: '', fatherName: '', motherName: '', fatherPhone: '', motherPhone: '', address: '',
     dateOfBirth: '', gender: '', bloodGroup: '', aadhaarNumber: '', religion: '', community: '', caste: '', RTE: '', nationality: '', 
     fatherOccupation: '', motherOccupation: '', guardian: '', city: '', state: '', pincode: '', whatsappNumber: '', emisNumber: '',
-    isRTE: false
+    isRTE: false,
+    photoUrl: '', passport_photo: ''
   });
   const [file, setFile] = useState(null);
   const [activeYear, setActiveYear] = useState('');
+  const [photoUploading, setPhotoUploading] = useState(false);
+
+  const handlePhotoUpload = async (e, formType = 'manual') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
+      toastError("Only JPG, JPEG, and PNG images are allowed.");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toastError("Maximum file size allowed is 2 MB.");
+      return;
+    }
+
+    const data = new FormData();
+    data.append('photo', file);
+
+    setPhotoUploading(true);
+    try {
+      const res = await api.post('/students/upload-photo', data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      const uploadedUrl = res.data.photoUrl;
+      if (formType === 'edit') {
+        setEditForm(prev => ({ ...prev, photoUrl: uploadedUrl, passport_photo: uploadedUrl }));
+      } else {
+        setManualForm(prev => ({ ...prev, photoUrl: uploadedUrl, passport_photo: uploadedUrl }));
+      }
+      toastSuccess("Passport photo uploaded successfully!");
+    } catch (err) {
+      console.error("Photo upload error", err);
+      toastError(err.response?.data?.error || "Error uploading passport photo.");
+    } finally {
+      setPhotoUploading(false);
+    }
+  };
 
   const sortedClasses = React.useMemo(() => {
     return [...classes].sort((a, b) => {
@@ -1180,6 +1220,7 @@ const Admissions = () => {
                 <Label>Nationality</Label>
                 <Input value={manualForm.nationality} onChange={(e) => handleValidatedChange('nationality', e, 'letters', manualForm, setManualForm)} />
               </div>
+
               <div className="space-y-2 md:col-span-3">
                 <Label className="font-bold text-gray-900">Student Group</Label>
                 <label className="flex items-center gap-3 rounded-md border-2 border-purple-300 bg-purple-50/30 px-3 py-2 text-sm font-semibold text-gray-800">

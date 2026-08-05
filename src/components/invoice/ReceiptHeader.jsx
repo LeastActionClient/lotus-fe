@@ -1,6 +1,9 @@
 import React, { memo } from 'react';
 
-const ReceiptHeader = memo(() => {
+const ReceiptHeader = memo(({ headerTitle }) => {
+  const line1 = headerTitle?.line1 || 'FEE';
+  const line2 = headerTitle?.line2 || 'RECEIPT';
+
   return (
     <header className="border-b border-[#ECECEC] pb-[1.4mm]">
       <div className="flex items-start justify-between gap-3">
@@ -11,8 +14,8 @@ const ReceiptHeader = memo(() => {
         />
 
         <div className="shrink-0 rounded-[14px] bg-[#FDE9D9] px-[14px] py-[4px] text-center shadow-sm">
-          <div className="text-[9.3px] font-bold uppercase tracking-[0.08em] text-[#111111]">FEE</div>
-          <div className="mt-0.5 text-[9.3px] font-bold uppercase tracking-[0.08em] text-[#111111]">RECEIPT</div>
+          <div className="text-[9.3px] font-bold uppercase tracking-[0.08em] text-[#111111]">{line1}</div>
+          <div className="mt-0.5 text-[9.3px] font-bold uppercase tracking-[0.08em] text-[#111111]">{line2}</div>
         </div>
       </div>
 

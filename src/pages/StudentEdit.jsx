@@ -8,6 +8,8 @@ import { Label } from '../components/ui/Label';
 import { ArrowLeft, User, BookOpen, Users, IndianRupee, Save } from 'lucide-react';
 import { MultiSelectDropdown } from '../components/ui/MultiSelectDropdown';
 import { isRTEStudent } from '../utils/studentCategory';
+import { getImageUrl } from '../utils/imageUrl';
+import { PageLoader } from '../components/ui/Spinner';
 import { toastError, toastSuccess, toastWarning } from '../services/toastService';
 
 const StudentEdit = () => {
@@ -18,6 +20,7 @@ const StudentEdit = () => {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
   
   const [categories, setCategories] = useState([]);
   const [classes, setClasses] = useState([]);
@@ -26,6 +29,51 @@ const StudentEdit = () => {
   const [topLength, setTopLength] = useState('');
   const [bottomLength, setBottomLength] = useState('');
   const [originalStudent, setOriginalStudent] = useState(null);
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
+      toastError("Only JPG, JPEG, and PNG images are allowed.");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toastError("Maximum file size allowed is 2 MB.");
+      return;
+    }
+
+    const data = new FormData();
+    data.append('photo', file);
+
+    setPhotoUploading(true);
+    try {
+      const res = await api.post('/students/upload-photo', data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      const uploadedUrl = res.data.photoUrl;
+      setFormData(prev => ({
+        ...prev,
+        photoUrl: uploadedUrl,
+        passport_photo: uploadedUrl
+      }));
+      toastSuccess("Passport photo uploaded successfully!");
+    } catch (err) {
+      console.error("Photo upload error", err);
+      toastError(err.response?.data?.error || "Error uploading passport photo.");
+    } finally {
+      setPhotoUploading(false);
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    setFormData(prev => ({
+      ...prev,
+      photoUrl: '',
+      passport_photo: ''
+    }));
+  };
 
   // Form State
   // Form State
@@ -204,7 +252,7 @@ const StudentEdit = () => {
           const rawCatId = f.feeCategoryId?._id || f.feeCategoryId;
           const catId = rawCatId ? rawCatId.toString() : '';
           const cat = cats.find(c => c._id?.toString() === catId);
-          return cat && !cat.mandatory && cat.name.toLowerCase() !== 'uniform';
+          return cat && !cat.mandatory && cat.name.toLowerCase() !== 'uniform' && (f.totalAmount || 0) > 0;
         })
         .map(f => (f.feeCategoryId?._id || f.feeCategoryId)?.toString())
         .filter(Boolean);

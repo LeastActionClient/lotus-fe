@@ -59,29 +59,29 @@ const buildFeeEntry = (source, fallbackAmount = 0) => {
   };
 };
 
-export const groupFeeAllocations = (payment) => {
+export const parsePaymentEntries = (payment) => {
   if (payment?.paymentType === 'APPLICATION') {
     return [{
-      name: 'Application Fee',
+      rawName: 'Application Fee',
       displayName: 'Application Fee',
-      terms: [],
       totalAmount: payment.amount,
-      discountAmount: 0,
       paidAmount: payment.amount,
       balanceAmount: 0,
-      rows: []
+      discountAmount: 0
     }];
   }
 
   const feeAllocations = Array.isArray(payment?.feeAllocations) ? payment.feeAllocations : [];
   const studentFee = payment?.studentFee || payment?.studentFeeId || null;
 
-  const entries = feeAllocations.length > 0
+  return feeAllocations.length > 0
     ? feeAllocations.map((allocation) => buildFeeEntry(allocation))
     : studentFee
       ? [buildFeeEntry(studentFee, payment?.amount)]
       : [];
+};
 
+export const groupReceiptEntriesList = (entries = []) => {
   const grouped = [];
   const groupedMap = new Map();
 
@@ -139,6 +139,12 @@ export const groupFeeAllocations = (payment) => {
   });
 };
 
+export const groupFeeAllocations = (payment) => {
+  return groupReceiptEntriesList(parsePaymentEntries(payment));
+};
+
+export const groupReceiptEntries = (payment) => groupFeeAllocations(payment);
+
 export const calculateReceiptTotals = (groupedRows) =>
   groupedRows.reduce(
     (acc, row) => ({
@@ -155,6 +161,93 @@ export const calculateReceiptTotals = (groupedRows) =>
     }
   );
 
+export const ACADEMIC_FEE_CATEGORIES = [
+  'book fee',
+  'term 1',
+  'term 2',
+  'term 3',
+  'tuition term 1',
+  'tuition term 2',
+  'tuition term 3',
+  'abacus term 1',
+  'abacus term 2',
+  'abacus term 3',
+  'term',
+  'tuition term',
+  'abacus term'
+];
+
+export const isAcademicCategory = (feeName) => {
+  if (!feeName) return false;
+  const normalized = normalizeSpaces(feeName).toLowerCase();
+
+  if (ACADEMIC_FEE_CATEGORIES.includes(normalized)) {
+    return true;
+  }
+
+  return (
+    /^book fee/i.test(normalized) ||
+    /^term\s*\d*$/i.test(normalized) ||
+    /^tuition\s*term\s*\d*$/i.test(normalized) ||
+    /^abacus\s*term\s*\d*$/i.test(normalized)
+  );
+};
+
+export const getSplitBillsForPayment = (payment) => {
+  const allEntries = parsePaymentEntries(payment);
+
+  const academicEntries = [];
+  const additionalEntries = [];
+
+  allEntries.forEach((entry) => {
+    if (isAcademicCategory(entry.rawName)) {
+      academicEntries.push(entry);
+    } else {
+      additionalEntries.push(entry);
+    }
+  });
+
+  const bills = [];
+
+  if (academicEntries.length > 0) {
+    const groupedRows = groupReceiptEntriesList(academicEntries);
+    bills.push({
+      id: 'academic',
+      type: 'ACADEMIC',
+      headerTitle: { line1: 'ACADEMIC FEE', line2: 'RECEIPT' },
+      entries: academicEntries,
+      groupedRows,
+      totals: calculateReceiptTotals(groupedRows)
+    });
+  }
+
+  if (additionalEntries.length > 0) {
+    const groupedRows = groupReceiptEntriesList(additionalEntries);
+    bills.push({
+      id: 'additional',
+      type: 'ADDITIONAL',
+      headerTitle: { line1: 'ADDITIONAL CHARGES', line2: 'RECEIPT' },
+      entries: additionalEntries,
+      groupedRows,
+      totals: calculateReceiptTotals(groupedRows)
+    });
+  }
+
+  if (bills.length === 0) {
+    const groupedRows = groupReceiptEntries(payment);
+    bills.push({
+      id: 'academic',
+      type: 'ACADEMIC',
+      headerTitle: { line1: 'ACADEMIC FEE', line2: 'RECEIPT' },
+      entries: allEntries,
+      groupedRows,
+      totals: calculateReceiptTotals(groupedRows)
+    });
+  }
+
+  return bills;
+};
+
 export const formatCurrency = (value) => `${toNumber(value).toFixed(2)}`;
 
 export const formatReceiptDate = (value) => {
@@ -163,4 +256,3 @@ export const formatReceiptDate = (value) => {
   if (Number.isNaN(date.getTime())) return '-';
   return date.toLocaleDateString('en-GB');
 };
-

@@ -21,6 +21,7 @@ const OldStudents = lazy(() => import('./pages/OldStudents'));
 const PendingFees = lazy(() => import('./pages/PendingFees'));
 const AcademicYearPage = lazy(() => import('./pages/AcademicYear'));
 const Concessions = lazy(() => import('./pages/Concessions'));
+const IdCards = lazy(() => import('./pages/IdCards'));
 
 const ProtectedRoute = ({ children }) => {
 
