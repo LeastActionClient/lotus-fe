@@ -10,7 +10,8 @@ const defaultOptions = {
   description: 'Are you sure you want to continue?',
   confirmText: 'Confirm',
   cancelText: 'Cancel',
-  tone: 'danger'
+  tone: 'danger',
+  list: []
 };
 
 const toneStyles = {
@@ -87,6 +88,16 @@ function ConfirmDialog({ isOpen, options, onConfirm, onCancel }) {
             <p id="confirm-dialog-description" className={cn('mt-1 text-sm leading-6', theme.description)}>
               {options.description}
             </p>
+            {Array.isArray(options.list) && options.list.length > 0 && (
+              <ul className="mt-3 space-y-1.5">
+                {options.list.map((item) => (
+                  <li key={item} className="flex items-start gap-2 text-sm text-gray-700">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-red-400" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
           <button
             type="button"

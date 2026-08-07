@@ -18,14 +18,14 @@ import { useClassesQuery, useQueryInvalidator, useStudentsQuery } from '../hooks
 
 
 const Students = () => {
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const currentUser = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || '{}');
   const confirm = useConfirm();
   const location = useLocation();
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
   const { data: studentsData = [], isLoading: studentsLoading } = useStudentsQuery();
   const { data: classesData = [], isLoading: classesLoading } = useClassesQuery();
-  const { invalidateStudents, invalidateClasses } = useQueryInvalidator();
+  const { invalidateStudents, invalidateClasses, invalidateDashboard } = useQueryInvalidator();
   
   const normalizeClassName = (value) => String(value ?? '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
   const sortedClasses = React.useMemo(() => {
@@ -274,9 +274,18 @@ const Students = () => {
 
   const handleDeleteStudent = async (student) => {
     const accepted = await confirm({
-      title: 'Delete Student',
-      description: 'Are you sure you want to delete this student?',
-      confirmText: 'Delete',
+      title: 'Delete Student?',
+      description: 'This action cannot be undone. The following will also be deleted:',
+      list: [
+        'Fee Records',
+        'Receipts',
+        'Payment History',
+        'Fee Concessions',
+        'Academic Enrollment History',
+        'Included Charges & Activities',
+        'Uploaded Photos'
+      ],
+      confirmText: 'Delete Permanently',
       tone: 'danger'
     });
 
@@ -284,8 +293,10 @@ const Students = () => {
 
     setDeleteLoadingId(`student-${student._id}`);
     try {
-      await api.delete(`/students/${student._id}`);
+      const res = await api.delete(`/students/${student._id}`);
+      toastSuccess(res.data?.message || 'Student deleted successfully');
       fetchStudents();
+      invalidateDashboard();
     } catch (e) {
       toastError(e.response?.data?.error || 'Error deleting student');
     } finally {
