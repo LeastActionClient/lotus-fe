@@ -474,8 +474,47 @@ const PendingFees = () => {
       targetCategoryNames = Array.from(catNamesSet);
     }
 
-    const excelData = filteredStudents.map(student => {
+    const classSortFn = (aCls, bCls) => {
+      const normalize = (name) => String(name || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+      const order = { prekg: 1, lkg: 2, ukg: 3 };
+      const aNorm = normalize(aCls);
+      const bNorm = normalize(bCls);
+      const aNum = parseInt(aNorm);
+      const bNum = parseInt(bNorm);
+
+      const aVal = !isNaN(aNum) ? aNum + 10 : (order[aNorm] || 999);
+      const bVal = !isNaN(bNum) ? bNum + 10 : (order[bNorm] || 999);
+      return aVal - bVal;
+    };
+
+    const sortedStudents = [...filteredStudents].sort((a, b) => {
+      const classDiff = classSortFn(a.currentClass, b.currentClass);
+      if (classDiff !== 0) return classDiff;
+      const secA = String(a.section || '').trim().toLowerCase();
+      const secB = String(b.section || '').trim().toLowerCase();
+      return secA.localeCompare(secB);
+    });
+
+    let totalPrevPending = 0;
+    let totalCurrPending = 0;
+    let totalFee = 0;
+    let totalPaidAmount = 0;
+    let totalTotalPending = 0;
+    const categoryTotals = {};
+    targetCategoryNames.forEach(catName => { categoryTotals[catName] = 0; });
+
+    const excelData = sortedStudents.map(student => {
       const displayPendingAmount = getStudentTotalPending(student, selectedCategoryIds);
+      const prevPend = getPreviousPending(student, selectedCategoryIds);
+      const currPend = getCurrentPending(student, selectedCategoryIds);
+      const stuFee = getStudentTotalFee(student);
+      const stuPaid = getStudentTotalPaid(student);
+
+      totalPrevPending += prevPend;
+      totalCurrPending += currPend;
+      totalFee += stuFee;
+      totalPaidAmount += stuPaid;
+      totalTotalPending += displayPendingAmount;
 
       const categoryColumns = {};
       targetCategoryNames.forEach(catName => {
@@ -484,6 +523,7 @@ const PendingFees = () => {
           return lbl === catName && isFeeCategorySelected(f, selectedCategoryIds);
         });
         const catPending = feesForCat.reduce((sum, f) => sum + (f.remainingAmount || 0), 0);
+        categoryTotals[catName] += catPending;
         categoryColumns[catName] = catPending > 0 ? `Rs. ${catPending.toFixed(2)}` : 'Rs. 0.00';
       });
 
@@ -494,14 +534,35 @@ const PendingFees = () => {
         'Class': student.currentClass || '',
         'Section': student.section || '',
         'Academic Year': student.currentEnrollment?.academicYear || student.academicYear || '',
-        'Prev Pending': `Rs. ${getPreviousPending(student, selectedCategoryIds).toFixed(2)}`,
-        'Curr Pending': `Rs. ${getCurrentPending(student, selectedCategoryIds).toFixed(2)}`,
+        'Prev Pending': `Rs. ${prevPend.toFixed(2)}`,
+        'Curr Pending': `Rs. ${currPend.toFixed(2)}`,
         ...categoryColumns,
-        'Total Fee': `Rs. ${getStudentTotalFee(student).toFixed(2)}`,
-        'Paid Amount': `Rs. ${getStudentTotalPaid(student).toFixed(2)}`,
+        'Total Fee': `Rs. ${stuFee.toFixed(2)}`,
+        'Paid Amount': `Rs. ${stuPaid.toFixed(2)}`,
         'Total Pending': `Rs. ${displayPendingAmount.toFixed(2)}`
       };
     });
+
+    const totalRow = {
+      'Admission Number': '',
+      'Student Name': 'TOTAL',
+      'Student Status': '',
+      'Class': '',
+      'Section': '',
+      'Academic Year': '',
+      'Prev Pending': `Rs. ${totalPrevPending.toFixed(2)}`,
+      'Curr Pending': `Rs. ${totalCurrPending.toFixed(2)}`,
+    };
+
+    targetCategoryNames.forEach(catName => {
+      totalRow[catName] = `Rs. ${categoryTotals[catName].toFixed(2)}`;
+    });
+
+    totalRow['Total Fee'] = `Rs. ${totalFee.toFixed(2)}`;
+    totalRow['Paid Amount'] = `Rs. ${totalPaidAmount.toFixed(2)}`;
+    totalRow['Total Pending'] = `Rs. ${totalTotalPending.toFixed(2)}`;
+
+    excelData.push(totalRow);
 
     const worksheet = XLSX.utils.json_to_sheet(excelData);
     const workbook = XLSX.utils.book_new();

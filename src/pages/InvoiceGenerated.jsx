@@ -251,59 +251,11 @@ const InvoiceGenerated = () => {
         return;
       }
 
-      let pdfBlob;
-      let pdfFile;
-
-      try {
-        const pdfResponse = await api.get(`/payments/invoice/${id}`, {
-          responseType: 'blob',
-          params: { bill: 'first' }
-        });
-        pdfBlob = new Blob([pdfResponse.data], { type: 'application/pdf' });
-
-        const receiptNumber = String(data.bill?.receiptNumber || id || 'receipt')
-          .replace(/[^a-zA-Z0-9._-]/g, '_');
-        pdfFile = new File([pdfBlob], `Fee-Receipt-${receiptNumber}.pdf`, { type: 'application/pdf' });
-      } catch (pdfError) {
-        console.error('Error fetching receipt PDF', pdfError);
-        toastError('Failed to load the receipt PDF. Please try again.');
-        return;
-      }
-
-      let canShareFiles = false;
-      if (typeof navigator.share === 'function' && typeof navigator.canShare === 'function') {
-        try {
-          canShareFiles = navigator.canShare({ files: [pdfFile] });
-        } catch {
-          canShareFiles = false;
-        }
-      }
-
-      if (canShareFiles) {
-        try {
-          await navigator.share({
-            title: 'Fee Payment Receipt',
-            text: data.message || 'Fee payment receipt',
-            files: [pdfFile]
-          });
-          toastSuccess('Receipt PDF shared successfully.');
-          return;
-        } catch (shareError) {
-          if (shareError?.name === 'AbortError') {
-            toastInfo('Sharing was cancelled.');
-            return;
-          }
-          console.error('Error sharing receipt PDF', shareError);
-          toastError('Sharing the receipt PDF failed. Please try again.');
-          return;
-        }
-      }
-
-      // Fallback: this browser cannot attach files to the native share sheet.
+      // Always use the direct wa.me link to ensure it opens the chat for the specific (potentially unsaved) number.
+      // The browser's native share sheet (navigator.share) does not allow passing a target phone number.
       window.open(data.waLink, '_blank', 'noopener,noreferrer');
-      triggerPdfDownload(pdfBlob, pdfFile.name);
       toastInfo(
-        'PDF sharing is not supported in this browser. WhatsApp has been opened with the message and the PDF has been downloaded - please attach it manually.',
+        'WhatsApp has been opened. A link to the receipt is included in the message.',
         { duration: 8000 }
       );
     } catch (shareError) {
@@ -397,7 +349,6 @@ const InvoiceGenerated = () => {
           <Button
             variant="outline"
             onClick={handleCopyNumber}
-            disabled={!getParentNumber()}
             className="text-sky-700 hover:bg-sky-50"
           >
             <Copy className="mr-2 h-4 w-4" /> {copiedNo ? 'Copied!' : 'Copy No'}
