@@ -12,14 +12,19 @@ import { PageLoader } from '../components/ui/Spinner';
 import { toastError, toastSuccess, toastWarning } from '../services/toastService';
 import StudentIdCard from '../components/StudentIdCard';
 import { getImageUrl } from '../utils/imageUrl';
+import TeacherIdCard from '../components/TeacherIdCard';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import html2canvas from 'html2canvas-pro';
 
 const IdCards = () => {
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
   const [academicYears, setAcademicYears] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Tabs State
+  const [activeTab, setActiveTab] = useState('students');
+  const [teachers, setTeachers] = useState([]);
 
   // Filters State
   const [filterYear, setFilterYear] = useState('');
@@ -45,7 +50,7 @@ const IdCards = () => {
 
   const previewRef = useRef(null);
   const hiddenRenderRef = useRef(null);
-  const [batchStudentsToRender, setBatchStudentsToRender] = useState([]);
+  const [batchItemsToRender, setBatchItemsToRender] = useState([]);
 
   useEffect(() => {
     fetchInitialData();
@@ -93,18 +98,46 @@ const IdCards = () => {
     setSelectedStudentIds([]);
   }, [filterYear, filterClass, filterSection, filterSearch, filterStatus, filterRteType]);
 
+  const fetchTeachersList = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/teachers');
+      setTeachers(res.data || []);
+    } catch (error) {
+      console.error('Error fetching teachers', error);
+      toastError('Error loading teachers list.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'teachers' && teachers.length === 0) {
+      fetchTeachersList();
+    }
+    setCurrentPage(1);
+    setSelectedStudentIds([]);
+  }, [activeTab]);
+
   const selectedClassObj = classes.find(c => c.name === filterClass);
   const availableSections = selectedClassObj?.sections || [];
 
-  const totalPages = Math.max(1, Math.ceil(students.length / itemsPerPage));
-  const paginatedStudents = students.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const getItemsForCurrentTab = () => {
+    if (activeTab === 'students') {
+      return students;
+    }
+    return teachers;
+  };
+
+  const paginatedItems = getItemsForCurrentTab().slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(getItemsForCurrentTab().length / itemsPerPage));
 
   const handleSelectAllOnPage = (e) => {
     if (e.target.checked) {
-      const pageIds = paginatedStudents.map(s => s._id);
+      const pageIds = paginatedItems.map(item => item._id);
       setSelectedStudentIds(prev => Array.from(new Set([...prev, ...pageIds])));
     } else {
-      const pageIdsSet = new Set(paginatedStudents.map(s => s._id));
+      const pageIdsSet = new Set(paginatedItems.map(item => item._id));
       setSelectedStudentIds(prev => prev.filter(id => !pageIdsSet.has(id)));
     }
   };
@@ -125,6 +158,19 @@ const IdCards = () => {
     setIsPreviewModalOpen(true);
   };
 
+  const waitForImagesToLoad = (container) => {
+    if (!container) return Promise.resolve();
+    const images = Array.from(container.querySelectorAll('img'));
+    const promises = images.map((img) => {
+      if (img.complete && img.naturalHeight !== 0) return Promise.resolve();
+      return new Promise((resolve) => {
+        img.onload = resolve;
+        img.onerror = resolve;
+      });
+    });
+    return Promise.all(promises);
+  };
+
   // PDF Generation Logic (CR80 standard 54mm x 85.6mm PVC portrait per page)
   const generatePdfForStudents = async (studentList) => {
     if (!studentList || studentList.length === 0) {
@@ -133,7 +179,7 @@ const IdCards = () => {
     }
 
     setDownloadingPdf(true);
-    setBatchStudentsToRender(studentList);
+    setBatchItemsToRender(studentList);
 
     // Wait for DOM render of hidden cards
     setTimeout(async () => {
@@ -142,6 +188,8 @@ const IdCards = () => {
         if (!container) {
           throw new Error('Container reference missing');
         }
+
+        await waitForImagesToLoad(container);
 
         const cardElements = container.querySelectorAll('.batch-id-card');
         if (cardElements.length === 0) {
@@ -157,14 +205,16 @@ const IdCards = () => {
 
         for (let i = 0; i < cardElements.length; i++) {
           const el = cardElements[i];
-          const canvas = await html2canvas(el, {
-            scale: 3, // High DPI rendering
+          const targetNode = el.querySelector('.id-card-container') || el;
+          const canvas = await html2canvas(targetNode, {
+            scale: 2,
             useCORS: true,
+            allowTaint: true,
             logging: false,
             backgroundColor: '#ffffff'
           });
 
-          const imgData = canvas.toDataURL('image/jpeg', 0.98);
+          const imgData = canvas.toDataURL('image/jpeg', 0.95);
 
           if (i > 0) {
             pdf.addPage([54, 85.6], 'portrait');
@@ -174,96 +224,110 @@ const IdCards = () => {
         }
 
         const filename = studentList.length === 1
-          ? `ID_Card_${studentList[0].studentName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`
+          ? `ID_Card_${(studentList[0].studentName || 'Student').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`
           : `Student_ID_Cards_Batch_${studentList.length}.pdf`;
 
         pdf.save(filename);
         toastSuccess(`PDF generated successfully (${studentList.length} card(s))!`);
       } catch (error) {
         console.error('Error generating PDF:', error);
-        toastError('Failed to generate ID Card PDF.');
+        toastError(error.message || 'Failed to generate ID Card PDF.');
       } finally {
         setDownloadingPdf(false);
-        setBatchStudentsToRender([]);
+        setBatchItemsToRender([]);
       }
-    }, 300);
+    }, 400);
   };
 
-  // Print Logic using native window print with styled PVC media
-  const handlePrintStudents = (studentList) => {
+  // High-Resolution Image Print Logic for PVC ID Cards
+  const handlePrintStudents = async (studentList) => {
     if (!studentList || studentList.length === 0) {
       toastWarning('No students selected for printing.');
       return;
     }
 
     setPrintingCard(true);
-    setBatchStudentsToRender(studentList);
+    setBatchItemsToRender(studentList);
 
-    setTimeout(() => {
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) {
-        toastError('Pop-up blocked! Please allow pop-ups to print ID Cards.');
+    setTimeout(async () => {
+      try {
+        const container = hiddenRenderRef.current;
+        if (!container) throw new Error('Container reference missing');
+
+        await waitForImagesToLoad(container);
+
+        const cardElements = container.querySelectorAll('.batch-id-card');
+        if (cardElements.length === 0) throw new Error('No card elements found');
+
+        let imagesHtml = '';
+        for (let i = 0; i < cardElements.length; i++) {
+          const el = cardElements[i];
+          const targetNode = el.querySelector('.id-card-container') || el;
+          const canvas = await html2canvas(targetNode, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            logging: false,
+            backgroundColor: '#ffffff'
+          });
+          const imgData = canvas.toDataURL('image/png');
+          imagesHtml += `<img src="${imgData}" class="print-card-img" />`;
+        }
+
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+          toastError('Pop-up blocked! Please allow pop-ups to print ID Cards.');
+          setPrintingCard(false);
+          setBatchItemsToRender([]);
+          return;
+        }
+
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <title>Print Student ID Cards</title>
+              <style>
+                @page {
+                  size: 54mm 85.6mm;
+                  margin: 0;
+                }
+                body {
+                  margin: 0;
+                  padding: 0;
+                  background: #ffffff;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                }
+                .print-card-img {
+                  width: 54mm;
+                  height: 85.6mm;
+                  display: block;
+                  page-break-after: always;
+                  page-break-inside: avoid;
+                }
+              </style>
+            </head>
+            <body onload="window.print(); window.close();">
+              ${imagesHtml}
+            </body>
+          </html>
+        `);
+
+        printWindow.document.close();
+      } catch (err) {
+        console.error('Error preparing print:', err);
+        toastError('Failed to print ID Cards.');
+      } finally {
         setPrintingCard(false);
-        return;
+        setBatchItemsToRender([]);
       }
-
-      const containerHtml = hiddenRenderRef.current ? hiddenRenderRef.current.innerHTML : '';
-
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>Print Student ID Cards</title>
-            <style>
-              @page {
-                size: 54mm 85.6mm;
-                margin: 0;
-              }
-              body {
-                margin: 0;
-                padding: 0;
-                background: #ffffff;
-                font-family: 'Outfit', 'Inter', system-ui, sans-serif;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-              }
-              .batch-id-card {
-                width: 54mm !important;
-                height: 85.6mm !important;
-                page-break-after: always;
-                page-break-inside: avoid;
-                margin: 0 auto;
-                box-sizing: border-box;
-                transform: scale(0.67);
-                transform-origin: top left;
-              }
-              .id-card-container {
-                box-shadow: none !important;
-                border: none !important;
-              }
-            </style>
-            <script src="https://cdn.tailwindcss.com"></script>
-          </head>
-          <body>
-            ${containerHtml}
-            <script>
-              setTimeout(() => {
-                window.print();
-                window.close();
-              }, 500);
-            </script>
-          </body>
-        </html>
-      `);
-
-      printWindow.document.close();
-      setPrintingCard(false);
-      setBatchStudentsToRender([]);
-    }, 300);
+    }, 400);
   };
 
   const getSelectedStudentsObjects = () => {
-    return students.filter(s => selectedStudentIds.includes(s._id));
+    return getItemsForCurrentTab().filter(s => selectedStudentIds.includes(s._id));
   };
 
   if (loading) return <PageLoader text="Loading ID Cards Module..." />;
@@ -275,9 +339,9 @@ const IdCards = () => {
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center">
             <Contact className="mr-3 text-orange-600" size={32} />
-            Student ID Cards
+            ID Cards
           </h1>
-          <p className="text-gray-500 mt-1 text-sm">Generate, preview, print, and export high-resolution PVC Student ID Cards</p>
+          <p className="text-gray-500 mt-1 text-sm">Generate, preview, and export high-resolution PVC ID Cards</p>
         </div>
 
         {/* Top Right Action Buttons */}
@@ -305,18 +369,28 @@ const IdCards = () => {
             {downloadingPdf ? 'Generating...' : `Download PDF ${selectedStudentIds.length > 0 ? `(${selectedStudentIds.length})` : ''}`}
           </Button>
 
-          <Button
-            disabled={selectedStudentIds.length === 0 || printingCard}
-            onClick={() => handlePrintStudents(getSelectedStudentsObjects())}
-            className="bg-orange-600 hover:bg-orange-700 text-white font-bold disabled:opacity-50 shadow-xs text-xs h-9"
-          >
-            <Printer className="mr-1.5 h-4 w-4" />
-            Print Selected {selectedStudentIds.length > 0 ? `(${selectedStudentIds.length})` : ''}
-          </Button>
+
         </div>
       </div>
 
-      {/* Top Filters Bar */}
+      {/* Tabs */}
+      <div className="flex border-b border-gray-200">
+        <button
+          className={`py-2 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'students' ? 'border-orange-600 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+          onClick={() => setActiveTab('students')}
+        >
+          Students
+        </button>
+        <button
+          className={`py-2 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'teachers' ? 'border-orange-600 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+          onClick={() => setActiveTab('teachers')}
+        >
+          Teachers
+        </button>
+      </div>
+
+      {/* Top Filters Bar (Only for Students) */}
+      {activeTab === 'students' && (
       <Card className="bg-gray-50/80 border-gray-200">
         <CardContent className="p-4">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
@@ -416,12 +490,13 @@ const IdCards = () => {
           </div>
         </CardContent>
       </Card>
+      )}
 
       {/* Selection Summary Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-purple-50/70 p-3 rounded-xl border border-purple-200">
         <div className="flex items-center gap-3">
           <span className="text-xs font-extrabold text-purple-900">
-            Selected: <span className="text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full border border-purple-300">{selectedStudentIds.length} of {students.length} Students</span>
+            Selected: <span className="text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full border border-purple-300">{selectedStudentIds.length} of {getItemsForCurrentTab().length} Items</span>
           </span>
 
           {selectedStudentIds.length > 0 && (
@@ -438,10 +513,10 @@ const IdCards = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setSelectedStudentIds(students.map(s => s._id))}
+            onClick={() => setSelectedStudentIds(getItemsForCurrentTab().map(s => s._id))}
             className="text-xs font-bold text-purple-800 hover:bg-purple-100 h-8"
           >
-            Select All ({students.length})
+            Select All ({getItemsForCurrentTab().length})
           </Button>
         </div>
       </div>
@@ -451,41 +526,64 @@ const IdCards = () => {
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead className="w-12 text-center">
-                  <input
-                    type="checkbox"
-                    checked={
-                      paginatedStudents.length > 0 &&
-                      paginatedStudents.every(s => selectedStudentIds.includes(s._id))
-                    }
-                    onChange={handleSelectAllOnPage}
-                    className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-600 cursor-pointer"
-                    title="Select all on this page"
-                  />
-                </TableHead>
-                <TableHead className="w-20">Photo</TableHead>
-                <TableHead>Admission No</TableHead>
-                <TableHead>Student Name</TableHead>
-                <TableHead>Class</TableHead>
-                <TableHead>Section</TableHead>
-                <TableHead>Course Type</TableHead>
-                <TableHead className="text-right">Action</TableHead>
-              </TableRow>
+              {activeTab === 'students' ? (
+                <TableRow>
+                  <TableHead className="w-12 text-center">
+                    <input
+                      type="checkbox"
+                      checked={
+                        paginatedItems.length > 0 &&
+                        paginatedItems.every(s => selectedStudentIds.includes(s._id))
+                      }
+                      onChange={handleSelectAllOnPage}
+                      className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-600 cursor-pointer"
+                      title="Select all on this page"
+                    />
+                  </TableHead>
+                  <TableHead className="w-20">Photo</TableHead>
+                  <TableHead>Admission No</TableHead>
+                  <TableHead>Student Name</TableHead>
+                  <TableHead>Class</TableHead>
+                  <TableHead>Section</TableHead>
+                  <TableHead>Course Type</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
+                </TableRow>
+              ) : (
+                <TableRow>
+                  <TableHead className="w-12 text-center">
+                    <input
+                      type="checkbox"
+                      checked={
+                        paginatedItems.length > 0 &&
+                        paginatedItems.every(s => selectedStudentIds.includes(s._id))
+                      }
+                      onChange={handleSelectAllOnPage}
+                      className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-600 cursor-pointer"
+                      title="Select all on this page"
+                    />
+                  </TableHead>
+                  <TableHead className="w-20">Photo</TableHead>
+                  <TableHead>Teacher ID</TableHead>
+                  <TableHead>Teacher Name</TableHead>
+                  <TableHead>Designation</TableHead>
+                  <TableHead>Phone Number</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
+                </TableRow>
+              )}
             </TableHeader>
             <TableBody>
-              {students.length === 0 ? (
+              {getItemsForCurrentTab().length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center h-32 text-gray-500">
-                    No matching students found for ID Card generation.
+                    No matching {activeTab} found for ID Card generation.
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedStudents.map((student) => {
-                  const isSelected = selectedStudentIds.includes(student._id);
-                  const photo = student.passport_photo || student.photoUrl || '';
+                paginatedItems.map((item) => {
+                  const isSelected = selectedStudentIds.includes(item._id);
+                  const photo = item.passport_photo || item.photoUrl || item.photo || '';
                   return (
-                    <TableRow key={student._id} className={isSelected ? 'bg-orange-50/40' : ''}>
+                    <TableRow key={item._id} className={isSelected ? 'bg-orange-50/40' : ''}>
                       <TableCell className="text-center">
                         <input
                           type="checkbox"
@@ -499,7 +597,7 @@ const IdCards = () => {
                           {photo ? (
                             <img
                               src={getImageUrl(photo)}
-                              alt={student.studentName}
+                              alt={item.studentName || item.name}
                               className="w-full h-full object-cover"
                               onError={(e) => {
                                 e.target.onerror = null;
@@ -518,31 +616,51 @@ const IdCards = () => {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="font-mono text-xs font-bold text-gray-900">
-                        {student.admissionNumber}
-                      </TableCell>
-                      <TableCell className="font-bold text-gray-900 text-xs">
-                        {student.studentName}
-                      </TableCell>
-                      <TableCell className="text-xs font-semibold text-gray-700">
-                        {student.currentClass}
-                      </TableCell>
-                      <TableCell className="text-xs font-semibold text-gray-700">
-                        {student.section || 'A'}
-                      </TableCell>
-                      <TableCell>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
-                          student.courseType === 'RTE' ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-gray-100 text-gray-800 border border-gray-200'
-                        }`}>
-                          {student.courseType}
-                        </span>
-                      </TableCell>
+                      {activeTab === 'students' ? (
+                        <>
+                          <TableCell className="font-mono text-xs font-bold text-gray-900">
+                            {item.admissionNumber}
+                          </TableCell>
+                          <TableCell className="font-bold text-gray-900 text-xs">
+                            {item.studentName}
+                          </TableCell>
+                          <TableCell className="text-xs font-semibold text-gray-700">
+                            {item.currentClass}
+                          </TableCell>
+                          <TableCell className="text-xs font-semibold text-gray-700">
+                            {item.section || 'A'}
+                          </TableCell>
+                          <TableCell>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
+                              item.courseType === 'RTE' ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-gray-100 text-gray-800 border border-gray-200'
+                            }`}>
+                              {item.courseType}
+                            </span>
+                          </TableCell>
+                        </>
+                      ) : (
+                        <>
+                          <TableCell className="font-mono text-xs font-bold text-gray-900">
+                            {item.teacherId}
+                          </TableCell>
+                          <TableCell className="font-bold text-gray-900 text-xs">
+                            {item.name}
+                          </TableCell>
+                          <TableCell className="text-xs font-semibold text-gray-700">
+                            {item.designation}
+                          </TableCell>
+                          <TableCell className="text-xs font-semibold text-gray-700">
+                            {item.phoneNumber}
+                          </TableCell>
+                        </>
+                      )}
+                      
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => openPreview(student)}
+                            onClick={() => openPreview(item)}
                             className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 h-8 w-8 p-0"
                             title="Preview ID Card"
                           >
@@ -551,21 +669,13 @@ const IdCards = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => generatePdfForStudents([student])}
+                            onClick={() => generatePdfForStudents([item])}
                             className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-8 w-8 p-0"
                             title="Download PDF"
                           >
                             <Download className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handlePrintStudents([student])}
-                            className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 h-8 w-8 p-0"
-                            title="Print Card"
-                          >
-                            <Printer className="h-4 w-4" />
-                          </Button>
+
                         </div>
                       </TableCell>
                     </TableRow>
@@ -582,7 +692,7 @@ const IdCards = () => {
       <Modal
         isOpen={isPreviewModalOpen}
         onClose={() => setIsPreviewModalOpen(false)}
-        title="Student ID Card Preview"
+        title={`${activeTab === 'teachers' ? 'Teacher' : 'Student'} ID Card Preview`}
         className="max-w-md"
       >
         {previewStudent && (
@@ -631,13 +741,7 @@ const IdCards = () => {
                 >
                   <Download className="h-3.5 w-3.5 mr-1 text-blue-600" /> PDF
                 </Button>
-                <Button
-                  size="sm"
-                  onClick={() => handlePrintStudents([previewStudent])}
-                  className="h-8 text-xs font-bold bg-orange-600 hover:bg-orange-700 text-white"
-                >
-                  <Printer className="h-3.5 w-3.5 mr-1" /> Print
-                </Button>
+
               </div>
             </div>
 
@@ -650,7 +754,11 @@ const IdCards = () => {
                   transition: 'transform 0.15s ease-out'
                 }}
               >
-                <StudentIdCard ref={previewRef} student={previewStudent} />
+                {activeTab === 'students' ? (
+                  <StudentIdCard ref={previewRef} student={previewStudent} />
+                ) : (
+                  <TeacherIdCard ref={previewRef} teacher={previewStudent} />
+                )}
               </div>
             </div>
 
@@ -664,10 +772,24 @@ const IdCards = () => {
       </Modal>
 
       {/* Hidden Render Container for Batch Export & Printing */}
-      <div style={{ position: 'absolute', top: '-9999px', left: '-9999px', pointerEvents: 'none' }} ref={hiddenRenderRef}>
-        {batchStudentsToRender.map(student => (
-          <div key={`render-${student._id}`} className="batch-id-card p-2 bg-white">
-            <StudentIdCard student={student} />
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          zIndex: -9999,
+          opacity: 0.01,
+          pointerEvents: 'none'
+        }}
+        ref={hiddenRenderRef}
+      >
+        {batchItemsToRender.map(item => (
+          <div key={`render-${item._id}`} className="batch-id-card p-0 m-0 bg-white">
+            {activeTab === 'students' ? (
+              <StudentIdCard student={item} />
+            ) : (
+              <TeacherIdCard teacher={item} />
+            )}
           </div>
         ))}
       </div>

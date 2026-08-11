@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Users, FileText, UserPlus, IndianRupee, FileCheck, PieChart, LogOut, Printer, Menu, X, Calendar, Percent, Contact } from 'lucide-react';
+import { Home, Users, FileText, UserPlus, IndianRupee, FileCheck, PieChart, LogOut, Printer, Menu, X, Calendar, Percent, Contact, GraduationCap } from 'lucide-react';
 
 import logo from '../assets/logo.png';
 
@@ -55,7 +55,9 @@ const DashboardLayout = () => {
     { name: 'Applications', path: '/dashboard/applications', icon: <FileText size={20} /> },
     { name: 'Admissions', path: '/dashboard/admissions', icon: <UserPlus size={20} /> },
     { name: 'Students', path: '/dashboard/students', icon: <Users size={20} /> },
+    { name: 'ID Cards', path: '/dashboard/id-cards', icon: <Contact size={20} /> },
     { name: 'Academic Year', path: '/dashboard/academic-year', icon: <Calendar size={20} /> },
+    { name: 'Teachers', path: '/dashboard/teachers', icon: <GraduationCap size={20} /> },
     { name: 'Old Students', path: '/dashboard/old-students', icon: <Users size={20} /> },
     { name: 'Pending Fees', path: '/dashboard/pending-fees', icon: <IndianRupee size={20} /> },
     { name: 'Fee Categories', path: '/dashboard/fee-categories', icon: <FileCheck size={20} /> },

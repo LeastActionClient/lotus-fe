@@ -56,10 +56,10 @@ export const StudentIdCard = React.forwardRef(({ student }, ref) => {
         <div
           className="absolute z-10 overflow-hidden flex items-center justify-center bg-white"
           style={{
-            top: '162px',
-            left: '85px',
-            width: '170px',
-            height: '170px',
+            top: '168px',
+            left: '78.5px',
+            width: '175px',
+            height: '175px',
             borderRadius: '50%'
           }}
         >
@@ -67,7 +67,7 @@ export const StudentIdCard = React.forwardRef(({ student }, ref) => {
             <img
               src={getImageUrl(photo)}
               alt={studentName}
-              className="w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full object-cover"
               onError={(e) => {
                 e.target.onerror = null;
                 e.target.style.display = 'none';
@@ -88,9 +88,9 @@ export const StudentIdCard = React.forwardRef(({ student }, ref) => {
         {/* Student Name */}
         <div
           className="absolute z-10 left-0 w-full text-center px-3"
-          style={{ top: '348px' }}
+          style={{ top: '362px' }}
         >
-          <h2 className="text-[21px] font-black text-[#0A2368] tracking-wide leading-tight line-clamp-1">
+          <h2 className="text-[20px] font-black text-[#0A2368] tracking-wide leading-tight line-clamp-1">
             {studentName}
           </h2>
         </div>
@@ -98,9 +98,9 @@ export const StudentIdCard = React.forwardRef(({ student }, ref) => {
         {/* Class & Section */}
         <div
           className="absolute z-10 left-0 w-full text-center px-3"
-          style={{ top: '382px' }}
+          style={{ top: '390px' }}
         >
-          <p className="text-[14.5px] font-black text-[#8B6508] tracking-wider uppercase">
+          <p className="text-[14px] font-black text-[#8B6508] tracking-wider uppercase">
             {classDisplay}
           </p>
         </div>
@@ -124,7 +124,7 @@ export const StudentIdCard = React.forwardRef(({ student }, ref) => {
         {/* Student Address */}
         <div
           className="absolute z-10 left-0 w-full text-center px-4 text-[#8B6508]"
-          style={{ top: '445px', fontFamily: "'Playfair Display', Georgia, serif" }}
+          style={{ top: '456px', fontFamily: "'Playfair Display', Georgia, serif" }}
         >
           {studentAddress.split('\n').map((line, idx) => (
             <p key={idx} className="text-[12.5px] font-bold leading-snug">
@@ -136,7 +136,7 @@ export const StudentIdCard = React.forwardRef(({ student }, ref) => {
         {/* Student Phone */}
         <div
           className="absolute z-10 left-0 w-full text-center text-[#8B6508]"
-          style={{ top: '488px', fontFamily: "'Montserrat', sans-serif" }}
+          style={{ top: '496px', fontFamily: "'Montserrat', sans-serif" }}
         >
           <p className="text-[13px] font-black tracking-wide">
             Ph: {studentPhone}

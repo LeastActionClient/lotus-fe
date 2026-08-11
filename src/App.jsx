@@ -13,6 +13,7 @@ const Payments = lazy(() => import('./pages/Payments'));
 const InvoiceGenerated = lazy(() => import('./pages/InvoiceGenerated'));
 const Reports = lazy(() => import('./pages/Reports'));
 const Admins = lazy(() => import('./pages/Admins'));
+const Teachers = lazy(() => import('./pages/Teachers'));
 const PrintExport = lazy(() => import('./pages/PrintExport'));
 const IncludedCharges = lazy(() => import('./pages/IncludedCharges'));
 const Activities = lazy(() => import('./pages/Activities'));
@@ -60,7 +61,9 @@ const App = () => {
           <Route path="payments/invoice/:id" element={<InvoiceGenerated />} />
           <Route path="reports" element={<Reports />} />
           <Route path="admins" element={<Admins />} />
+          <Route path="teachers" element={<Teachers />} />
           <Route path="print-export" element={<PrintExport />} />
+          <Route path="id-cards" element={<IdCards />} />
           <Route path="concessions" element={<Concessions />} />
         </Route>
       </Routes>
