@@ -1,16 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
-import { ArrowLeft, User, BookOpen, Users, IndianRupee, Save } from 'lucide-react';
+import { ArrowLeft, User, BookOpen, Users, IndianRupee, Save, Contact, Upload, Trash2, Eye, Printer, Download, RefreshCw } from 'lucide-react';
 import { MultiSelectDropdown } from '../components/ui/MultiSelectDropdown';
+import { Modal } from '../components/ui/Modal';
+import StudentIdCard from '../components/StudentIdCard';
 import { isRTEStudent } from '../utils/studentCategory';
 import { getImageUrl } from '../utils/imageUrl';
 import { PageLoader } from '../components/ui/Spinner';
 import { toastError, toastSuccess, toastWarning } from '../services/toastService';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas-pro';
 
 const StudentEdit = () => {
   const { id } = useParams();
@@ -21,6 +25,10 @@ const StudentEdit = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
+  const fileInputRef = useRef(null);
+  const previewRef = useRef(null);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
   
   const [categories, setCategories] = useState([]);
   const [classes, setClasses] = useState([]);
@@ -73,6 +81,49 @@ const StudentEdit = () => {
       photoUrl: '',
       passport_photo: ''
     }));
+  };
+
+  const handlePrintIdCard = async () => {
+    if (!previewRef.current) return;
+    try {
+      const canvas = await html2canvas(previewRef.current, { scale: 2, useCORS: true, allowTaint: true, logging: false });
+      const imgData = canvas.toDataURL('image/png');
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Student ID Card - ${formData.studentName || 'Card'}</title>
+            <style>
+              @page { size: 54mm 85.6mm; margin: 0; }
+              body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #ffffff; }
+              img { width: 54mm; height: 85.6mm; }
+            </style>
+          </head>
+          <body onload="window.print(); window.close();">
+            <img src="${imgData}" />
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+    } catch (err) {
+      console.error("Print error", err);
+      toastError("Failed to print ID Card.");
+    }
+  };
+
+  const handleDownloadPdfIdCard = async () => {
+    if (!previewRef.current) return;
+    try {
+      const canvas = await html2canvas(previewRef.current, { scale: 2, useCORS: true, allowTaint: true, logging: false });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [54, 85.6] });
+      pdf.addImage(imgData, 'PNG', 0, 0, 54, 85.6);
+      pdf.save(`ID_Card_${formData.admissionNumber || formData.studentName || 'Student'}.pdf`);
+      toastSuccess("ID Card PDF downloaded!");
+    } catch (err) {
+      console.error("PDF download error", err);
+      toastError("Failed to generate ID Card PDF.");
+    }
   };
 
   // Form State
@@ -672,6 +723,112 @@ const StudentEdit = () => {
         
         {/* Left Column: Forms */}
         <div className="lg:col-span-2 space-y-6">
+
+          {/* Student Photo & ID Card Section */}
+          <Card>
+            <CardHeader className="bg-gray-50 border-b border-gray-100 pb-4">
+              <CardTitle className="text-lg flex items-center justify-between text-gray-700">
+                <div className="flex items-center">
+                  <Contact className="mr-2 h-5 w-5 text-orange-600" /> Student Photo & ID Card
+                </div>
+                {formData.studentName && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsPreviewModalOpen(true)}
+                    className="text-xs font-semibold text-orange-600 border-orange-200 hover:bg-orange-50"
+                  >
+                    <Eye className="h-3.5 w-3.5 mr-1" /> Preview ID Card
+                  </Button>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="flex flex-col sm:flex-row items-center gap-6">
+                <div className="relative w-32 h-36 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center overflow-hidden shrink-0 group">
+                  {formData.photoUrl || formData.passport_photo ? (
+                    <>
+                      <img
+                        src={getImageUrl(formData.photoUrl || formData.passport_photo)}
+                        alt="Passport Photo"
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleRemovePhoto}
+                        className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full opacity-90 hover:opacity-100 transition-opacity"
+                        title="Remove Photo"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center text-gray-400 p-2 text-center">
+                      <User className="h-12 w-12 mb-1 text-gray-300" />
+                      <span className="text-xs font-medium text-gray-400">No Photo</span>
+                    </div>
+                  )}
+                  {photoUploading && (
+                    <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                      <RefreshCw className="h-6 w-6 animate-spin text-orange-600" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3 text-center sm:text-left flex-1">
+                  <div>
+                    <Label className="text-sm font-semibold text-gray-800">Passport Photo</Label>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Upload a passport size photograph for student records and ID card generation. JPG, JPEG or PNG under 2MB.
+                    </p>
+                  </div>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handlePhotoUpload}
+                    accept="image/jpeg,image/jpg,image/png"
+                    className="hidden"
+                  />
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={photoUploading}
+                      className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                    >
+                      <Upload className="h-4 w-4 mr-1.5 text-orange-600" />
+                      {formData.photoUrl || formData.passport_photo ? 'Change Photo' : 'Upload Photo'}
+                    </Button>
+
+                    {(formData.photoUrl || formData.passport_photo) && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleRemovePhoto}
+                        className="text-red-600 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" /> Remove
+                      </Button>
+                    )}
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsPreviewModalOpen(true)}
+                      className="border-orange-200 text-orange-600 hover:bg-orange-50"
+                    >
+                      <Contact className="h-4 w-4 mr-1.5" /> ID Card Preview
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
           
           {/* Personal Details */}
           <Card>
@@ -1013,6 +1170,86 @@ const StudentEdit = () => {
           </Card>
         </div>
       </form>
+
+      {/* ID Card Preview Modal */}
+      <Modal
+        isOpen={isPreviewModalOpen}
+        onClose={() => setIsPreviewModalOpen(false)}
+        title="STUDENT ID CARD PREVIEW"
+        className="max-w-lg"
+      >
+        <div className="space-y-4 pt-2">
+          {/* Zoom controls & Actions */}
+          <div className="flex items-center justify-between bg-gray-50 p-2.5 rounded-lg border border-gray-200">
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setZoomLevel(prev => Math.max(0.6, prev - 0.1))}
+                className="h-8 px-2 text-xs"
+              >
+                -
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setZoomLevel(1)}
+                className="h-8 px-2 text-xs"
+              >
+                Reset
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setZoomLevel(prev => Math.min(1.4, prev + 0.1))}
+                className="h-8 px-2 text-xs"
+              >
+                +
+              </Button>
+              <span className="text-[11px] font-bold text-gray-600 ml-1">
+                {Math.round(zoomLevel * 100)}%
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadPdfIdCard}
+                className="h-8 text-xs font-bold border-blue-300 text-blue-700 hover:bg-blue-50"
+              >
+                <Download className="h-3.5 w-3.5 mr-1 text-blue-600" /> PDF
+              </Button>
+              <Button
+                size="sm"
+                onClick={handlePrintIdCard}
+                className="h-8 text-xs font-bold bg-orange-600 hover:bg-orange-700 text-white"
+              >
+                <Printer className="h-3.5 w-3.5 mr-1" /> Print
+              </Button>
+            </div>
+          </div>
+
+          {/* Centered ID Card Display Box */}
+          <div className="flex justify-center p-4 bg-gray-100/60 rounded-2xl border border-gray-200 overflow-auto max-h-[560px]">
+            <div
+              style={{
+                transform: `scale(${zoomLevel})`,
+                transformOrigin: 'top center',
+                transition: 'transform 0.15s ease-out'
+              }}
+            >
+              <StudentIdCard ref={previewRef} student={{ ...formData, _id: id }} />
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-1 border-t border-gray-200">
+            <Button variant="ghost" onClick={() => setIsPreviewModalOpen(false)}>
+              Close
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
