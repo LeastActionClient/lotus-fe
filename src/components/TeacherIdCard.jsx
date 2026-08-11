@@ -11,6 +11,7 @@ export const TeacherIdCard = React.forwardRef(({ teacher }, ref) => {
   const designation = (teacher.designation || 'TEACHER').toUpperCase();
   const phone = teacher.phoneNumber || '';
   const address = teacher.address || 'No.35, Pasapathan Mettu st,\nSaidapet, Vellore-12.';
+  const photoOverscan = 4;
 
   return (
     <>
@@ -41,7 +42,7 @@ export const TeacherIdCard = React.forwardRef(({ teacher }, ref) => {
 
         {/* Teacher Photo inside Template Circle Frame */}
         <div
-          className="absolute z-10 overflow-hidden flex items-center justify-center bg-white"
+          className="absolute z-10 overflow-hidden flex items-center justify-center"
           style={{
             top: '173px',
             left: '168px',
@@ -55,7 +56,14 @@ export const TeacherIdCard = React.forwardRef(({ teacher }, ref) => {
             <img
               src={getImageUrl(photo)}
               alt={teacherName}
-              className="absolute inset-0 w-full h-full object-cover"
+              className="absolute object-cover"
+              style={{
+                top: `-${photoOverscan}px`,
+                left: `-${photoOverscan}px`,
+                width: `calc(100% + ${photoOverscan * 2}px)`,
+                height: `calc(100% + ${photoOverscan * 2}px)`,
+                objectPosition: 'center center'
+              }}
               onError={(e) => {
                 e.target.onerror = null;
                 e.target.style.display = 'none';

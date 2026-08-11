@@ -731,7 +731,7 @@ const StudentEdit = () => {
                 <div className="flex items-center">
                   <Contact className="mr-2 h-5 w-5 text-orange-600" /> Student Photo & ID Card
                 </div>
-                {formData.studentName && (
+                {/* {formData.studentName && (
                   <Button
                     type="button"
                     variant="outline"
@@ -741,7 +741,7 @@ const StudentEdit = () => {
                   >
                     <Eye className="h-3.5 w-3.5 mr-1" /> Preview ID Card
                   </Button>
-                )}
+                )} */}
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6">

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { User } from 'lucide-react';
 import { getImageUrl } from '../utils/imageUrl';
 import templateImg from '../assets/id_card_template.png';
@@ -8,6 +8,11 @@ export const StudentIdCard = React.forwardRef(({ student }, ref) => {
 
   const photo = student.passport_photo || student.photoUrl || '';
   const studentName = (student.studentName || 'STUDENT NAME').toUpperCase();
+  const [photoLoadFailed, setPhotoLoadFailed] = useState(false);
+
+  useEffect(() => {
+    setPhotoLoadFailed(false);
+  }, [photo]);
 
   // Class formatting e.g. "III - STD 'A' SEC"
   const rawClass = (student.currentClass || '').toUpperCase();
@@ -54,32 +59,39 @@ export const StudentIdCard = React.forwardRef(({ student }, ref) => {
 
         {/* Student Passport Photo inside Template Circle Frame */}
         <div
-          className="absolute z-10 overflow-hidden flex items-center justify-center bg-white"
+          className="absolute z-10 overflow-hidden flex items-center justify-center"
           style={{
-            top: '168px',
-            left: '78.5px',
-            width: '175px',
-            height: '175px',
-            borderRadius: '50%'
+            top: '165px',
+            left: '75px',
+            width: '182px',
+            height: '182px',
+            borderRadius: '50%',
+            backgroundColor: photo && !photoLoadFailed ? '#ef2f2a' : '#f3f4f6'
           }}
         >
-          {photo ? (
-            <img
-              src={getImageUrl(photo)}
-              alt={studentName}
-              className="absolute inset-0 w-full h-full object-cover"
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.style.display = 'none';
-                if (e.target.nextSibling) {
-                  e.target.nextSibling.style.display = 'flex';
-                }
-              }}
-            />
+          {photo && !photoLoadFailed ? (
+            <>
+              <div
+                className="absolute inset-0"
+                style={{
+                  inset: '-2px',
+                  backgroundImage: `url(${getImageUrl(photo)})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center center',
+                  backgroundRepeat: 'no-repeat'
+                }}
+              />
+              <img
+                src={getImageUrl(photo)}
+                alt={studentName}
+                className="absolute inset-0 w-full h-full opacity-0 pointer-events-none"
+                onError={() => setPhotoLoadFailed(true)}
+              />
+            </>
           ) : null}
           <div
             className="w-full h-full bg-gray-100 flex items-center justify-center"
-            style={{ display: photo ? 'none' : 'flex' }}
+            style={{ display: photo && !photoLoadFailed ? 'none' : 'flex' }}
           >
             <User className="w-20 h-20 text-gray-300" />
           </div>
