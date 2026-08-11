@@ -3,9 +3,10 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import api from '../services/api';
 import { PageLoader } from '../components/ui/Spinner';
 import { Button } from '../components/ui/Button';
-import { ArrowLeft, Download, Printer, Trash2 } from 'lucide-react';
+import { ArrowLeft, Copy, Download, Printer, Trash2 } from 'lucide-react';
+import WhatsAppIcon from '../components/ui/WhatsAppIcon';
 import InvoiceTemplate from '../components/invoice/InvoiceTemplate';
-import { toastError, toastSuccess } from '../services/toastService';
+import { toastError, toastInfo, toastSuccess } from '../services/toastService';
 import { useConfirm } from '../components/ui/ConfirmDialog';
 import { useQueryInvalidator } from '../hooks/useSchoolQueries';
 import { getStoredUser } from '../utils/auth';
@@ -116,6 +117,18 @@ const RECEIPT_PRINT_STYLES = `
   }
 `;
 
+// Triggers a browser download for an in-memory PDF blob.
+const triggerPdfDownload = (blob, filename) => {
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+};
+
 const InvoiceGenerated = () => {
   const { id } = useParams();
   const location = useLocation();
@@ -127,7 +140,9 @@ const InvoiceGenerated = () => {
   const [payment, setPayment] = useState(location.state?.payment || null);
   const [loading, setLoading] = useState(!location.state?.payment);
   const [downloading, setDownloading] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [copiedNo, setCopiedNo] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -223,6 +238,105 @@ const InvoiceGenerated = () => {
     }
   };
 
+  const handleWhatsAppShare = async () => {
+    if (sharing) return;
+
+    setSharing(true);
+    try {
+      const response = await api.post(`/payments/${id}/whatsapp`, {}, { skipToast: true });
+      const data = response.data;
+
+      if (!data?.waLink || !data?.pdfUrl) {
+        toastError('Failed to prepare the WhatsApp bill. Please try again.');
+        return;
+      }
+
+      let pdfBlob;
+      let pdfFile;
+
+      try {
+        const pdfResponse = await api.get(`/payments/invoice/${id}`, {
+          responseType: 'blob',
+          params: { bill: 'first' }
+        });
+        pdfBlob = new Blob([pdfResponse.data], { type: 'application/pdf' });
+
+        const receiptNumber = String(data.bill?.receiptNumber || id || 'receipt')
+          .replace(/[^a-zA-Z0-9._-]/g, '_');
+        pdfFile = new File([pdfBlob], `Fee-Receipt-${receiptNumber}.pdf`, { type: 'application/pdf' });
+      } catch (pdfError) {
+        console.error('Error fetching receipt PDF', pdfError);
+        toastError('Failed to load the receipt PDF. Please try again.');
+        return;
+      }
+
+      let canShareFiles = false;
+      if (typeof navigator.share === 'function' && typeof navigator.canShare === 'function') {
+        try {
+          canShareFiles = navigator.canShare({ files: [pdfFile] });
+        } catch {
+          canShareFiles = false;
+        }
+      }
+
+      if (canShareFiles) {
+        try {
+          await navigator.share({
+            title: 'Fee Payment Receipt',
+            text: data.message || 'Fee payment receipt',
+            files: [pdfFile]
+          });
+          toastSuccess('Receipt PDF shared successfully.');
+          return;
+        } catch (shareError) {
+          if (shareError?.name === 'AbortError') {
+            toastInfo('Sharing was cancelled.');
+            return;
+          }
+          console.error('Error sharing receipt PDF', shareError);
+          toastError('Sharing the receipt PDF failed. Please try again.');
+          return;
+        }
+      }
+
+      // Fallback: this browser cannot attach files to the native share sheet.
+      window.open(data.waLink, '_blank', 'noopener,noreferrer');
+      triggerPdfDownload(pdfBlob, pdfFile.name);
+      toastInfo(
+        'PDF sharing is not supported in this browser. WhatsApp has been opened with the message and the PDF has been downloaded - please attach it manually.',
+        { duration: 8000 }
+      );
+    } catch (shareError) {
+      console.error('Error sharing bill on WhatsApp', shareError);
+      const message = shareError?.response?.data?.error || 'Failed to prepare the WhatsApp bill. Please try again.';
+      toastError(message);
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const getParentNumber = () => {
+    const student = payment?.studentId || payment?.student || payment?.applicationId || payment?.application || {};
+    return (student?.whatsappNumber || student?.fatherPhone || student?.motherPhone || student?.guardianPhone || '').trim();
+  };
+
+  const handleCopyNumber = async () => {
+    const number = getParentNumber();
+    if (!number) {
+      toastError('Parent WhatsApp number is not available.');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(number);
+      setCopiedNo(true);
+      toastSuccess(`Parent WhatsApp number copied: ${number}`);
+      setTimeout(() => setCopiedNo(false), 2000);
+    } catch (copyError) {
+      console.error('Error copying number', copyError);
+      toastError('Failed to copy the number.');
+    }
+  };
+
   const handleDelete = async () => {
     const accepted = await confirm({
       title: 'Delete Payment',
@@ -279,6 +393,23 @@ const InvoiceGenerated = () => {
           )}
           <Button variant="outline" onClick={downloadInvoice} loading={downloading} loadingText="Downloading...">
             <Download className="mr-2 h-4 w-4" /> Download PDF
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleCopyNumber}
+            disabled={!getParentNumber()}
+            className="text-sky-700 hover:bg-sky-50"
+          >
+            <Copy className="mr-2 h-4 w-4" /> {copiedNo ? 'Copied!' : 'Copy No'}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleWhatsAppShare}
+            loading={sharing}
+            loadingText="Preparing PDF..."
+            className="text-emerald-700 hover:bg-emerald-50"
+          >
+            <WhatsAppIcon className="mr-2 h-4 w-4" /> WhatsApp PDF
           </Button>
           <Button onClick={handlePrint}>
             <Printer className="mr-2 h-4 w-4" /> Print
