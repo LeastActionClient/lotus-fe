@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 
-import { ArrowUpCircle, Calendar, DollarSign, FileText, IndianRupee, TrendingUp, Users } from 'lucide-react';
+import { ArrowUpCircle, BookOpen, Calculator, Calendar, DollarSign, FileText, GraduationCap, IndianRupee, Layers, School, TrendingUp, Users } from 'lucide-react';
 import api from '../services/api';
 import { useDashboardOverviewQuery, useQueryInvalidator } from '../hooks/useSchoolQueries';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
@@ -31,6 +31,11 @@ const Dashboard = () => {
     collections: 0,
     RTEStudents: 0,
     generalStudents: 0,
+    teachers: 0,
+    tuitionStudents: 0,
+    abacusStudents: 0,
+    classesCount: 0,
+    feeCategories: 0,
   };
   const normalizeClassName = (value) => String(value ?? '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
   const classSortFn = (a, b) => {
@@ -223,6 +228,61 @@ const Dashboard = () => {
           <CardContent>
             <div className="text-2xl sm:text-3xl font-bold text-gray-900 break-words">{stats.students}</div>
             <p className="mt-1 text-xs text-gray-500">Currently active enrolled students</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-sky-50 to-white">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-sky-700">Teachers</CardTitle>
+            <GraduationCap className="h-4 w-4 text-sky-700" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl sm:text-3xl font-bold text-gray-900 break-words">{stats.teachers}</div>
+            <p className="mt-1 text-xs text-gray-500">Total teaching staff</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-teal-50 to-white">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-teal-700">Tuition Students</CardTitle>
+            <BookOpen className="h-4 w-4 text-teal-700" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl sm:text-3xl font-bold text-gray-900 break-words">{stats.tuitionStudents}</div>
+            <p className="mt-1 text-xs text-gray-500">Enrolled in tuition course</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-indigo-50 to-white">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-indigo-700">Abacus Students</CardTitle>
+            <Calculator className="h-4 w-4 text-indigo-700" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl sm:text-3xl font-bold text-gray-900 break-words">{stats.abacusStudents}</div>
+            <p className="mt-1 text-xs text-gray-500">Enrolled in abacus course</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-rose-50 to-white">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-rose-700">Classes</CardTitle>
+            <School className="h-4 w-4 text-rose-700" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl sm:text-3xl font-bold text-gray-900 break-words">{stats.classesCount}</div>
+            <p className="mt-1 text-xs text-gray-500">Total classes configured</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-lime-50 to-white">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-lime-700">Fee Categories</CardTitle>
+            <Layers className="h-4 w-4 text-lime-700" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl sm:text-3xl font-bold text-gray-900 break-words">{stats.feeCategories}</div>
+            <p className="mt-1 text-xs text-gray-500">Total fee categories</p>
           </CardContent>
         </Card>
 
