@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
 import { Card, CardContent } from '../components/ui/Card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
-import { UserPlus, Eye, Upload, Plus, Users, Pencil, Save, X, Contact, Trash2, Printer, Download, RefreshCw, User } from 'lucide-react';
+import { UserPlus, Eye, Upload, Plus, Users, Pencil, Save, X, Contact, Trash2, Download, RefreshCw, User } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
@@ -105,33 +105,7 @@ const Admissions = () => {
     }
   };
 
-  const handlePrintIdCard = async () => {
-    if (!cardPreviewRef.current) return;
-    try {
-      const canvas = await html2canvas(cardPreviewRef.current, { scale: 2, useCORS: true, allowTaint: true, logging: false });
-      const imgData = canvas.toDataURL('image/png');
-      const printWindow = window.open('', '_blank');
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Student ID Card - ${previewStudent?.studentName || 'Card'}</title>
-            <style>
-              @page { size: 54mm 85.6mm; margin: 0; }
-              body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #ffffff; }
-              img { width: 54mm; height: 85.6mm; }
-            </style>
-          </head>
-          <body onload="window.print(); window.close();">
-            <img src="${imgData}" />
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-    } catch (err) {
-      console.error("Print error", err);
-      toastError("Failed to print ID Card.");
-    }
-  };
+
 
   const handleDownloadPdfIdCard = async () => {
     if (!cardPreviewRef.current) return;
@@ -1590,13 +1564,7 @@ const Admissions = () => {
               >
                 <Download className="h-3.5 w-3.5 mr-1 text-blue-600" /> PDF
               </Button>
-              <Button
-                size="sm"
-                onClick={handlePrintIdCard}
-                className="h-8 text-xs font-bold bg-orange-600 hover:bg-orange-700 text-white"
-              >
-                <Printer className="h-3.5 w-3.5 mr-1" /> Print
-              </Button>
+
             </div>
           </div>
 

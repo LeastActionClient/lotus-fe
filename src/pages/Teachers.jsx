@@ -289,7 +289,8 @@ const Teachers = () => {
               <Input 
                 id="teacherId" 
                 value={formData.teacherId}
-                onChange={(e) => setFormData({...formData, teacherId: e.target.value})}
+                onChange={(e) => setFormData({...formData, teacherId: e.target.value.replace(/[^A-Za-z0-9-]/g, '')})}
+                maxLength={20}
                 required 
               />
             </div>
@@ -298,7 +299,8 @@ const Teachers = () => {
               <Input 
                 id="name" 
                 value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                onChange={(e) => setFormData({...formData, name: e.target.value.replace(/[^A-Za-z\s.]/g, '')})}
+                maxLength={50}
                 required 
               />
             </div>
@@ -307,7 +309,8 @@ const Teachers = () => {
               <Input 
                 id="designation" 
                 value={formData.designation}
-                onChange={(e) => setFormData({...formData, designation: e.target.value})}
+                onChange={(e) => setFormData({...formData, designation: e.target.value.replace(/[^A-Za-z\s.-]/g, '')})}
+                maxLength={50}
                 required 
               />
             </div>
@@ -316,7 +319,8 @@ const Teachers = () => {
               <Input 
                 id="phoneNumber" 
                 value={formData.phoneNumber}
-                onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
+                onChange={(e) => setFormData({...formData, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 10)})}
+                maxLength={10}
                 required 
               />
             </div>
@@ -326,6 +330,7 @@ const Teachers = () => {
                 id="address" 
                 value={formData.address}
                 onChange={(e) => setFormData({...formData, address: e.target.value})}
+                maxLength={100}
                 required 
               />
             </div>
