@@ -590,10 +590,10 @@ const Concessions = () => {
         title="Assign Fee Concession"
         className="max-w-5xl md:max-w-5xl w-full rounded-2xl"
       >
-        <div className="flex flex-col h-[75vh] md:h-[80vh] justify-between">
+        <div className="flex flex-col justify-between">
           
-          {/* Scrollable Body */}
-          <div className="flex-1 overflow-y-auto pr-3 space-y-6">
+          {/* Body */}
+          <div className="space-y-6">
             
             {/* Subtitle & Info Header */}
             <div className="pb-4 border-b border-gray-150">
