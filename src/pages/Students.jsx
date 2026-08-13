@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import api from '../services/api';
 import { Card, CardContent } from '../components/ui/Card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
@@ -16,6 +16,23 @@ import { toastError, toastSuccess } from '../services/toastService';
 import { useConfirm } from '../components/ui/ConfirmDialog';
 import { useClassesQuery, useQueryInvalidator, useStudentsQuery } from '../hooks/useSchoolQueries';
 
+const normalizeText = (value) => String(value ?? '').trim().toLowerCase();
+
+const hasProgramFee = (student, keyword) =>
+  (student.studentFees || []).some((fee) => {
+    const feeName = normalizeText(fee.feeCategory?.name || fee.feeCategoryId?.name || fee.categoryName || '');
+    return feeName.includes(keyword);
+  });
+
+const getStudentProgramType = (student) => {
+  const hasTuition = hasProgramFee(student, 'tuition');
+  const hasAbacus = hasProgramFee(student, 'abacus');
+
+  if (hasTuition && hasAbacus) return 'BOTH';
+  if (hasTuition) return 'TUITION';
+  if (hasAbacus) return 'ABACUS';
+  return 'OTHER';
+};
 
 const Students = () => {
   const currentUser = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || '{}');
@@ -55,6 +72,7 @@ const Students = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [feeFilter, setFeeFilter] = useState('ALL');
   const [studentGroupFilter, setStudentGroupFilter] = useState('All');
+  const [studentProgramFilter, setStudentProgramFilter] = useState('ALL');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -120,7 +138,7 @@ const Students = () => {
 
   useEffect(() => {
     if (classes.length > 0 && location.state) {
-      const { fromClassId, fromSectionId, feeFilter, studentGroupFilter, searchQuery } = location.state;
+      const { fromClassId, fromSectionId, feeFilter, studentGroupFilter, studentProgramFilter, searchQuery } = location.state;
       if (fromClassId) {
         const clsObj = classes.find(c => c._id === fromClassId);
         if (clsObj) {
@@ -140,6 +158,7 @@ const Students = () => {
       }
       if (feeFilter) setFeeFilter(feeFilter);
       if (studentGroupFilter) setStudentGroupFilter(studentGroupFilter);
+      if (studentProgramFilter) setStudentProgramFilter(studentProgramFilter);
       if (searchQuery) {
         setSearchQuery(searchQuery);
         setViewMode('SEARCH_RESULTS');
@@ -304,49 +323,69 @@ const Students = () => {
     }
   };
 
-  const filteredStudents = students.filter(s => {
-    if (s.studentStatus && s.studentStatus !== 'Active') return false;
-    let match = false;
-    if (viewMode === 'SEARCH_RESULTS') {
-      const q = searchQuery.toLowerCase();
-      const combinedClassSection = `${s.currentClass || ''} ${s.section || ''}`.toLowerCase();
-      match = s.studentName.toLowerCase().includes(q) || 
-             combinedClassSection.includes(q) || 
-             s.admissionNumber.toLowerCase().includes(q);
-    } else if (viewMode === 'STUDENTS') {
-      match = s.currentClass === selectedClass?.name && s.section === selectedSection?.name;
-    }
+  const baseFilteredStudents = useMemo(() => {
+    return students.filter((s) => {
+      if (s.studentStatus && s.studentStatus !== 'Active') return false;
 
-    if (!match) return false;
-
-    if (studentGroupFilter === 'RTE' && !isRTEStudent(s)) return false;
-    if (studentGroupFilter === 'General' && isRTEStudent(s)) return false;
-
-    if (feeFilter !== 'ALL') {
-      const totalPending = s.studentFees?.reduce((sum, f) => sum + f.remainingAmount, 0) || 0;
-      const hasFees = s.studentFees?.length > 0;
-      if (feeFilter === 'PAID') {
-        return hasFees && totalPending === 0;
+      let match = false;
+      if (viewMode === 'SEARCH_RESULTS') {
+        const q = searchQuery.toLowerCase();
+        const combinedClassSection = `${s.currentClass || ''} ${s.section || ''}`.toLowerCase();
+        match = s.studentName.toLowerCase().includes(q) ||
+               combinedClassSection.includes(q) ||
+               s.admissionNumber.toLowerCase().includes(q);
+      } else if (viewMode === 'STUDENTS') {
+        match = s.currentClass === selectedClass?.name && s.section === selectedSection?.name;
       }
-      if (feeFilter === 'PENDING') {
-        return totalPending > 0;
+
+      if (!match) return false;
+
+      if (studentGroupFilter === 'RTE' && !isRTEStudent(s)) return false;
+      if (studentGroupFilter === 'General' && isRTEStudent(s)) return false;
+
+      if (feeFilter !== 'ALL') {
+        const totalPending = s.studentFees?.reduce((sum, f) => sum + (f.remainingAmount || 0), 0) || 0;
+        const hasFees = s.studentFees?.length > 0;
+        if (feeFilter === 'PAID') {
+          return hasFees && totalPending === 0;
+        }
+        if (feeFilter === 'PENDING') {
+          return totalPending > 0;
+        }
       }
-    }
-    
-    return true;
-  });
+
+      return true;
+    });
+  }, [students, viewMode, selectedClass, selectedSection, searchQuery, studentGroupFilter, feeFilter]);
+
+  const studentProgramCounts = useMemo(() => {
+    return baseFilteredStudents.reduce(
+      (acc, student) => {
+        const programType = getStudentProgramType(student);
+        acc[programType] = (acc[programType] || 0) + 1;
+        return acc;
+      },
+      { TUITION: 0, ABACUS: 0, BOTH: 0, OTHER: 0 }
+    );
+  }, [baseFilteredStudents]);
+
+  const filteredStudents = useMemo(() => {
+    if (studentProgramFilter === 'ALL') return baseFilteredStudents;
+
+    return baseFilteredStudents.filter((student) => getStudentProgramType(student) === studentProgramFilter);
+  }, [baseFilteredStudents, studentProgramFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredStudents.length / itemsPerPage));
   const paginatedStudents = filteredStudents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [viewMode, selectedClass, selectedSection, searchQuery, feeFilter, studentGroupFilter]);
+  }, [viewMode, selectedClass, selectedSection, searchQuery, feeFilter, studentGroupFilter, studentProgramFilter]);
 
   useEffect(() => {
     // Keep selection in sync with the current filtered view so exports do not use stale rows.
     setSelectedStudentIds([]);
-  }, [viewMode, selectedClass, selectedSection, searchQuery, feeFilter, studentGroupFilter]);
+  }, [viewMode, selectedClass, selectedSection, searchQuery, feeFilter, studentGroupFilter, studentProgramFilter]);
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
@@ -548,6 +587,17 @@ const Students = () => {
                 <option value="RTE">RTE</option>
                 <option value="General">General</option>
               </select>
+              <select
+                className="flex h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+                value={studentProgramFilter}
+                onChange={(e) => setStudentProgramFilter(e.target.value)}
+              >
+                <option value="ALL">All Programs</option>
+                <option value="TUITION">Tuition ({studentProgramCounts.TUITION})</option>
+                <option value="ABACUS">Abacus ({studentProgramCounts.ABACUS})</option>
+                <option value="BOTH">Tuition + Abacus ({studentProgramCounts.BOTH})</option>
+                <option value="OTHER">Other ({studentProgramCounts.OTHER})</option>
+              </select>
             </div>
           </div>
           
@@ -628,7 +678,7 @@ const Students = () => {
                           >
                             <Eye className="h-4 w-4 mr-2" /> View
                           </Button>
-                          <Link to={`/dashboard/students/edit/${student._id}`} state={{ fromClassId: selectedClass?._id, fromSectionId: selectedSection?._id, feeFilter, studentGroupFilter, searchQuery }}>
+                          <Link to={`/dashboard/students/edit/${student._id}`} state={{ fromClassId: selectedClass?._id, fromSectionId: selectedSection?._id, feeFilter, studentGroupFilter, studentProgramFilter, searchQuery }}>
                             <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
                               <Edit className="h-4 w-4 mr-2" /> Edit
                             </Button>
