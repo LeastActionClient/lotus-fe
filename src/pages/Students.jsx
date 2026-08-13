@@ -595,8 +595,8 @@ const Students = () => {
                 <option value="ALL">All Programs</option>
                 <option value="TUITION">Tuition ({studentProgramCounts.TUITION})</option>
                 <option value="ABACUS">Abacus ({studentProgramCounts.ABACUS})</option>
-                <option value="BOTH">Tuition + Abacus ({studentProgramCounts.BOTH})</option>
-                <option value="OTHER">Other ({studentProgramCounts.OTHER})</option>
+                {/* <option value="BOTH">Tuition + Abacus ({studentProgramCounts.BOTH})</option>
+                <option value="OTHER">Other ({studentProgramCounts.OTHER})</option> */}
               </select>
             </div>
           </div>
