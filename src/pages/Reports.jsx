@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Download, PieChart, TrendingUp, Calendar } from 'lucide-react';
+import { Download, PieChart, TrendingUp, Calendar, IndianRupee } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { PageLoader } from '../components/ui/Spinner';
-import { useFeeCategoriesQuery, usePendingFeesQuery, useReportDataQuery } from '../hooks/useSchoolQueries';
+import { useFeeCategoriesQuery, usePendingFeesQuery, useReportDataQuery, useDashboardOverviewQuery } from '../hooks/useSchoolQueries';
 import * as XLSX from 'xlsx';
 
 const formatDateDDMMYYYY = (dateVal) => {
@@ -25,6 +25,7 @@ const escapeCSVValue = (value) => {
 };
 
 const Reports = () => {
+  const currentUser = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || '{}');
   const [timeframe, setTimeframe] = useState('daily');
   
   // Custom date range states
@@ -35,6 +36,7 @@ const Reports = () => {
   const { data: reportData = {}, isLoading: reportLoading } = useReportDataQuery(timeframe, startDate, endDate);
   const { data: pendingData = {}, isLoading: pendingLoading } = usePendingFeesQuery();
   const { data: feeCategories = [], isLoading: categoriesLoading } = useFeeCategoriesQuery();
+  const { data: overview = {} } = useDashboardOverviewQuery();
 
   const daily = useMemo(() => {
     const rawPayments = reportData.payments || [];
@@ -303,21 +305,37 @@ const Reports = () => {
         </Card>
         </div>
 
-        <div className="md:col-span-1">
-        <Card className="h-fit bg-gradient-to-br from-red-50/50 to-white border-red-100/80 shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center text-gray-700 ">
-              <TrendingUp className="h-5 w-5 mr-2 text-red-500" /> Pending Fees
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-6">
-              <span className="text-sm text-gray-500 block mb-1">Total Outstanding</span>
-              <span className="text-3xl font-bold text-red-600">₹{totalPending.toFixed(2)}</span>
-            </div>
-            {!pending || pending.length === 0 ? <p className="text-gray-500">No pending dues.</p> : null}
-          </CardContent>
-        </Card>
+        <div className="md:col-span-1 space-y-6">
+          <Card className="h-fit bg-gradient-to-br from-red-50/50 to-white border-red-100/80 shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center text-gray-700 ">
+                <TrendingUp className="h-5 w-5 mr-2 text-red-500" /> Pending Fees
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-6">
+                <span className="text-sm text-gray-500 block mb-1">Total Outstanding</span>
+                <span className="text-3xl font-bold text-red-600">₹{totalPending.toFixed(2)}</span>
+              </div>
+              {!pending || pending.length === 0 ? <p className="text-gray-500">No pending dues.</p> : null}
+            </CardContent>
+          </Card>
+          
+          {currentUser.role === 'SUPER_ADMIN' && (
+            <Card className="h-fit bg-gradient-to-br from-purple-50 to-white shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-orange-600 ">Total Collections</CardTitle>
+                <IndianRupee className="h-4 w-4 text-orange-600 " />
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 break-words">₹{(overview?.stats?.collections || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                <p className="mt-2 flex items-center text-xs text-gray-500">
+                  <TrendingUp className="mr-1 h-3 w-3" />
+                  Collected through fees
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

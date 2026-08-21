@@ -286,20 +286,6 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-purple-50 to-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-orange-600 ">Total Collections</CardTitle>
-            <IndianRupee className="h-4 w-4 text-orange-600 " />
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 break-words">₹{stats.collections.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-            <p className="mt-2 flex items-center text-xs text-gray-500">
-              <TrendingUp className="mr-1 h-3 w-3" />
-              Collected through fees
-            </p>
-          </CardContent>
-        </Card>
-
         <Card className="bg-gradient-to-br from-violet-50 to-white">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-violet-700">RTE Students</CardTitle>

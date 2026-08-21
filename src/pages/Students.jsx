@@ -361,18 +361,23 @@ const Students = () => {
   const studentProgramCounts = useMemo(() => {
     return baseFilteredStudents.reduce(
       (acc, student) => {
-        const programType = getStudentProgramType(student);
-        acc[programType] = (acc[programType] || 0) + 1;
+        if (hasProgramFee(student, 'tuition')) acc.TUITION++;
+        if (hasProgramFee(student, 'abacus')) acc.ABACUS++;
         return acc;
       },
-      { TUITION: 0, ABACUS: 0, BOTH: 0, OTHER: 0 }
+      { TUITION: 0, ABACUS: 0 }
     );
   }, [baseFilteredStudents]);
 
   const filteredStudents = useMemo(() => {
     if (studentProgramFilter === 'ALL') return baseFilteredStudents;
-
-    return baseFilteredStudents.filter((student) => getStudentProgramType(student) === studentProgramFilter);
+    if (studentProgramFilter === 'TUITION') {
+      return baseFilteredStudents.filter((student) => hasProgramFee(student, 'tuition'));
+    }
+    if (studentProgramFilter === 'ABACUS') {
+      return baseFilteredStudents.filter((student) => hasProgramFee(student, 'abacus'));
+    }
+    return baseFilteredStudents;
   }, [baseFilteredStudents, studentProgramFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredStudents.length / itemsPerPage));

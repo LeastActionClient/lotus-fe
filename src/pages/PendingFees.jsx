@@ -474,6 +474,24 @@ const PendingFees = () => {
       targetCategoryNames = Array.from(catNamesSet);
     }
 
+    const getCategoryPriority = (name) => {
+      const lowerName = String(name || '').toLowerCase();
+      if (lowerName.includes('book')) return 1;
+      if (lowerName.includes('term') && !lowerName.includes('tuition') && !lowerName.includes('abacus')) return 2;
+      if (lowerName.includes('tuition')) return 3;
+      if (lowerName.includes('abacus')) return 4;
+      return 5;
+    };
+
+    targetCategoryNames.sort((a, b) => {
+      const priorityA = getCategoryPriority(a);
+      const priorityB = getCategoryPriority(b);
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+      return a.localeCompare(b);
+    });
+
     const classSortFn = (aCls, bCls) => {
       const normalize = (name) => String(name || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
       const order = { prekg: 1, lkg: 2, ukg: 3 };
@@ -497,21 +515,30 @@ const PendingFees = () => {
 
     let totalPrevPending = 0;
     let totalCurrPending = 0;
+    let totalCurrFee = 0;
     let totalFee = 0;
     let totalPaidAmount = 0;
     let totalTotalPending = 0;
     const categoryTotals = {};
     targetCategoryNames.forEach(catName => { categoryTotals[catName] = 0; });
 
-    const excelData = sortedStudents.map(student => {
+    const excelData = sortedStudents.map((student, index) => {
       const displayPendingAmount = getStudentTotalPending(student, selectedCategoryIds);
       const prevPend = getPreviousPending(student, selectedCategoryIds);
       const currPend = getCurrentPending(student, selectedCategoryIds);
+      
+      const currentSelectedFees = getCurrentFees(student).filter(f => isFeeCategorySelected(f, selectedCategoryIds));
+      const currTotalFee = currentSelectedFees.reduce((sum, f) => {
+          const concession = f.concessionStatus === 'Active' ? (f.lessAmount || 0) : 0;
+          return sum + Math.max(0, (f.totalAmount || 0) - concession);
+      }, 0);
+
       const stuFee = getStudentTotalFee(student);
       const stuPaid = getStudentTotalPaid(student);
 
       totalPrevPending += prevPend;
       totalCurrPending += currPend;
+      totalCurrFee += currTotalFee;
       totalFee += stuFee;
       totalPaidAmount += stuPaid;
       totalTotalPending += displayPendingAmount;
@@ -524,43 +551,43 @@ const PendingFees = () => {
         });
         const catPending = feesForCat.reduce((sum, f) => sum + (f.remainingAmount || 0), 0);
         categoryTotals[catName] += catPending;
-        categoryColumns[catName] = catPending > 0 ? `Rs. ${catPending.toFixed(2)}` : 'Rs. 0.00';
+        categoryColumns[catName] = Number(catPending.toFixed(2));
       });
 
       return {
-        'Admission Number': student.admissionNumber || '',
-        'Student Name': student.studentName || '',
-        'Student Status': (!student.studentStatus || student.studentStatus === 'Active') ? 'Active' : student.studentStatus,
-        'Class': student.currentClass || '',
+        'S.No': index + 1,
+        'Admission number': student.admissionNumber || '',
+        'Student name': student.studentName || '',
+        'class': student.currentClass || '',
         'Section': student.section || '',
-        'Academic Year': student.currentEnrollment?.academicYear || student.academicYear || '',
-        'Prev Pending': `Rs. ${prevPend.toFixed(2)}`,
-        'Curr Pending': `Rs. ${currPend.toFixed(2)}`,
+        'Previous year pending': Number(prevPend.toFixed(2)),
         ...categoryColumns,
-        'Total Fee': `Rs. ${stuFee.toFixed(2)}`,
-        'Paid Amount': `Rs. ${stuPaid.toFixed(2)}`,
-        'Total Pending': `Rs. ${displayPendingAmount.toFixed(2)}`
+        'Current total': Number(currTotalFee.toFixed(2)),
+        'Current pending': Number(currPend.toFixed(2)),
+        'Total fees': Number(stuFee.toFixed(2)),
+        'Total paid': Number(stuPaid.toFixed(2)),
+        'Total pending': Number(displayPendingAmount.toFixed(2))
       };
     });
 
     const totalRow = {
-      'Admission Number': '',
-      'Student Name': 'TOTAL',
-      'Student Status': '',
-      'Class': '',
+      'S.No': '',
+      'Admission number': '',
+      'Student name': 'TOTAL',
+      'class': '',
       'Section': '',
-      'Academic Year': '',
-      'Prev Pending': `Rs. ${totalPrevPending.toFixed(2)}`,
-      'Curr Pending': `Rs. ${totalCurrPending.toFixed(2)}`,
+      'Previous year pending': Number(totalPrevPending.toFixed(2)),
     };
 
     targetCategoryNames.forEach(catName => {
-      totalRow[catName] = `Rs. ${categoryTotals[catName].toFixed(2)}`;
+      totalRow[catName] = Number(categoryTotals[catName].toFixed(2));
     });
 
-    totalRow['Total Fee'] = `Rs. ${totalFee.toFixed(2)}`;
-    totalRow['Paid Amount'] = `Rs. ${totalPaidAmount.toFixed(2)}`;
-    totalRow['Total Pending'] = `Rs. ${totalTotalPending.toFixed(2)}`;
+    totalRow['Current total'] = Number(totalCurrFee.toFixed(2));
+    totalRow['Current pending'] = Number(totalCurrPending.toFixed(2));
+    totalRow['Total fees'] = Number(totalFee.toFixed(2));
+    totalRow['Total paid'] = Number(totalPaidAmount.toFixed(2));
+    totalRow['Total pending'] = Number(totalTotalPending.toFixed(2));
 
     excelData.push(totalRow);
 

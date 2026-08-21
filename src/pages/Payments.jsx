@@ -103,7 +103,7 @@ const Payments = () => {
       return { isLocked: false, message: '' };
     }
 
-    const previousTermFees = (allFees || []).filter(otherFee => {
+    const prerequisites = (allFees || []).filter(otherFee => {
       if ((otherFee._id || otherFee.id) === (fee._id || fee.id)) return false;
 
       const feeYear = fee.academicYear || '';
@@ -116,14 +116,18 @@ const Payments = () => {
 
       if (!sameYear || !sameClass) return false;
 
-      const otherCatName = otherFee.feeCategory?.name || otherFee.feeCategoryId?.name || '';
+      const otherCatName = String(otherFee.feeCategory?.name || otherFee.feeCategoryId?.name || '').toLowerCase();
+      
+      const isBookFee = otherCatName.includes('book fee') || otherCatName.includes('books fee');
+      if (isBookFee) return true;
+
       const otherTermInfo = parseTermInfo(otherCatName);
       return otherTermInfo.isTerm &&
              otherTermInfo.baseCategory === termInfo.baseCategory &&
              otherTermInfo.termNumber < termInfo.termNumber;
     });
 
-    for (const prevFee of previousTermFees) {
+    for (const prevFee of prerequisites) {
       const prevFeeId = prevFee._id || prevFee.id;
       const dynamicRemaining = typeof prevFee.remainingAmount === 'number'
         ? prevFee.remainingAmount
@@ -135,9 +139,14 @@ const Payments = () => {
       const isFullyPaid = dynamicRemaining === 0 || (isCheckedInModal && payingVal >= dynamicRemaining && dynamicRemaining > 0);
 
       if (!isFullyPaid) {
+        const otherCatName = String(prevFee.feeCategory?.name || prevFee.feeCategoryId?.name || '').toLowerCase();
+        const isBookFee = otherCatName.includes('book fee') || otherCatName.includes('books fee');
+        
         return {
           isLocked: true,
-          message: 'Please complete payment for the previous term before paying this term.'
+          message: isBookFee 
+            ? 'Please complete payment for the Book fee before paying term fees.'
+            : 'Please complete payment for the previous term before paying this term.'
         };
       }
     }
@@ -334,7 +343,7 @@ const Payments = () => {
       const fee = studentFees.find(sf => (sf._id || sf.id) === id);
       const lockInfo = getTermLockInfo(fee, studentFees, paymentData.studentFeeIds, payingAmounts);
       if (lockInfo.isLocked) {
-        toastWarning("Please complete payment for the previous term before paying this term.");
+        toastWarning(lockInfo.message || "Please complete prerequisite payments first.");
         return;
       }
     }
@@ -989,8 +998,8 @@ const Payments = () => {
                           {classLabel} {f.feeCategory?.name || 'Fee'}
                         </Label>
                         {isLocked && (
-                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-300" title="Complete the previous term payment first.">
-                            <Lock className="h-3 w-3 text-amber-700" /> Complete the previous term payment first.
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-300" title={lockInfo.message}>
+                            <Lock className="h-3 w-3 text-amber-700" /> {lockInfo.message}
                           </span>
                         )}
                       </div>
