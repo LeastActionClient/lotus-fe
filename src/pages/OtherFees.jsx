@@ -12,7 +12,7 @@ import { Link } from 'react-router-dom';
 import { toastError } from '../services/toastService';
 import { useConfirm } from '../components/ui/ConfirmDialog';
 
-const IncludedCharges = () => {
+const OtherFees = () => {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const confirm = useConfirm();
   const [charges, setCharges] = useState([]);
@@ -53,7 +53,7 @@ const IncludedCharges = () => {
       const res = await api.get('/included-charges');
       setCharges(res.data);
     } catch (error) {
-      console.error("Error fetching included charges", error);
+      console.error("Error fetching Other Fees", error);
     }
   };
 
@@ -102,7 +102,7 @@ const IncludedCharges = () => {
       fetchCharges();
     } catch (error) {
       console.error("Error saving charge", error);
-      toastError(error.response?.data?.error || "Error saving included charge.");
+      toastError(error.response?.data?.error || "Error saving other fee.");
     } finally {
       setSaveLoading(false);
     }
@@ -110,8 +110,8 @@ const IncludedCharges = () => {
 
   const handleDelete = async (id) => {
     const accepted = await confirm({
-      title: 'Delete Included Charge',
-      description: 'Are you sure you want to delete this included charge?',
+      title: 'Delete other fee',
+      description: 'Are you sure you want to delete this other fee?',
       confirmText: 'Delete',
       tone: 'danger'
     });
@@ -196,9 +196,9 @@ const IncludedCharges = () => {
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center">
             <FileCheck className="mr-3 text-orange-600" size={32} />
-            Included Charges
+            Other Fees
           </h1>
-          <p className="text-gray-500 mt-2">Manage additional included charges</p>
+          <p className="text-gray-500 mt-2">Manage additional Other Fees</p>
         </div>
         <div className="flex flex-wrap gap-3">
           <Input 
@@ -208,31 +208,12 @@ const IncludedCharges = () => {
             className="w-full sm:w-64"
           />
           <Button onClick={() => { resetForm(); setIsModalOpen(true); }}>
-            <Plus className="mr-2 h-4 w-4" /> Add Included Charge
+            <Plus className="mr-2 h-4 w-4" /> Add other fee
           </Button>
         </div>
       </div>
 
-      <div className="flex overflow-x-auto border-b border-gray-200">
-        <Link 
-          to="/dashboard/fee-categories" 
-          className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm"
-        >
-          Fee Categories
-        </Link>
-        <Link 
-          to="/dashboard/fee-categories/included-charges" 
-          className="border-orange-500 text-orange-600 whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm"
-        >
-          Included Charges
-        </Link>
-        <Link 
-          to="/dashboard/fee-categories/activities" 
-          className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm"
-        >
-          Activities
-        </Link>
-      </div>
+
 
       <Card>
         <CardContent className="p-0">
@@ -253,7 +234,7 @@ const IncludedCharges = () => {
               {filteredCharges.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center h-32 text-gray-500">
-                    No included charges found.
+                    No Other Fees found.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -325,10 +306,10 @@ const IncludedCharges = () => {
         </CardContent>
       </Card>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? "Edit Included Charge" : "Create Included Charge"}>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? "Edit other fee" : "Create other fee"}>
         <form onSubmit={handleSave} className="space-y-4 pt-2">
           <div className="space-y-2">
-            <Label>Included Charge Name *</Label>
+            <Label>other fee Name *</Label>
             <Input 
               value={name} 
               onChange={(e) => setName(e.target.value)} 
@@ -484,4 +465,4 @@ const IncludedCharges = () => {
   );
 };
 
-export default IncludedCharges;
+export default OtherFees;

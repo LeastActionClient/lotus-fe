@@ -10,7 +10,11 @@ export const TeacherIdCard = React.forwardRef(({ teacher }, ref) => {
   const teacherName = (teacher.name || 'TEACHER NAME').toUpperCase();
   const designation = (teacher.designation || 'TEACHER').toUpperCase();
   const phone = teacher.phoneNumber || '';
-  const address = teacher.address || 'No.35, Pasapathan Mettu st,\nSaidapet, Vellore-12.';
+  const formatAddress = (addr) => {
+    if (!addr) return 'No.35, Pasapathan Mettu st,\nSaidapet, Vellore-12.';
+    return addr.replace(/,/g, ', ').replace(/ +/g, ' ').trim();
+  };
+  const address = formatAddress(teacher.address);
   const photoOverscan = 4;
 
   return (
@@ -119,12 +123,14 @@ export const TeacherIdCard = React.forwardRef(({ teacher }, ref) => {
 
         {/* Address */}
         <div
-          className="absolute z-10 left-0 w-full text-center px-4 flex flex-col items-center justify-center text-[#8B6508]"
+          className="absolute z-10 left-0 w-full text-center flex flex-col items-center justify-center text-[#8B6508]"
           style={{ top: '445px', height: '40px', fontFamily: "Georgia, serif" }}
         >
-          <p className="text-[14px] font-bold leading-snug break-words line-clamp-2 whitespace-pre-wrap">
-            {address}
-          </p>
+          <div className="w-[240px]">
+            <p className="text-[14px] font-bold leading-snug break-words line-clamp-2 whitespace-pre-wrap">
+              {address}
+            </p>
+          </div>
         </div>
 
         {/* Phone number */}

@@ -27,8 +27,33 @@ export const StudentIdCard = React.forwardRef(({ student }, ref) => {
   const formattedClass = getRomanClass(rawClass);
   const classDisplay = `${formattedClass} - STD '${rawSec}' SEC`;
 
-  const studentAddress = student.address || '#15&44, Eda Street, Saidapet, Vellore-12.';
-  const studentPhone = student.phone || student.fatherPhone || student.motherPhone || student.whatsappNumber || '63790 41414';
+  const formatAddress = (addr) => {
+    if (!addr) return '#15 & 44, Eda Street, Saidapet, Vellore-12.';
+    // Inject spaces after commas if missing, so browser can wrap properly
+    // This fixes the issue where "STREET,SAIDAPET,VELLORE" wraps as one huge block
+    return addr.replace(/,/g, ', ').replace(/ +/g, ' ').trim();
+  };
+
+  const getPhoneNumbers = () => {
+    let text = [];
+    if (student.fatherPhone) {
+      text.push(`F: ${student.fatherPhone}`);
+    }
+    if (student.motherPhone) {
+      text.push(`M: ${student.motherPhone}`);
+    }
+    
+    if (text.length === 0) {
+      if (student.whatsappNumber) text.push(`Ph: ${student.whatsappNumber}`);
+      else if (student.phone) text.push(`Ph: ${student.phone}`);
+      else return 'Ph: 63790 41414';
+    }
+    
+    return text.join(' | ');
+  };
+
+  const studentAddress = formatAddress(student.address);
+  const studentPhone = getPhoneNumbers();
 
   return (
     <>
@@ -135,14 +160,16 @@ export const StudentIdCard = React.forwardRef(({ student }, ref) => {
 
         {/* Student Address */}
         <div
-          className="absolute z-10 left-0 w-full text-center px-4 text-[#8B6508]"
+          className="absolute z-10 left-0 w-full flex flex-col items-center text-center text-[#8B6508]"
           style={{ top: '456px', fontFamily: "'Playfair Display', Georgia, serif" }}
         >
-          {studentAddress.split('\n').map((line, idx) => (
-            <p key={idx} className="text-[12.5px] font-bold leading-snug">
-              {line}
-            </p>
-          ))}
+          <div className="w-[240px]">
+            {studentAddress.split('\n').map((line, idx) => (
+              <p key={idx} className="text-[12.5px] font-bold leading-snug">
+                {line}
+              </p>
+            ))}
+          </div>
         </div>
 
         {/* Student Phone */}
@@ -151,7 +178,7 @@ export const StudentIdCard = React.forwardRef(({ student }, ref) => {
           style={{ top: '496px', fontFamily: "'Montserrat', sans-serif" }}
         >
           <p className="text-[13px] font-black tracking-wide">
-            Ph: {studentPhone}
+            {studentPhone}
           </p>
         </div>
       </div>

@@ -36,7 +36,7 @@ const splitFeeName = (value) => {
 
 const buildFeeEntry = (source, fallbackAmount = 0) => {
   const fee = source?.studentFeeId || source?.studentFee || source || {};
-  const feeName = fee.feeCategoryId?.name || fee.name || 'Fee';
+  const feeName = fee.feeCategoryId?.name || fee.includedChargeId?.name || fee.name || 'Fee';
   const totalAmount = toNumber(fee.totalAmount);
   const paidAmount = toNumber(source?.amount ?? fallbackAmount);
   const balanceAmount = toNumber(fee.remainingAmount);

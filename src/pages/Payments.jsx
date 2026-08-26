@@ -14,7 +14,7 @@ import { PageLoader } from '../components/ui/Spinner';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toastError, toastSuccess, toastWarning } from '../services/toastService';
 import { useConfirm } from '../components/ui/ConfirmDialog';
-import { useFeeCategoriesQuery, usePaymentsQuery, useQueryInvalidator, useStudentQuery, useStudentsQuery, useClassesQuery } from '../hooks/useSchoolQueries';
+import { useFeeCategoriesQuery, usePaymentsQuery, useQueryInvalidator, useStudentQuery, useStudentsQuery, useClassesQuery, useIncludedChargesQuery } from '../hooks/useSchoolQueries';
 import { getStoredUser } from '../utils/auth';
 
 const Payments = () => {
@@ -32,11 +32,13 @@ const Payments = () => {
   const { data: studentsData, isLoading: studentsLoading } = useStudentsQuery();
   const { data: feeCategoriesData, isLoading: feeCategoriesLoading } = useFeeCategoriesQuery();
   const { data: classesData, isLoading: classesLoading } = useClassesQuery();
+  const { data: includedChargesData, isLoading: includedChargesLoading } = useIncludedChargesQuery();
   const { data: selectedStudentData } = useStudentQuery(selectedStudentId, Boolean(selectedStudentId));
   const { invalidatePayments, invalidateStudents, invalidateFeeCategories } = useQueryInvalidator();
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedSection, setSelectedSection] = useState('');
   const [studentFees, setStudentFees] = useState([]);
+  const [includedCharges, setIncludedCharges] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [downloadingInvoiceId, setDownloadingInvoiceId] = useState(null);
@@ -53,9 +55,11 @@ const Payments = () => {
     amount: '0',
     paymentMethod: 'CASH',
     referenceNumber: '',
-    remarks: ''
+    remarks: '',
+    otherFees: [] // Array of { includedChargeId, amount }
   });
   const [payingAmounts, setPayingAmounts] = useState({});
+  const [otherFeesAmounts, setOtherFeesAmounts] = useState({}); // { [includedChargeId]: stringAmount }
 
   useEffect(() => {
     if (paymentsData) setPayments(paymentsData);
@@ -72,6 +76,12 @@ const Payments = () => {
   useEffect(() => {
     if (classesData) setClasses(classesData);
   }, [classesData]);
+
+  useEffect(() => {
+    if (includedChargesData) {
+      setIncludedCharges(includedChargesData.filter(c => c.status === true));
+    }
+  }, [includedChargesData]);
 
   useEffect(() => {
     const sid = incomingStudentId.current;
@@ -305,12 +315,14 @@ const Payments = () => {
       } else {
         setStudentFees([]);
         setPayingAmounts({});
-        setPaymentData(prev => ({...prev, studentFeeIds: [], amount: '0'}));
+        setPaymentData(prev => ({...prev, studentFeeIds: [], amount: '0', otherFees: []}));
+        setOtherFeesAmounts({});
       }
     } else {
       setStudentFees([]);
       setPayingAmounts({});
-      setPaymentData(prev => ({...prev, studentFeeIds: [], amount: '0'}));
+      setPaymentData(prev => ({...prev, studentFeeIds: [], amount: '0', otherFees: []}));
+        setOtherFeesAmounts({});
     }
   }, [selectedStudentId, selectedStudentData]);
 
@@ -360,6 +372,7 @@ const Payments = () => {
         return;
       }
     }
+
     setLoading(true);
     try {
       const feeAllocations = paymentData.studentFeeIds.map(id => ({
@@ -371,6 +384,7 @@ const Payments = () => {
         studentId: selectedStudentId,
         studentFeeIds: paymentData.studentFeeIds,
         amount: Number(paymentData.amount),
+        otherFees: paymentData.otherFees,
         feeAllocations,
         paymentMethod: paymentData.paymentMethod,
         referenceNumber: paymentData.referenceNumber,
@@ -384,9 +398,11 @@ const Payments = () => {
         amount: '0',
         paymentMethod: 'CASH',
         referenceNumber: '',
-        remarks: ''
+        remarks: '',
+        otherFees: []
       });
       setPayingAmounts({});
+      setOtherFeesAmounts({});
       invalidatePayments();
       invalidateStudents();
       toastSuccess('Payment recorded successfully.');
@@ -473,11 +489,14 @@ const Payments = () => {
     const allocationDescriptors = (payment.feeAllocations || [])
       .map((alloc) => {
         const feeCategory = alloc.studentFeeId?.feeCategoryId;
-        if (!feeCategory) return null;
+        const includedCharge = alloc.studentFeeId?.includedChargeId;
+        const name = feeCategory?.name || includedCharge?.name;
+        const id = feeCategory?._id || feeCategory?.id || includedCharge?._id || includedCharge?.id || name;
+        if (!name) return null;
         return {
-          id: feeCategory._id || feeCategory.id || feeCategory.name,
-          name: feeCategory.name,
-          title: feeCategory.name
+          id: id,
+          name: name,
+          title: name
         };
       })
       .filter(Boolean);
@@ -486,12 +505,16 @@ const Payments = () => {
       return allocationDescriptors;
     }
 
-    const singleCategory = payment.studentFee?.feeCategory;
-    if (singleCategory) {
+    const singleCategory = payment.studentFee?.feeCategory || payment.studentFeeId?.feeCategoryId;
+    const singleIncluded = payment.studentFee?.includedChargeId || payment.studentFeeId?.includedChargeId;
+    const singleName = singleCategory?.name || singleIncluded?.name;
+    const singleId = singleCategory?._id || singleCategory?.id || singleIncluded?._id || singleIncluded?.id || singleName;
+    
+    if (singleName) {
       return [{
-        id: singleCategory._id || singleCategory.id || singleCategory.name,
-        name: singleCategory.name,
-        title: singleCategory.name
+        id: singleId,
+        name: singleName,
+        title: singleName
       }];
     }
 
@@ -526,18 +549,22 @@ const Payments = () => {
         rawDetails = allocations
           .map((alloc) => {
             const feeCategory = alloc.studentFeeId?.feeCategoryId;
-            if (!feeCategory) return null;
+            const includedCharge = alloc.studentFeeId?.includedChargeId;
+            const name = feeCategory?.name || includedCharge?.name;
+            if (!name) return null;
             return {
-              name: feeCategory.name,
+              name: name,
               amount: alloc.amount || 0
             };
           })
           .filter(Boolean);
       } else {
         const singleCategory = payment.studentFee?.feeCategory || payment.studentFeeId?.feeCategoryId;
-        if (singleCategory) {
+        const singleIncluded = payment.studentFee?.includedChargeId || payment.studentFeeId?.includedChargeId;
+        const name = singleCategory?.name || singleIncluded?.name;
+        if (name) {
           rawDetails = [{
-            name: singleCategory.name,
+            name: name,
             amount: payment.amount
           }];
         }
@@ -984,11 +1011,12 @@ const Payments = () => {
                           const val = payingAmounts[id] ?? '0';
                           return sum + (parseFloat(val) || 0);
                         }, 0);
-
+                        
+                        let otherTotal = paymentData.otherFees ? paymentData.otherFees.reduce((sum, of) => sum + (parseFloat(of.amount) || 0), 0) : 0;
                         setPaymentData(prev => ({
                           ...prev,
                           studentFeeIds: validIds,
-                          amount: newTotal.toString()
+                          amount: String(newTotal + otherTotal)
                         }));
                       }}
                     />
@@ -1041,10 +1069,11 @@ const Payments = () => {
                               return sum + (parseFloat(currVal) || 0);
                             }, 0);
 
+                            let otherTotal = paymentData.otherFees ? paymentData.otherFees.reduce((sum, of) => sum + (parseFloat(of.amount) || 0), 0) : 0;
                             setPaymentData(prev => ({
                               ...prev,
                               studentFeeIds: validIds,
-                              amount: newTotal.toString()
+                              amount: String(newTotal + otherTotal)
                             }));
                           }}
                           className={`h-9 font-bold text-sm ${parseFloat(payingVal) > dynamicRemaining ? 'border-red-500 focus:ring-red-500' : ''}`}
@@ -1081,6 +1110,89 @@ const Payments = () => {
               }
               return null;
             })()}
+
+            {includedCharges.length > 0 && (
+              <div className="space-y-2 mt-6 border-t pt-4">
+                <Label>Other Fees (Optional)</Label>
+                <div className="max-h-64 overflow-y-auto p-2 border border-gray-300 rounded-md bg-white space-y-3">
+                  {includedCharges.map(charge => {
+                    const isChecked = paymentData.otherFees.some(of => of.includedChargeId === charge._id);
+                    const payingVal = otherFeesAmounts[charge._id] ?? '';
+                    
+                    return (
+                      <div key={charge._id} className={`relative p-3.5 border rounded-xl space-y-3 transition-all duration-300 ${
+                        isChecked ? 'border-orange-200 bg-orange-50/10 shadow-xs' : 'border-gray-200 hover:border-gray-300'
+                      }`}>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            id={`otherfee-${charge._id}`}
+                            checked={isChecked}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              let newOtherFees = [...paymentData.otherFees];
+                              let newAmounts = { ...otherFeesAmounts };
+                              
+                              if (checked) {
+                                newOtherFees.push({ includedChargeId: charge._id, amount: String(charge.amount || '') });
+                                newAmounts[charge._id] = String(charge.amount || '');
+                              } else {
+                                newOtherFees = newOtherFees.filter(of => of.includedChargeId !== charge._id);
+                                delete newAmounts[charge._id];
+                              }
+                              
+                              let baseTotal = paymentData.studentFeeIds.reduce((sum, id) => sum + (parseFloat(payingAmounts[id]) || 0), 0);
+                              let otherTotal = newOtherFees.reduce((sum, of) => sum + (parseFloat(of.amount) || 0), 0);
+                              
+                              setPaymentData(prev => ({ ...prev, otherFees: newOtherFees, amount: String(baseTotal + otherTotal) }));
+                              setOtherFeesAmounts(newAmounts);
+                            }}
+                            disabled={charge.stockQuantity <= 0}
+                            className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-600 cursor-pointer disabled:cursor-not-allowed"
+                          />
+                          <Label htmlFor={`otherfee-${charge._id}`} className={`text-sm font-bold select-none ${charge.stockQuantity <= 0 ? 'text-gray-400 cursor-not-allowed' : 'cursor-pointer text-gray-800'}`}>
+                            {charge.name} {charge.stockQuantity <= 0 && <span className="text-red-500 text-xs ml-2">(Out of Stock)</span>}
+                          </Label>
+                        </div>
+                        <div className="text-xs text-gray-500 pl-7">
+                          Price: <span className="font-bold text-gray-700">₹{charge.amount}</span> | Stock: {charge.stockQuantity}
+                        </div>
+                        {isChecked && (
+                          <div className="pl-6 pt-1 grid grid-cols-1 gap-4 items-center bg-white p-3 rounded-lg border border-orange-100 shadow-sm animate-in fade-in slide-in-from-top-1 duration-150">
+                            <div className="space-y-1.5">
+                              <Label htmlFor={`paying-other-${charge._id}`} className="text-xs font-bold text-gray-700">Amount Paying Now (Rs.)</Label>
+                              <Input
+                                id={`paying-other-${charge._id}`}
+                                type="text"
+                                value={payingVal}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (val !== '' && !/^\d+$/.test(val)) return;
+                                  
+                                  const newAmounts = { ...otherFeesAmounts, [charge._id]: val };
+                                  setOtherFeesAmounts(newAmounts);
+                                  
+                                  const newOtherFees = paymentData.otherFees.map(of => 
+                                    of.includedChargeId === charge._id ? { ...of, amount: val } : of
+                                  );
+
+                                  let baseTotal = paymentData.studentFeeIds.reduce((sum, id) => sum + (parseFloat(payingAmounts[id]) || 0), 0);
+                                  let otherTotal = newOtherFees.reduce((sum, of) => sum + (parseFloat(of.amount) || 0), 0);
+                                  
+                                  setPaymentData(prev => ({ ...prev, otherFees: newOtherFees, amount: String(baseTotal + otherTotal) }));
+                                }}
+                                className="h-8 text-sm w-full font-semibold text-emerald-700"
+                                placeholder="0"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1122,7 +1234,7 @@ const Payments = () => {
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">
             <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={loading} loadingText="Processing..." disabled={!selectedStudentId || paymentData.studentFeeIds.length === 0 || isFormInvalid}>
+            <Button type="submit" loading={loading} loadingText="Processing..." onClick={handlePayment} disabled={!selectedStudentId || paymentData.studentFeeIds.length === 0 || isFormInvalid}>
               Confirm Payment
             </Button>
           </div>

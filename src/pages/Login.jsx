@@ -23,8 +23,15 @@ const Login = () => {
         password,
       });
 
+      console.log('Login response:', response);
+
       if (!response.data?.token || !response.data?.user) {
-        setError('Login failed. Please try again.');
+        if (typeof response.data === 'string' && response.data.includes('<!DOCTYPE html>')) {
+          setError('Server returned an HTML page. Is the backend running on port 5000?');
+        } else {
+          console.error("Invalid response format:", response.data);
+          setError(`Invalid response format from server. Data type: ${typeof response.data}`);
+        }
         return;
       }
 

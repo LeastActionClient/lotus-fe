@@ -186,7 +186,12 @@ const PendingFees = () => {
     return 'current';
   };
 
-  const getFeeCatId = (fee) => String(fee?.feeCategoryId?._id || fee?.feeCategoryId || '');
+  const getFeeCatId = (fee) => {
+    if (fee?.includedChargeId) {
+      return String(fee.includedChargeId._id || fee.includedChargeId);
+    }
+    return String(fee?.feeCategoryId?._id || fee?.feeCategoryId || '');
+  };
 
   const isFeeCategorySelected = (fee, selectedIds = selectedCategoryIds) => {
     if (!selectedIds || selectedIds.length === 0) return true;
@@ -250,7 +255,7 @@ const PendingFees = () => {
     return getPreviousFees(student).reduce((sum, fee) => sum + (fee.paidAmount || 0), 0);
   };
 
-  const formatFeeLabel = (fee) => fee.feeCategory?.name || fee.feeCategoryId?.name || 'Unknown';
+  const formatFeeLabel = (fee) => fee.feeCategory?.name || fee.feeCategoryId?.name || fee.includedChargeId?.name || fee.name || 'Unknown';
   const formatRs = (amount) => `Rs. ${(amount || 0).toFixed(2)}`;
   const renderFeeBreakdown = (fees, emptyMessage = 'No pending fees') => {
     if (!fees || fees.length === 0) {
@@ -291,8 +296,19 @@ const PendingFees = () => {
 
   const fetchCategories = async () => {
     try {
-      const res = await api.get('/fees/categories');
-      setCategories(res.data);
+      const [catRes, chargeRes] = await Promise.all([
+        api.get('/fees/categories'),
+        api.get('/included-charges')
+      ]);
+      const data = catRes.data || [];
+      const charges = chargeRes.data?.data || chargeRes.data || [];
+      
+      const chargeOptions = charges.map(c => ({
+        _id: c._id,
+        name: c.name
+      }));
+      
+      setCategories([...data, ...chargeOptions]);
     } catch (error) {
       console.error('Error fetching categories', error);
     }

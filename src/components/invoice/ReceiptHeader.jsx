@@ -14,12 +14,12 @@ const ReceiptHeader = memo(({ headerTitle }) => {
         />
 
         <div className="shrink-0 rounded-[14px] bg-[#FDE9D9] px-[14px] py-[4px] text-center shadow-sm">
-          <div className="text-[9.3px] font-bold uppercase tracking-[0.08em] text-[#111111]">{line1}</div>
-          <div className="mt-0.5 text-[9.3px] font-bold uppercase tracking-[0.08em] text-[#111111]">{line2}</div>
+          <div className="text-[11.3px] font-bold uppercase tracking-[0.08em] text-[#111111]">{line1}</div>
+          <div className="mt-0.5 text-[11.3px] font-bold uppercase tracking-[0.08em] text-[#111111]">{line2}</div>
         </div>
       </div>
 
-      <div className="mt-1 text-center text-[7.8px] font-medium leading-tight text-[#8A8A8A]">
+      <div className="mt-1 text-center text-[9.8px] font-bold leading-tight text-[#8A8A8A]">
         Approved by Govt. of Tamilnadu - 2349
       </div>
     </header>

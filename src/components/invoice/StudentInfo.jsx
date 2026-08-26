@@ -1,17 +1,17 @@
 import React, { memo } from 'react';
 
-const fieldLabelClass = 'w-[18.5mm] shrink-0 whitespace-nowrap text-[7.8px] font-medium leading-[1.15] tracking-normal text-[#555555]';
-const fieldValueBaseClass = 'min-w-0 flex-1 whitespace-normal break-words text-[8px] font-semibold leading-[1.18] tabular-nums';
+const fieldLabelClass = 'w-[22mm] shrink-0 whitespace-nowrap text-[9.8px] font-bold leading-[1.15] tracking-normal text-[#555555]';
+const fieldValueBaseClass = 'min-w-0 flex-1 whitespace-normal break-words text-[10px] font-bold leading-[1.18] tabular-nums';
 
-const InfoBlock = ({ label, value, accent = false, align = 'left', largeValue = false }) => (
-  <div className={`flex min-w-0 items-start gap-[1.1mm] ${align === 'right' ? 'justify-end' : ''}`}>
+const InfoBlock = ({ label, value, accent = false, largeValue = false }) => (
+  <div className="flex min-w-0 items-start gap-[1.1mm]">
     <div className={fieldLabelClass}>{label}</div>
-    <div className="shrink-0 text-[9px] font-medium leading-[1.15] text-[#555555]">:</div>
+    <div className="shrink-0 text-[11px] font-bold leading-[1.15] text-[#555555]">:</div>
     <div
       className={[
         fieldValueBaseClass,
-        largeValue ? 'text-[9px] font-bold leading-[1.08] text-[#111111]' : (accent ? 'text-[#F58220]' : 'text-[#111111]'),
-        align === 'right' ? 'text-right' : 'text-left'
+        largeValue ? 'text-[11px] font-bold leading-[1.08] text-[#111111]' : (accent ? 'text-[#F58220]' : 'text-[#111111]'),
+        'text-left'
       ].join(' ')}
       title={value}
     >
@@ -34,7 +34,7 @@ const StudentInfo = memo(({ payment }) => {
       : '-';
 
   return (
-    <section className="border-b border-[#ECECEC] py-[1.5mm]">
+    <section className="border-b border-[#ECECEC] py-[1.5mm] break-inside-avoid">
       <div className="grid grid-cols-2 gap-x-[4mm] gap-y-[1.2mm]">
         {isApplication ? (
           <>

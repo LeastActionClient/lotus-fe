@@ -4,7 +4,7 @@ import { formatReceiptMoney } from './receiptHelpers';
 const TableCell = ({ children, align = 'right', className = '' }) => (
   <div
     className={[
-      'min-w-0 border-t border-[#ECECEC] px-[2.6mm] py-[1.7mm] text-[8px] font-semibold leading-[1.18]',
+      'min-w-0 border-t border-[#ECECEC] px-[2.6mm] py-[1.7mm] text-[10px] font-bold leading-[1.18]',
       align === 'left' ? 'text-left' : 'text-right',
       className
     ].join(' ')}
@@ -25,7 +25,7 @@ const FeeTable = memo(({ groupedRows, showLessAmount: forceShowLessAmount }) => 
   ].join(' ');
 
   return (
-    <section className="overflow-hidden rounded-[14px] border border-[#ECECEC] shadow-sm">
+    <section className="overflow-hidden rounded-[14px] border border-[#ECECEC] shadow-sm break-inside-avoid">
       <div
         className="grid overflow-hidden"
         style={{
@@ -34,21 +34,21 @@ const FeeTable = memo(({ groupedRows, showLessAmount: forceShowLessAmount }) => 
             : 'minmax(0,1fr) max-content max-content max-content'
         }}
       >
-        <div className="bg-[#F58220] px-[2.6mm] py-[1.8mm] text-left text-[8px] font-semibold text-white">
+        <div className="bg-[#F58220] px-[2.6mm] py-[1.8mm] text-left text-[10px] font-bold text-white">
           Fee Description
         </div>
-        <div className="border-l border-[#FFFFFF33] bg-[#F58220] px-[2.6mm] py-[1.8mm] text-right text-[8px] font-semibold text-white">
+        <div className="border-l border-[#FFFFFF33] bg-[#F58220] px-[2.6mm] py-[1.8mm] text-right text-[10px] font-bold text-white">
           Total
         </div>
         {showLessAmount && (
-          <div className="border-l border-[#FFFFFF33] bg-[#F58220] px-[2.6mm] py-[1.8mm] text-right text-[8px] font-semibold text-white">
+          <div className="border-l border-[#FFFFFF33] bg-[#F58220] px-[2.6mm] py-[1.8mm] text-right text-[10px] font-bold text-white">
             Less
           </div>
         )}
-        <div className="border-l border-[#FFFFFF33] bg-[#F58220] px-[2.6mm] py-[1.8mm] text-right text-[8px] font-semibold text-white">
+        <div className="border-l border-[#FFFFFF33] bg-[#F58220] px-[2.6mm] py-[1.8mm] text-right text-[10px] font-bold text-white">
           Paid
         </div>
-        <div className="border-l border-[#FFFFFF33] bg-[#F58220] px-[2.6mm] py-[1.8mm] text-right text-[8px] font-semibold text-white">
+        <div className="border-l border-[#FFFFFF33] bg-[#F58220] px-[2.6mm] py-[1.8mm] text-right text-[10px] font-bold text-white">
           Balance
         </div>
 
@@ -80,7 +80,7 @@ const FeeTable = memo(({ groupedRows, showLessAmount: forceShowLessAmount }) => 
             </React.Fragment>
           ))
         ) : (
-          <div className="col-span-4 bg-white px-3 py-3 text-center text-[8.2px] font-medium text-[#555555]">
+          <div className="col-span-4 bg-white px-3 py-3 text-center text-[10.2px] font-bold text-[#555555]">
             No fee details available.
           </div>
         )}

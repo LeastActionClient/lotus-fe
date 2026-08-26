@@ -15,7 +15,7 @@ const Reports = lazy(() => import('./pages/Reports'));
 const Admins = lazy(() => import('./pages/Admins'));
 const Teachers = lazy(() => import('./pages/Teachers'));
 const PrintExport = lazy(() => import('./pages/PrintExport'));
-const IncludedCharges = lazy(() => import('./pages/IncludedCharges'));
+const OtherFees = lazy(() => import('./pages/OtherFees'));
 const Activities = lazy(() => import('./pages/Activities'));
 const StudentEdit = lazy(() => import('./pages/StudentEdit'));
 const OldStudents = lazy(() => import('./pages/OldStudents'));
@@ -55,7 +55,7 @@ const App = () => {
           <Route path="pending-fees" element={<PendingFees />} />
           <Route path="students/edit/:id" element={<StudentEdit />} />
           <Route path="fee-categories" element={<FeeCategories />} />
-          <Route path="fee-categories/included-charges" element={<IncludedCharges />} />
+          <Route path="fee-categories/other-fees" element={<OtherFees />} />
           <Route path="fee-categories/activities" element={<Activities />} />
           <Route path="payments" element={<Payments />} />
           <Route path="payments/invoice/:id" element={<InvoiceGenerated />} />

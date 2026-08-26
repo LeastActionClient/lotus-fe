@@ -18,6 +18,17 @@
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+
+  @media print {
+    @page {
+      size: A6;
+      margin: 0;
+    }
+    
+    body {
+      margin: 0;
+    }
+  }
 }
 
 /* Hide spin buttons in WebKit (Chrome, Safari, Edge) */

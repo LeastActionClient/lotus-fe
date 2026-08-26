@@ -15,10 +15,10 @@ const ReceiptPage = memo(({ payment, rows, totals, receiptDate, isLastPage, show
 
   return (
     <section
-      className="receipt-page print-color-exact mx-auto flex w-[95mm] flex-col overflow-hidden rounded-[12px] border border-[#ECECEC] bg-white shadow-sm"
+      className="receipt-page print-color-exact mx-auto flex w-[105mm] h-[148mm] break-inside-avoid flex-col overflow-hidden rounded-[12px] border border-[#ECECEC] bg-white shadow-sm"
       data-receipt-page
     >
-      <div className="flex flex-1 flex-col px-[4mm] pt-[4mm] pb-[2.6mm]">
+      <div className="flex flex-1 flex-col px-[2.5mm] pt-[2.5mm] pb-[1.5mm]">
         <ReceiptHeader headerTitle={headerTitle} />
         <div className="pt-[1.3mm]">
           <StudentInfo payment={{ ...payment, receiptDate }} />
@@ -63,7 +63,7 @@ const PDFRenderer = memo(({ payment }) => {
       {billsData.map((bill, billIndex) => (
         <div key={`bill-${bill.id}-${billIndex}`} className="bill-wrapper w-full flex flex-col items-center gap-4">
           {bill.pages.map((rows, pageIndex) => (
-            <div key={`receipt-page-${bill.id}-${pageIndex}`} className="receipt-page-wrapper w-full">
+            <div key={`receipt-page-${bill.id}-${pageIndex}`} className="receipt-page-wrapper w-full break-after-page">
               <ReceiptPage
                 payment={payment}
                 rows={rows}

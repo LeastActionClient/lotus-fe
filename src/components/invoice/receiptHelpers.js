@@ -11,12 +11,12 @@ export const receiptPalette = {
 };
 
 export const receiptMetrics = {
-  pageWidthMm: 95,
-  pageHeightMm: 138,
+  pageWidthMm: 105,
+  pageHeightMm: 148.5,
   pageMarginMm: 5,
   innerPaddingMm: 4,
   footerHeightMm: 5.5,
-  maxRowsPerPage: 12,
+  maxRowsPerPage: 10,
   contentGapMm: 1.8
 };
 
