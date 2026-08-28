@@ -14,7 +14,7 @@ import { useConfirm } from '../components/ui/ConfirmDialog';
 import { useApplicationsQuery, useClassesQuery, useQueryInvalidator } from '../hooks/useSchoolQueries';
 
 const Applications = () => {
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const currentUser = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || '{}');
   const confirm = useConfirm();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);

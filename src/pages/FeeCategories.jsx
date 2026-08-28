@@ -16,7 +16,7 @@ import { useConfirm } from '../components/ui/ConfirmDialog';
 import { useClassesQuery, useFeeCategoriesQuery, useQueryInvalidator, useStudentsQuery, useAcademicYearsQuery } from '../hooks/useSchoolQueries';
 
 const FeeCategories = () => {
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const currentUser = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || '{}');
   const confirm = useConfirm();
   const [categories, setCategories] = useState([]);
   const [students, setStudents] = useState([]);

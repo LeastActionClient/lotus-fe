@@ -13,7 +13,7 @@ import { toastError } from '../services/toastService';
 import { useConfirm } from '../components/ui/ConfirmDialog';
 
 const OtherFees = () => {
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const currentUser = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || '{}');
   const confirm = useConfirm();
   const [charges, setCharges] = useState([]);
   

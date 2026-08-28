@@ -32,7 +32,7 @@ const Admins = () => {
     role: 'ADMIN'
   });
 
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const currentUser = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || '{}');
   const confirm = useConfirm();
 
   const fetchAdmins = async () => {
