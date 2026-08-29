@@ -539,7 +539,7 @@ const PendingFees = () => {
     targetCategoryNames.forEach(catName => { categoryTotals[catName] = 0; });
 
     const excelData = sortedStudents.map((student, index) => {
-      const displayPendingAmount = getStudentTotalPending(student, selectedCategoryIds);
+      const displayPendingAmount = getStudentTotalPending(student, []);
       const prevPend = getPreviousPending(student, selectedCategoryIds);
       const currPend = getCurrentPending(student, selectedCategoryIds);
       
@@ -815,7 +815,7 @@ const PendingFees = () => {
                   </TableRow>
                 ) : (
                   paginatedStudents.map((student, index) => {
-                    const totalPending = getStudentTotalPending(student, selectedCategoryIds);
+                    const totalPending = getStudentTotalPending(student, []);
                     const totalPaid = getStudentTotalPaid(student);
                     const totalFee = getStudentTotalFee(student);
                     const currentPending = getCurrentPending(student, selectedCategoryIds);

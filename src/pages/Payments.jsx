@@ -340,13 +340,16 @@ const Payments = () => {
     }
     
     return val === '' || isNaN(num) || num <= 0 || num > dynamicRemaining;
+  }) || (paymentData.otherFees || []).some(of => {
+    const num = parseFloat(of.amount);
+    return isNaN(num) || num <= 0;
   });
 
   const getFeeRemainingDisplay = (f) => (f ? getDynamicRemaining(f) : 0);
 
   const handlePayment = async (e) => {
     e.preventDefault();
-    if (paymentData.studentFeeIds.length === 0) {
+    if (paymentData.studentFeeIds.length === 0 && (!paymentData.otherFees || paymentData.otherFees.length === 0)) {
       toastWarning("Please select at least one fee to pay.");
       return;
     }
@@ -360,7 +363,7 @@ const Payments = () => {
       }
     }
 
-    if (hasPreviousYearPending) {
+    if (hasPreviousYearPending && paymentData.studentFeeIds.length > 0) {
       const selectedPreviousYearFees = paymentData.studentFeeIds.filter(id => {
         const fee = studentFees.find(f => (f._id || f.id) === id);
         return fee && isPreviousYearFee(fee, selectedStudent);
@@ -1234,7 +1237,7 @@ const Payments = () => {
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">
             <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={loading} loadingText="Processing..." onClick={handlePayment} disabled={!selectedStudentId || paymentData.studentFeeIds.length === 0 || isFormInvalid}>
+            <Button type="submit" loading={loading} loadingText="Processing..." onClick={handlePayment} disabled={!selectedStudentId || (paymentData.studentFeeIds.length === 0 && (!paymentData.otherFees || paymentData.otherFees.length === 0)) || isFormInvalid}>
               Confirm Payment
             </Button>
           </div>

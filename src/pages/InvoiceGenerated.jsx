@@ -213,12 +213,52 @@ const InvoiceGenerated = () => {
     window.print();
   };
 
+  const getFullHtml = () => {
+    const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+      .map(el => el.outerHTML)
+      .join('\n');
+    const pagesHtml = Array.from(document.querySelectorAll('.receipt-page'))
+      .map(p => p.outerHTML)
+      .join('\n');
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          ${styles}
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+            body { 
+              font-family: 'Poppins', sans-serif; 
+              -webkit-print-color-adjust: exact; 
+              print-color-adjust: exact;
+              margin: 0; 
+              padding: 0; 
+              display: flex; 
+              flex-direction: column; 
+              background: #fff; 
+            }
+            .receipt-page {
+              margin: 0 !important;
+              page-break-after: always;
+              border: none !important;
+              box-shadow: none !important;
+              border-radius: 0 !important;
+            }
+          </style>
+        </head>
+        <body>
+          ${pagesHtml}
+        </body>
+      </html>
+    `;
+  };
+
   const downloadInvoice = async () => {
     setDownloading(true);
     try {
-      const response = await api.get(`/payments/invoice/${id}`, {
-        responseType: 'blob'
-      });
+      const html = getFullHtml();
+      const response = await api.post(`/payments/${id}/render-pdf`, { html }, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -243,7 +283,8 @@ const InvoiceGenerated = () => {
 
     setSharing(true);
     try {
-      const response = await api.post(`/payments/${id}/whatsapp`, {}, { skipToast: true });
+      const html = getFullHtml();
+      const response = await api.post(`/payments/${id}/whatsapp`, { html }, { skipToast: true });
       const data = response.data;
 
       if (!data?.waLink || !data?.pdfUrl) {

@@ -69,8 +69,8 @@ const Admissions = () => {
       return;
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-      toastError("Maximum file size allowed is 2 MB.");
+    if (file.size > 6 * 1024 * 1024) {
+      toastError("Maximum file size allowed is 6 MB.");
       return;
     }
 
