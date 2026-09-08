@@ -34,24 +34,24 @@ const StudentInfo = memo(({ payment }) => {
 
   return (
     <section className="border-b border-[#ECECEC] py-[1.5mm] break-inside-avoid">
-      <div className="grid grid-cols-2 gap-x-[4mm] gap-y-[1.2mm]">
+      <div className="grid grid-cols-[58%_42%] gap-x-[4mm] gap-y-[1.2mm]">
         {isApplication ? (
           <>
             <InfoBlock label="Application No" value={application.applicationId || '-'} accent labelWidthClass="w-[24mm]" />
-            <InfoBlock label="Receipt No" value={invoiceNumber} labelWidthClass="w-[24mm]" />
+            <InfoBlock label="Rec.No" value={invoiceNumber} labelWidthClass="w-[15.5mm]" />
             <InfoBlock label="Applicant Name" value={application.studentName || '-'} largeValue labelWidthClass="w-[24mm]" />
-            <InfoBlock label="Applying Class" value={application.applyingClass || '-'} labelWidthClass="w-[24mm]" />
-            <InfoBlock label="Date" value={receiptDate || '-'} labelWidthClass="w-[24mm]" />
-            <InfoBlock label="Payment Mode" value={paymentMode} labelWidthClass="w-[24mm]" />
+            <InfoBlock label="Applying Class" value={application.applyingClass || '-'} labelWidthClass="w-[15.5mm]" />
+            <InfoBlock label="Date" value={receiptDate || '-'} labelWidthClass="w-[15.5mm]" />
+            <InfoBlock label="Pay Mode" value={paymentMode} labelWidthClass="w-[15.5mm]" />
           </>
         ) : (
           <>
             <InfoBlock label="Ad. No" value={student.admissionNumber || '-'} labelWidthClass="w-[15.5mm]" />
-            <InfoBlock label="Receipt No" value={invoiceNumber} labelWidthClass="w-[22mm]" />
+            <InfoBlock label="Rec.No" value={invoiceNumber} labelWidthClass="w-[15.5mm]" />
             <InfoBlock label="S. Name" value={student.studentName || '-'} largeValue labelWidthClass="w-[15.5mm]" />
-            <InfoBlock label="Date" value={receiptDate || '-'} labelWidthClass="w-[22mm]" />
+            <InfoBlock label="Date" value={receiptDate || '-'} labelWidthClass="w-[15.5mm]" />
             <InfoBlock label="Class & Sec" value={classValue} labelWidthClass="w-[15.5mm]" />
-            <InfoBlock label="Payment Mode" value={paymentMode} labelWidthClass="w-[22mm]" />
+            <InfoBlock label="Pay Mode" value={paymentMode} labelWidthClass="w-[15.5mm]" />
           </>
         )}
       </div>
