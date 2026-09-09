@@ -42,7 +42,7 @@ const IdCards = () => {
   // Preview Modal State
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewStudent, setPreviewStudent] = useState(null);
-  const [zoomLevel, setZoomLevel] = useState(1);
+  const [zoomLevel, setZoomLevel] = useState(1.5);
 
   // Processing Loading States
   const [downloadingPdf, setDownloadingPdf] = useState(false);
@@ -154,7 +154,7 @@ const IdCards = () => {
 
   const openPreview = (student) => {
     setPreviewStudent(student);
-    setZoomLevel(1);
+    setZoomLevel(1.5);
     setIsPreviewModalOpen(true);
   };
 
@@ -721,7 +721,7 @@ const IdCards = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setZoomLevel(1)}
+                  onClick={() => setZoomLevel(1.5)}
                   className="h-8 w-8 p-0"
                   title="Reset Zoom"
                 >

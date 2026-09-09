@@ -3,7 +3,7 @@ import { Download, PieChart, TrendingUp, Calendar, IndianRupee } from 'lucide-re
 import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { PageLoader } from '../components/ui/Spinner';
-import { useFeeCategoriesQuery, usePendingFeesQuery, useReportDataQuery, useDashboardOverviewQuery } from '../hooks/useSchoolQueries';
+import { useFeeCategoriesQuery, usePendingFeesQuery, useReportDataQuery, useDashboardOverviewQuery, useIncludedChargesQuery } from '../hooks/useSchoolQueries';
 import * as XLSX from 'xlsx';
 
 const formatDateDDMMYYYY = (dateVal) => {
@@ -36,7 +36,16 @@ const Reports = () => {
   const { data: reportData = {}, isLoading: reportLoading } = useReportDataQuery(timeframe, startDate, endDate);
   const { data: pendingData = {}, isLoading: pendingLoading } = usePendingFeesQuery();
   const { data: feeCategories = [], isLoading: categoriesLoading } = useFeeCategoriesQuery();
+  const { data: includedCharges = [], isLoading: chargesLoading } = useIncludedChargesQuery();
   const { data: overview = {} } = useDashboardOverviewQuery();
+
+  const allCategories = useMemo(() => {
+    const combined = [...feeCategories];
+    includedCharges.forEach(charge => {
+      combined.push({ _id: charge._id, name: `${charge.name} (Included Charge)` });
+    });
+    return combined;
+  }, [feeCategories, includedCharges]);
 
   const daily = useMemo(() => {
     const rawPayments = reportData.payments || [];
@@ -65,13 +74,36 @@ const Reports = () => {
   const filteredCollections = daily.filter(item => {
     if (selectedCategory === 'ALL') return true;
     
-    const catName = item.studentFee?.feeCategory?.name || item.studentFeeId?.feeCategoryId?.name;
-    const catId = item.studentFee?.feeCategory?._id || item.studentFee?.feeCategory || item.studentFeeId?.feeCategoryId?._id || item.studentFeeId?.feeCategoryId;
+    const catName = item.studentFee?.feeCategory?.name || item.studentFeeId?.feeCategoryId?.name || item.studentFeeId?.includedChargeId?.name || item.feeCategoryName;
+    
+    let catId = item.studentFee?.feeCategory?._id || item.studentFee?.feeCategory;
+    if (!catId) {
+      catId = item.studentFeeId?.feeCategoryId?._id || item.studentFeeId?.feeCategoryId;
+    }
+    if (!catId) {
+      catId = item.studentFeeId?.includedChargeId?._id || item.studentFeeId?.includedChargeId;
+    }
+    if (!catId) {
+      catId = item.studentFeeId;
+    }
     
     if (selectedCategory === 'APPLICATION_FEES') {
-      return catName === 'Application Fee';
+      return catName === 'Application Fee' || item.paymentType === 'APPLICATION';
     }
-    return catId === selectedCategory;
+    
+    // Fuzzy matching fallback if names are very similar (e.g. Abcus kit vs Abacus kit)
+    if (String(catId) === String(selectedCategory)) return true;
+
+    const selectedCatObj = allCategories.find(c => String(c._id) === String(selectedCategory));
+    if (selectedCatObj && catName) {
+        const name1 = selectedCatObj.name.toLowerCase().replace(/[^a-z0-9]/g, '').replace('includedcharge', '');
+        const name2 = catName.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (name1 === name2) return true;
+        if (name1.includes('abacus') && name2.includes('abcus')) return true;
+        if (name1.includes('abcus') && name2.includes('abacus')) return true;
+    }
+
+    return false;
   });
 
   const totalFilteredCollections = filteredCollections.reduce((sum, item) => sum + (item.amount || 0), 0);
@@ -79,7 +111,7 @@ const Reports = () => {
   const handleExportExcel = () => {
     const data = filteredCollections.map(item => {
       const studentObj = item.student || item.studentId || {};
-      const feeCategoryObj = item.studentFee?.feeCategory || item.studentFeeId?.feeCategoryId || {};
+      const feeCategoryObj = item.studentFee?.feeCategory || item.studentFeeId?.feeCategoryId || item.studentFeeId?.includedChargeId || {};
       const recordedByObj = item.recordedBy || item.recordedById || item.processedById || {};
 
       return {
@@ -150,7 +182,7 @@ const Reports = () => {
     const headers = ['Date', 'Class', 'Sec', 'Admission number', 'Fee category', 'Amount', 'Method', 'Collected by'];
     const rows = filteredCollections.map(item => {
       const studentObj = item.student || item.studentId || {};
-      const feeCategoryObj = item.studentFee?.feeCategory || item.studentFeeId?.feeCategoryId || {};
+      const feeCategoryObj = item.studentFee?.feeCategory || item.studentFeeId?.feeCategoryId || item.studentFeeId?.includedChargeId || {};
       const recordedByObj = item.recordedBy || item.recordedById || item.processedById || {};
 
       return [
@@ -187,7 +219,7 @@ const Reports = () => {
     link.click();
   };
 
-  const isPageLoading = reportLoading || pendingLoading || categoriesLoading;
+  const isPageLoading = reportLoading || pendingLoading || categoriesLoading || chargesLoading;
   if (isPageLoading && daily.length === 0) return <PageLoader text="Loading reports..." />;
 
   const totalPending = pending.reduce((sum, item) => sum + (item.remainingAmount || 0), 0);
@@ -217,7 +249,7 @@ const Reports = () => {
               >
                 <option value="ALL">All Categories</option>
                 <option value="APPLICATION_FEES">Application Fees</option>
-                {feeCategories.map(cat => (
+                {allCategories.map(cat => (
                   <option key={cat._id} value={cat._id}>{cat.name}</option>
                 ))}
               </select>
@@ -290,7 +322,7 @@ const Reports = () => {
                         {formatDateDDMMYYYY(item.paymentDate)} - {item.student?.studentName || item.studentId?.studentName}
                       </span>
                       <span className="text-xs text-gray-500">
-                        {item.studentFee?.feeCategory?.name || item.studentFeeId?.feeCategoryId?.name || (item.paymentType === 'APPLICATION' ? 'Application Fee' : '')} | Admission No: {item.student?.admissionNumber || item.studentId?.admissionNumber} | Collected by: {item.recordedBy?.username || item.recordedById?.username || item.processedById?.username || ''}
+                        {item.studentFee?.feeCategory?.name || item.studentFeeId?.feeCategoryId?.name || item.studentFeeId?.includedChargeId?.name || (item.paymentType === 'APPLICATION' ? 'Application Fee' : '')} | Admission No: {item.student?.admissionNumber || item.studentId?.admissionNumber} | Collected by: {item.recordedBy?.username || item.recordedById?.username || item.processedById?.username || ''}
                       </span>
                     </div>
                     <div className="flex justify-between w-28 font-bold text-emerald-600 select-none">

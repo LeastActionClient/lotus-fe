@@ -59,7 +59,7 @@ export const StudentIdCard = React.forwardRef(({ student }, ref) => {
     <>
       <style>
         {`
-          @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Playfair+Display:wght@700;800&family=Alex+Brush&display=swap');
+          @import url('https://fonts.googleapis.com/css2?family=Alex+Brush&display=swap');
         `}
       </style>
 
@@ -67,12 +67,12 @@ export const StudentIdCard = React.forwardRef(({ student }, ref) => {
         ref={ref}
         className="id-card-container relative overflow-hidden text-gray-900 shadow-2xl border border-gray-200 select-none shrink-0"
         style={{
-          width: '340px',
-          height: '530px',
-          borderRadius: '16px',
+          width: '54mm',
+          height: '85.6mm',
+          borderRadius: '3mm',
           boxSizing: 'border-box',
           backgroundColor: '#FFFFFF',
-          fontFamily: "'Montserrat', sans-serif"
+          fontFamily: "Arial, sans-serif"
         }}
       >
         {/* Background Clean Template Graphic Image */}
@@ -86,11 +86,13 @@ export const StudentIdCard = React.forwardRef(({ student }, ref) => {
         <div
           className="absolute z-10 overflow-hidden flex items-center justify-center"
           style={{
-            top: '165px',
-            left: '75px',
-            width: '182px',
-            height: '182px',
+            top: '24.4mm',
+            left: '10.5mm',
+            width: '33mm',
+            height: '33mm',
             borderRadius: '50%',
+            border: '0.7mm solid #ae8041',
+            boxSizing: 'border-box',
             backgroundColor: photo && !photoLoadFailed ? '#ef2f2a' : '#f3f4f6'
           }}
         >
@@ -124,36 +126,36 @@ export const StudentIdCard = React.forwardRef(({ student }, ref) => {
 
         {/* Student Name */}
         <div
-          className="absolute z-10 left-0 w-full text-center px-3"
-          style={{ top: '362px' }}
+          className="absolute z-10 left-0 w-full text-center px-2"
+          style={{ top: '57.5mm' }}
         >
-          <h2 className="text-[20px] font-black text-[#0A2368] tracking-wide leading-tight line-clamp-1">
+          <h2 className="font-black text-[#0A2368] tracking-wide leading-tight line-clamp-1" style={{ fontSize: '13pt' }}>
             {studentName}
           </h2>
         </div>
 
         {/* Class & Section */}
         <div
-          className="absolute z-10 left-0 w-full text-center px-3"
-          style={{ top: '390px' }}
+          className="absolute z-10 left-0 w-full text-center px-2"
+          style={{ top: '62.5mm' }}
         >
-          <p className="text-[14px] font-black text-[#8B6508] tracking-wider uppercase">
+          <p className="font-black text-[#8B6508] tracking-wider uppercase" style={{ fontSize: '8pt' }}>
             {classDisplay}
           </p>
         </div>
 
         {/* Principal Signature */}
         <div
-          className="absolute z-10 text-right pr-6 flex flex-col items-end"
-          style={{ top: '412px', right: '0px' }}
+          className="absolute z-10 text-right pr-4 flex flex-col items-end"
+          style={{ top: '67.5mm', right: '0px' }}
         >
           <span
-            className="text-[15px] font-bold text-[#16A34A] tracking-wide select-none"
-            style={{ fontFamily: "'Alex Brush', cursive" }}
+            className="font-bold text-[#16A34A] tracking-wide select-none leading-none"
+            style={{ fontFamily: "'Alex Brush', cursive", fontSize: '10pt' }}
           >
             M. Vijayakumar
           </span>
-          <span className="text-[11px] font-extrabold text-[#8B6508] tracking-wide leading-none mt-0.5">
+          <span className="font-normal text-[#8B6508] tracking-wide leading-none" style={{ fontSize: '6pt' }}>
             Principal
           </span>
         </div>
@@ -161,11 +163,11 @@ export const StudentIdCard = React.forwardRef(({ student }, ref) => {
         {/* Student Address */}
         <div
           className="absolute z-10 left-0 w-full flex flex-col items-center text-center text-[#8B6508]"
-          style={{ top: '456px', fontFamily: "'Playfair Display', Georgia, serif" }}
+          style={{ top: '72.5mm', fontFamily: "Arial, sans-serif" }}
         >
-          <div className="w-[240px]">
+          <div className="w-[38mm]">
             {studentAddress.split('\n').map((line, idx) => (
-              <p key={idx} className="text-[12.5px] font-bold leading-snug">
+              <p key={idx} className="font-bold leading-snug" style={{ fontSize: '7.25pt' }}>
                 {line}
               </p>
             ))}
@@ -175,9 +177,9 @@ export const StudentIdCard = React.forwardRef(({ student }, ref) => {
         {/* Student Phone */}
         <div
           className="absolute z-10 left-0 w-full text-center text-[#8B6508]"
-          style={{ top: '496px', fontFamily: "'Montserrat', sans-serif" }}
+          style={{ top: '78.5mm', fontFamily: "Arial, sans-serif" }}
         >
-          <p className="text-[13px] font-black tracking-wide">
+          <p className="font-normal tracking-wide" style={{ fontSize: '7.25pt' }}>
             {studentPhone}
           </p>
         </div>
