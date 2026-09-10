@@ -42,7 +42,7 @@ const IdCards = () => {
   // Preview Modal State
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewStudent, setPreviewStudent] = useState(null);
-  const [zoomLevel, setZoomLevel] = useState(1.5);
+  const [zoomLevel, setZoomLevel] = useState(0.5);
 
   // Processing Loading States
   const [downloadingPdf, setDownloadingPdf] = useState(false);
@@ -154,7 +154,7 @@ const IdCards = () => {
 
   const openPreview = (student) => {
     setPreviewStudent(student);
-    setZoomLevel(1.5);
+    setZoomLevel(0.5);
     setIsPreviewModalOpen(true);
   };
 
@@ -171,7 +171,7 @@ const IdCards = () => {
     return Promise.all(promises);
   };
 
-  // PDF Generation Logic (CR80 standard 54mm x 85.6mm PVC portrait per page)
+  // PDF Generation Logic (CR80 standard 59mm x 85.6mm PVC portrait per page)
   const generatePdfForStudents = async (studentList) => {
     if (!studentList || studentList.length === 0) {
       toastWarning('No students selected for PDF download.');
@@ -196,18 +196,18 @@ const IdCards = () => {
           throw new Error('No card elements found for rendering');
         }
 
-        // Standard PVC Card size in mm: 54mm x 85.6mm
+        // Standard PVC Card size in mm: 59mm x 59mm (matching user requirement)
         const pdf = new jsPDF({
           orientation: 'portrait',
           unit: 'mm',
-          format: [54, 85.6]
+          format: [58, 89]
         });
 
         for (let i = 0; i < cardElements.length; i++) {
           const el = cardElements[i];
           const targetNode = el.querySelector('.id-card-container') || el;
           const canvas = await html2canvas(targetNode, {
-            scale: 2,
+            scale: 1,
             useCORS: true,
             allowTaint: true,
             logging: false,
@@ -217,10 +217,10 @@ const IdCards = () => {
           const imgData = canvas.toDataURL('image/jpeg', 0.95);
 
           if (i > 0) {
-            pdf.addPage([54, 85.6], 'portrait');
+            pdf.addPage([59, 89], 'portrait');
           }
 
-          pdf.addImage(imgData, 'JPEG', 0, 0, 54, 85.6);
+          pdf.addImage(imgData, 'JPEG', 0, 0, 59, 89);
         }
 
         const filename = studentList.length === 1
@@ -264,7 +264,7 @@ const IdCards = () => {
           const el = cardElements[i];
           const targetNode = el.querySelector('.id-card-container') || el;
           const canvas = await html2canvas(targetNode, {
-            scale: 2,
+            scale: 1,
             useCORS: true,
             allowTaint: true,
             logging: false,
@@ -289,7 +289,7 @@ const IdCards = () => {
               <title>Print Student ID Cards</title>
               <style>
                 @page {
-                  size: 54mm 85.6mm;
+                  size: 59mm 89mm;
                   margin: 0;
                 }
                 body {
@@ -301,8 +301,8 @@ const IdCards = () => {
                   align-items: center;
                 }
                 .print-card-img {
-                  width: 54mm;
-                  height: 85.6mm;
+                  width: 59mm;
+                  height: 89mm;
                   display: block;
                   page-break-after: always;
                   page-break-inside: avoid;
@@ -703,7 +703,7 @@ const IdCards = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setZoomLevel(prev => Math.min(prev + 0.15, 1.5))}
+                  onClick={() => setZoomLevel(prev => Math.min(prev + 0.1, 1.2))}
                   className="h-8 w-8 p-0"
                   title="Zoom In"
                 >
@@ -712,7 +712,7 @@ const IdCards = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setZoomLevel(prev => Math.max(prev - 0.15, 0.6))}
+                  onClick={() => setZoomLevel(prev => Math.max(prev - 0.1, 0.2))}
                   className="h-8 w-8 p-0"
                   title="Zoom Out"
                 >
@@ -721,7 +721,7 @@ const IdCards = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setZoomLevel(1.5)}
+                  onClick={() => setZoomLevel(0.5)}
                   className="h-8 w-8 p-0"
                   title="Reset Zoom"
                 >
