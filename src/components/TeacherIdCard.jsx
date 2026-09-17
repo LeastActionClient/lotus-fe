@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { User } from 'lucide-react';
 import { getImageUrl } from '../utils/imageUrl';
 import templateImg from '../assets/id_card_template.png';
+import principalSignatureImg from '../assets/principal_signature.png';
 
 export const TeacherIdCard = React.forwardRef(({ teacher }, ref) => {
   if (!teacher) return null;
@@ -18,7 +19,27 @@ export const TeacherIdCard = React.forwardRef(({ teacher }, ref) => {
   const phone = teacher.phoneNumber || '';
   const formatAddress = (addr) => {
     if (!addr) return 'No.35, Pasapathan Mettu st,\nSaidapet, Vellore-12.';
-    return addr.replace(/,/g, ', ').replace(/ +/g, ' ').trim();
+    
+    // Inject spaces after commas if missing, and replace newlines with commas
+    let formatted = addr.replace(/\n/g, ', ').replace(/,/g, ', ').replace(/ +/g, ' ').trim();
+    
+    // Split into parts to remove redundant "Vellore" entries (keeping only the last one)
+    let parts = formatted.split(',').map(p => p.trim()).filter(p => p !== '');
+    let velloreFound = false;
+    let newParts = [];
+    
+    for (let i = parts.length - 1; i >= 0; i--) {
+      if (parts[i].toLowerCase().includes('vellore')) {
+        if (!velloreFound) {
+          newParts.unshift(parts[i]);
+          velloreFound = true;
+        }
+      } else {
+        newParts.unshift(parts[i]);
+      }
+    }
+    
+    return newParts.join(', ');
   };
   const address = formatAddress(teacher.address);
 
@@ -93,10 +114,15 @@ export const TeacherIdCard = React.forwardRef(({ teacher }, ref) => {
 
         {/* Teacher Name */}
         <div
-          className="absolute z-10 left-0 w-full text-center px-4"
+          className="absolute z-10 left-0 w-full text-center px-4 flex justify-center"
           style={{ top: '679px' }}
         >
-          <h2 className="font-black text-[#0A2368] tracking-wide leading-tight line-clamp-1 uppercase" style={{ fontSize: '40pt' }}>
+          <h2 
+            className="font-black text-[#0A2368] tracking-wide leading-tight whitespace-nowrap uppercase" 
+            style={{ 
+              fontSize: teacherName.length > 22 ? '24pt' : teacherName.length > 18 ? '28pt' : teacherName.length > 14 ? '32pt' : '40pt' 
+            }}
+          >
             {teacherName}
           </h2>
         </div>
@@ -104,7 +130,7 @@ export const TeacherIdCard = React.forwardRef(({ teacher }, ref) => {
         {/* Designation */}
         <div
           className="absolute z-10 left-0 w-full text-center px-4"
-          style={{ top: '738px' }}
+          style={{ top: '735px' }}
         >
           <p className="font-black text-[#8B6508] tracking-wider uppercase" style={{ fontSize: '25pt' }}>
             {designation}
@@ -113,40 +139,33 @@ export const TeacherIdCard = React.forwardRef(({ teacher }, ref) => {
 
         {/* Principal Signature */}
         <div
-          className="absolute z-10 text-right pr-6 flex flex-col items-end"
-          style={{ top: '797px', right: '10px' }}
+          className="absolute z-10 text-center flex flex-col items-center"
+          style={{ top: '765px', right: '15px', width: '213px' }}
         >
-          <span
-            className="font-bold text-[#16A34A] tracking-wide select-none leading-none"
-            style={{ fontFamily: "'Alex Brush', cursive", fontSize: '31pt' }}
-          >
-            M. Vijayakumar
-          </span>
-          <span className="font-normal text-[#8B6508] tracking-wide leading-none mt-1" style={{ fontSize: '19pt' }}>
-            Principal
-          </span>
-        </div>
-
-        {/* Address */}
-        <div
-          className="absolute z-10 left-0 w-full flex flex-col items-center text-center text-[#8B6508]"
-          style={{ top: '857px', fontFamily: "Arial, sans-serif" }}
-        >
-          <div style={{ width: '449px' }}>
-            {address.split('\n').map((line, idx) => (
-              <p key={idx} className="font-bold leading-snug" style={{ fontSize: '22pt' }}>
-                {line}
-              </p>
-            ))}
+          <div style={{ width: '213px', height: '60px', overflow: 'hidden', position: 'relative' }}>
+            <img
+              src={principalSignatureImg}
+              alt="Principal Signature"
+              style={{ position: 'absolute', top: '-26px', left: '0', width: '213px', height: '113px', objectFit: 'contain' }}
+              className="select-none"
+            />
           </div>
+          <span className="font-bold text-[#8B6508] tracking-wide leading-none" style={{ fontSize: '19pt', marginTop: '2px' }}>
+             Principal
+          </span>
         </div>
 
-        {/* Phone number */}
+        {/* Contact Info (Address + Phone) */}
         <div
-          className="absolute z-10 left-0 w-full text-center text-[#8B6508]"
-          style={{ top: '927px', fontFamily: "Arial, sans-serif" }}
+          className="absolute z-10 left-0 w-full flex flex-col items-center text-center text-[#8B6508] px-4"
+          style={{ bottom: '8px', fontFamily: "Arial, sans-serif" }}
         >
-          <p className="font-bold tracking-wide" style={{ fontSize: '22pt' }}>
+          <div style={{ maxWidth: '560px' }}>
+            <p className="font-black" style={{ fontSize: '20pt', lineHeight: '1.2', fontWeight: 900 }}>
+              {address}
+            </p>
+          </div>
+          <p className="font-black tracking-wide mt-1" style={{ fontSize: '20pt', fontWeight: 900 }}>
             Ph: {phone}
           </p>
         </div>
