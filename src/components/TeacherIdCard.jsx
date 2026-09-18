@@ -142,11 +142,19 @@ export const TeacherIdCard = React.forwardRef(({ teacher }, ref) => {
           className="absolute z-10 text-center flex flex-col items-center"
           style={{ top: '765px', right: '15px', width: '213px' }}
         >
-          <div style={{ width: '213px', height: '60px', overflow: 'hidden', position: 'relative' }}>
+          <div style={{ width: '213px', height: '60px', overflow: 'visible', position: 'relative' }}>
             <img
               src={principalSignatureImg}
               alt="Principal Signature"
-              style={{ position: 'absolute', top: '-26px', left: '0', width: '213px', height: '113px', objectFit: 'contain' }}
+              style={{
+                position: 'absolute',
+                top: '-26px',
+                left: '-30px',
+                width: '213px',
+                height: '113px',
+                objectFit: 'contain',
+                filter: 'drop-shadow(0px 0px 0.5px rgba(0,0,0,0.4)) contrast(1.2)'
+              }}
               className="select-none"
             />
           </div>
@@ -158,7 +166,7 @@ export const TeacherIdCard = React.forwardRef(({ teacher }, ref) => {
         {/* Contact Info (Address + Phone) */}
         <div
           className="absolute z-10 left-0 w-full flex flex-col items-center text-center text-[#8B6508] px-4"
-          style={{ bottom: '8px', fontFamily: "Arial, sans-serif" }}
+          style={{ bottom: '30px', fontFamily: "Arial, sans-serif" }}
         >
           <div style={{ maxWidth: '560px' }}>
             <p className="font-black" style={{ fontSize: '20pt', lineHeight: '1.2', fontWeight: 900 }}>
