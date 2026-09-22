@@ -92,7 +92,7 @@ export const TeacherIdCard = React.forwardRef(({ teacher }, ref) => {
                   inset: '-2px',
                   backgroundImage: `url(${getImageUrl(photo)})`,
                   backgroundSize: 'cover',
-                  backgroundPosition: 'center center',
+                  backgroundPosition: 'center 15%',
                   backgroundRepeat: 'no-repeat'
                 }}
               />
