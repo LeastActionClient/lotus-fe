@@ -123,7 +123,7 @@ export const StudentIdCard = React.forwardRef(({ student }, ref) => {
                   inset: '-2px',
                   backgroundImage: `url(${getImageUrl(photo)})`,
                   backgroundSize: 'cover',
-                  backgroundPosition: 'center center',
+                  backgroundPosition: 'center 15%',
                   backgroundRepeat: 'no-repeat'
                 }}
               />
