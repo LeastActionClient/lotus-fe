@@ -49,8 +49,10 @@ export const StudentIdCard = React.forwardRef(({ student }, ref) => {
         newParts.unshift(parts[i]);
       }
     }
-    
-    return newParts.join(', ');
+    let result = newParts.join(', ');
+    result = result.replace(/Vellore\s*-\s*(\d+)/ig, 'Vellore\u00A0-\u00A0$1');
+    result = result.replace(/Vellore\s+(\d+)/ig, 'Vellore\u00A0$1');
+    return result;
   };
 
   const getPhoneNumbers = () => {
