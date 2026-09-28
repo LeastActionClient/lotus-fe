@@ -74,7 +74,7 @@ const DashboardLayout = () => {
 
 
   return (
-    <div className="dashboard-shell flex h-screen overflow-hidden bg-gray-100">
+    <div className="dashboard-shell flex h-screen w-full overflow-hidden bg-gray-100">
       {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div 
@@ -93,7 +93,7 @@ const DashboardLayout = () => {
             <X size={24} />
           </button>
           <div className="flex justify-center mb-4">
-            <img src={logo} alt="Logo" className="w-24 h-20" />
+            <img src={logo} alt="Logo" className="h-24 w-auto object-contain" />
           </div>
           <p className="text-sm text-gray-500 mt-1 text-center">Logged in as {user.username}</p>
         </div>
@@ -108,8 +108,8 @@ const DashboardLayout = () => {
               key={item.name}
               to={item.path}
               onClick={() => setIsSidebarOpen(false)}
-              className={`flex items-center px-6 py-3 text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors ${
-                isActive ? 'bg-orange-50 border-r-4 border-orange-600 text-orange-600 font-medium' : ''
+              className={`flex items-center px-6 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors ${
+                isActive ? 'bg-blue-50 border-r-4 border-blue-600 text-blue-600 font-medium' : ''
               }`}
             >
               {item.icon}
@@ -133,11 +133,11 @@ const DashboardLayout = () => {
         <header className="dashboard-mobile-header md:hidden bg-white shadow-sm flex items-center p-4">
           <button 
             onClick={() => setIsSidebarOpen(true)}
-            className="text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-orange-500 p-2 rounded-md"
+            className="text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 p-2 rounded-md"
           >
             <Menu size={24} />
           </button>
-          <h1 className="ml-3 text-lg font-semibold text-gray-900">Kasthuri School</h1>
+          <h1 className="ml-3 text-lg font-semibold text-gray-900">Lotus School</h1>
         </header>
 
         {/* Main Content */}

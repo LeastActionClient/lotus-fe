@@ -239,13 +239,13 @@ const OldStudents = () => {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center">
-            <Users className="mr-3 text-orange-600" size={32} />
+            <Users className="mr-3 text-blue-600" size={32} />
             Old Students Archive
           </h1>
           <p className="text-gray-500 mt-2">Permanent archive of students who are no longer active in the school.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <Button onClick={() => setIsExportModalOpen(true)} className="bg-orange-600 hover:bg-orange-700 text-white">
+          <Button onClick={() => setIsExportModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
             <FolderOpen className="h-4 w-4 mr-2" /> Export Center
           </Button>
         </div>
@@ -281,9 +281,9 @@ const OldStudents = () => {
             <p className="text-2xl font-bold text-gray-900">{stats.discontinued}</p>
           </CardContent>
         </Card>
-        <Card className="bg-white border-gray-200 border-l-4 border-l-orange-500">
+        <Card className="bg-white border-gray-200 border-l-4 border-l-blue-500">
           <CardContent className="p-4 flex flex-col items-center text-center">
-            <IndianRupee className="h-6 w-6 text-orange-600 mb-2" />
+            <IndianRupee className="h-6 w-6 text-blue-600 mb-2" />
             <p className="text-xs text-gray-500 font-medium">With Pending Fees</p>
             <p className="text-2xl font-bold text-gray-900">{stats.pendingFees}</p>
           </CardContent>
@@ -303,14 +303,14 @@ const OldStudents = () => {
                 <Button 
                   variant={quickFeeFilter === 'ALL' ? 'default' : 'outline'} 
                   onClick={() => setQuickFeeFilter('ALL')}
-                  className={quickFeeFilter === 'ALL' ? 'bg-orange-600 hover:bg-orange-700 text-white' : ''}
+                  className={quickFeeFilter === 'ALL' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}
                 >
                   All Old Students
                 </Button>
                 <Button 
                   variant={quickFeeFilter === 'PENDING' ? 'default' : 'outline'} 
                   onClick={() => setQuickFeeFilter('PENDING')}
-                  className={quickFeeFilter === 'PENDING' ? 'bg-orange-600 hover:bg-orange-700 text-white' : ''}
+                  className={quickFeeFilter === 'PENDING' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}
                 >
                   Pending Fees
                 </Button>
@@ -330,7 +330,7 @@ const OldStudents = () => {
               <div>
                 <Label>Exit Type</Label>
                 <select 
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
                   value={exitTypeFilter}
                   onChange={(e) => setExitTypeFilter(e.target.value)}
                 >
@@ -346,7 +346,7 @@ const OldStudents = () => {
               <div>
                 <Label>Fee Status</Label>
                 <select 
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
                   value={feeStatusFilter}
                   onChange={(e) => setFeeStatusFilter(e.target.value)}
                 >
@@ -359,7 +359,7 @@ const OldStudents = () => {
               <div>
                 <Label>Last Class</Label>
                 <select 
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
                   value={classFilter}
                   onChange={(e) => {
                     setClassFilter(e.target.value);
@@ -376,7 +376,7 @@ const OldStudents = () => {
               <div>
                 <Label>Last Section</Label>
                 <select 
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
                   value={sectionFilter}
                   onChange={(e) => setSectionFilter(e.target.value)}
                   disabled={classFilter === 'All'}
@@ -391,7 +391,7 @@ const OldStudents = () => {
               <div>
                 <Label>Last Academic Year</Label>
                 <select 
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
                   value={academicYearFilter}
                   onChange={(e) => setAcademicYearFilter(e.target.value)}
                 >
@@ -405,7 +405,7 @@ const OldStudents = () => {
               <div>
                 <Label>Student Group</Label>
                 <select 
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
                   value={studentGroupFilter}
                   onChange={(e) => setStudentGroupFilter(e.target.value)}
                 >
@@ -437,7 +437,7 @@ const OldStudents = () => {
                   <TableHead className="w-10">
                     <input 
                       type="checkbox" 
-                      className="rounded border-gray-300 text-orange-600 focus:ring-orange-600 h-4 w-4 cursor-pointer"
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-600 h-4 w-4 cursor-pointer"
                       checked={paginatedStudents.length > 0 && selectedStudentIds.length === paginatedStudents.length}
                       onChange={handleSelectAll}
                     />
@@ -474,14 +474,14 @@ const OldStudents = () => {
                         <TableCell>
                           <input 
                             type="checkbox" 
-                            className="rounded border-gray-300 text-orange-600 focus:ring-orange-600 h-4 w-4 cursor-pointer"
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-600 h-4 w-4 cursor-pointer"
                             checked={selectedStudentIds.includes(student._id)}
                             onChange={() => handleSelectStudent(student._id)}
                           />
                         </TableCell>
                         <TableCell className="font-medium text-gray-900">{student.admissionNumber}</TableCell>
                         <TableCell>
-                          <Link to={`/dashboard/students/edit/${student._id}`} className="text-orange-600 hover:underline">
+                          <Link to={`/dashboard/students/edit/${student._id}`} className="text-blue-600 hover:underline">
                             {student.studentName}
                           </Link>
                           <span className={`ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
@@ -545,7 +545,7 @@ const OldStudents = () => {
                             <Button 
                               size="sm" 
                               onClick={() => navigate('/dashboard/payments', { state: { studentId: student._id } })}
-                              className="bg-orange-600 hover:bg-orange-700 text-white whitespace-nowrap px-3"
+                              className="bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap px-3"
                             >
                               Pay Pending
                             </Button>

@@ -338,7 +338,7 @@ const IdCards = () => {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center">
-            <Contact className="mr-3 text-orange-600" size={32} />
+            <Contact className="mr-3 text-blue-600" size={32} />
             ID Cards
           </h1>
           <p className="text-gray-500 mt-1 text-sm">Generate, preview, and export high-resolution PVC ID Cards</p>
@@ -376,13 +376,13 @@ const IdCards = () => {
       {/* Tabs */}
       <div className="flex border-b border-gray-200">
         <button
-          className={`py-2 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'students' ? 'border-orange-600 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+          className={`py-2 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'students' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
           onClick={() => setActiveTab('students')}
         >
           Students
         </button>
         <button
-          className={`py-2 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'teachers' ? 'border-orange-600 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+          className={`py-2 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'teachers' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
           onClick={() => setActiveTab('teachers')}
         >
           Teachers
@@ -400,7 +400,7 @@ const IdCards = () => {
               <select
                 value={filterYear}
                 onChange={(e) => setFilterYear(e.target.value)}
-                className="w-full h-9 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium focus:ring-2 focus:ring-orange-600"
+                className="w-full h-9 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium focus:ring-2 focus:ring-blue-600"
               >
                 <option value="">-- All Years --</option>
                 {academicYears.map(ay => (
@@ -418,7 +418,7 @@ const IdCards = () => {
                   setFilterClass(e.target.value);
                   setFilterSection('');
                 }}
-                className="w-full h-9 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium focus:ring-2 focus:ring-orange-600"
+                className="w-full h-9 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium focus:ring-2 focus:ring-blue-600"
               >
                 <option value="">-- All Classes --</option>
                 {classes.map(c => (
@@ -433,7 +433,7 @@ const IdCards = () => {
               <select
                 value={filterSection}
                 onChange={(e) => setFilterSection(e.target.value)}
-                className="w-full h-9 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium focus:ring-2 focus:ring-orange-600"
+                className="w-full h-9 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium focus:ring-2 focus:ring-blue-600"
                 disabled={!filterClass}
               >
                 <option value="">-- All Sections --</option>
@@ -449,7 +449,7 @@ const IdCards = () => {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full h-9 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium focus:ring-2 focus:ring-orange-600"
+                className="w-full h-9 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium focus:ring-2 focus:ring-blue-600"
               >
                 <option value="all">-- All Statuses --</option>
                 <option value="Active">Active</option>
@@ -465,7 +465,7 @@ const IdCards = () => {
               <select
                 value={filterRteType}
                 onChange={(e) => setFilterRteType(e.target.value)}
-                className="w-full h-9 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium focus:ring-2 focus:ring-orange-600"
+                className="w-full h-9 rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium focus:ring-2 focus:ring-blue-600"
               >
                 <option value="all">-- All Types --</option>
                 <option value="General">General</option>
@@ -536,7 +536,7 @@ const IdCards = () => {
                         paginatedItems.every(s => selectedStudentIds.includes(s._id))
                       }
                       onChange={handleSelectAllOnPage}
-                      className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-600 cursor-pointer"
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600 cursor-pointer"
                       title="Select all on this page"
                     />
                   </TableHead>
@@ -558,7 +558,7 @@ const IdCards = () => {
                         paginatedItems.every(s => selectedStudentIds.includes(s._id))
                       }
                       onChange={handleSelectAllOnPage}
-                      className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-600 cursor-pointer"
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600 cursor-pointer"
                       title="Select all on this page"
                     />
                   </TableHead>
@@ -583,13 +583,13 @@ const IdCards = () => {
                   const isSelected = selectedStudentIds.includes(item._id);
                   const photo = item.passport_photo || item.photoUrl || item.photo || '';
                   return (
-                    <TableRow key={item._id} className={isSelected ? 'bg-orange-50/40' : ''}>
+                    <TableRow key={item._id} className={isSelected ? 'bg-blue-50/40' : ''}>
                       <TableCell className="text-center">
                         <input
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => handleToggleSelectStudent(student._id)}
-                          className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-600 cursor-pointer"
+                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600 cursor-pointer"
                         />
                       </TableCell>
                       <TableCell>

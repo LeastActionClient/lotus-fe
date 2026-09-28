@@ -701,7 +701,7 @@ const StudentEdit = () => {
             <CardHeader className="bg-gray-50 border-b border-gray-100 pb-4">
               <CardTitle className="text-lg flex items-center justify-between text-gray-700">
                 <div className="flex items-center">
-                  <Contact className="mr-2 h-5 w-5 text-orange-600" /> Student Photo & ID Card
+                  <Contact className="mr-2 h-5 w-5 text-blue-600" /> Student Photo & ID Card
                 </div>
                 {/* {formData.studentName && (
                   <Button
@@ -709,7 +709,7 @@ const StudentEdit = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => setIsPreviewModalOpen(true)}
-                    className="text-xs font-semibold text-orange-600 border-orange-200 hover:bg-orange-50"
+                    className="text-xs font-semibold text-blue-600 border-blue-200 hover:bg-blue-50"
                   >
                     <Eye className="h-3.5 w-3.5 mr-1" /> Preview ID Card
                   </Button>
@@ -743,7 +743,7 @@ const StudentEdit = () => {
                   )}
                   {photoUploading && (
                     <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
-                      <RefreshCw className="h-6 w-6 animate-spin text-orange-600" />
+                      <RefreshCw className="h-6 w-6 animate-spin text-blue-600" />
                     </div>
                   )}
                 </div>
@@ -771,7 +771,7 @@ const StudentEdit = () => {
                       disabled={photoUploading}
                       className="border-gray-300 text-gray-700 hover:bg-gray-50"
                     >
-                      <Upload className="h-4 w-4 mr-1.5 text-orange-600" />
+                      <Upload className="h-4 w-4 mr-1.5 text-blue-600" />
                       {formData.photoUrl || formData.passport_photo ? 'Change Photo' : 'Upload Photo'}
                     </Button>
 
@@ -792,7 +792,7 @@ const StudentEdit = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => setIsPreviewModalOpen(true)}
-                      className="border-orange-200 text-orange-600 hover:bg-orange-50"
+                      className="border-blue-200 text-blue-600 hover:bg-blue-50"
                     >
                       <Contact className="h-4 w-4 mr-1.5" /> ID Card Preview
                     </Button>
@@ -806,7 +806,7 @@ const StudentEdit = () => {
           <Card>
             <CardHeader className="bg-gray-50 border-b border-gray-100 pb-4">
               <CardTitle className="text-lg flex items-center text-gray-700">
-                <User className="mr-2 h-5 w-5 text-orange-600" /> Personal Details
+                <User className="mr-2 h-5 w-5 text-blue-600" /> Personal Details
               </CardTitle>
             </CardHeader>
              <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -824,7 +824,7 @@ const StudentEdit = () => {
               </div>
               <div className="space-y-2">
                 <Label>Gender</Label>
-                <select name="gender" value={formData.gender} onChange={handleInputChange} className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600">
+                <select name="gender" value={formData.gender} onChange={handleInputChange} className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
                   <option value="">Select Gender</option>
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
@@ -862,7 +862,7 @@ const StudentEdit = () => {
           <Card>
             <CardHeader className="bg-gray-50 border-b border-gray-100 pb-4">
               <CardTitle className="text-lg flex items-center text-gray-700">
-                <BookOpen className="mr-2 h-5 w-5 text-orange-600" /> Academic Details
+                <BookOpen className="mr-2 h-5 w-5 text-blue-600" /> Academic Details
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -892,7 +892,7 @@ const StudentEdit = () => {
               </div>
               <div className="space-y-2">
                 <Label>Student Status</Label>
-                <select name="studentStatus" value={formData.studentStatus} onChange={handleInputChange} className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600">
+                <select name="studentStatus" value={formData.studentStatus} onChange={handleInputChange} className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
                   <option value="Active">Active</option>
                   <option value="Inactive">Inactive</option>
                   <option value="Graduated">Graduated</option>
@@ -923,7 +923,7 @@ const StudentEdit = () => {
           <Card>
             <CardHeader className="bg-gray-50 border-b border-gray-100 pb-4">
               <CardTitle className="text-lg flex items-center text-gray-700">
-                <Users className="mr-2 h-5 w-5 text-orange-600" /> Parent Details
+                <Users className="mr-2 h-5 w-5 text-blue-600" /> Parent Details
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -982,10 +982,10 @@ const StudentEdit = () => {
 
         {/* Right Column: Fee Details */}
         <div className="space-y-6">
-          <Card className="border-orange-200 shadow-sm lg:sticky lg:top-6">
-            <CardHeader className="bg-orange-50 border-b border-orange-100 pb-4">
-              <CardTitle className="text-lg flex items-center text-orange-800">
-                <IndianRupee className="mr-2 h-5 w-5 text-orange-600" /> Fee Details
+          <Card className="border-blue-200 shadow-sm lg:sticky lg:top-6">
+            <CardHeader className="bg-blue-50 border-b border-blue-100 pb-4">
+              <CardTitle className="text-lg flex items-center text-blue-800">
+                <IndianRupee className="mr-2 h-5 w-5 text-blue-600" /> Fee Details
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
@@ -1006,8 +1006,8 @@ const StudentEdit = () => {
               ) : null}
 
               {hasUniform && (
-                <div className="border border-orange-100 rounded-lg p-4 bg-orange-50/20 space-y-4">
-                  <h3 className="font-semibold text-sm text-orange-800 border-b border-orange-100 pb-1 flex items-center">
+                <div className="border border-blue-100 rounded-lg p-4 bg-blue-50/20 space-y-4">
+                  <h3 className="font-semibold text-sm text-blue-800 border-b border-blue-100 pb-1 flex items-center">
                     Uniform details
                   </h3>
                   
@@ -1042,7 +1042,7 @@ const StudentEdit = () => {
                   </div>
 
                   {/* Bottom Cloth */}
-                  <div className="space-y-3 pt-2 border-t border-orange-100">
+                  <div className="space-y-3 pt-2 border-t border-blue-100">
                     <div className="flex justify-between items-center text-xs font-bold text-gray-700">
                       <span>Bottom Cloth</span>
                       <span className="text-gray-500 font-normal">Rate: ₹{bottomPrice}/m</span>
@@ -1071,7 +1071,7 @@ const StudentEdit = () => {
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-center text-xs font-bold text-orange-800 pt-2 border-t border-orange-100">
+                  <div className="flex justify-between items-center text-xs font-bold text-blue-800 pt-2 border-t border-blue-100">
                     <span>Uniform Total</span>
                     <span>₹ {uniformTotal.toFixed(2)}</span>
                   </div>
@@ -1134,7 +1134,7 @@ const StudentEdit = () => {
                 
                 <div className="flex justify-between items-center text-lg font-bold text-gray-900 border-t border-gray-300 pt-3 mt-3">
                   <span>Grand Total</span>
-                  <span className="text-orange-600">₹ {grandTotal.toFixed(2)}</span>
+                  <span className="text-blue-600">₹ {grandTotal.toFixed(2)}</span>
                 </div>
               </div>
 

@@ -186,7 +186,7 @@ const Admins = () => {
                     <TableCell className="font-medium">{admin.username}</TableCell>
                     <TableCell>
                       <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                        admin.role === 'SUPER_ADMIN' ? 'bg-red-100 text-red-800' : 'bg-orange-600 text-orange-100'
+                        admin.role === 'SUPER_ADMIN' ? 'bg-red-100 text-red-800' : 'bg-blue-600 text-blue-100'
                       }`}>
                         {admin.role}
                       </span>
@@ -273,7 +273,7 @@ const Admins = () => {
               <input 
                 id="password" 
                 type={showPassword ? "text" : "password"}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-600 pr-10"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 pr-10"
                 value={formData.password}
                 onChange={(e) => setFormData({...formData, password: e.target.value})}
                 required 

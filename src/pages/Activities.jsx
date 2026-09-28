@@ -126,7 +126,7 @@ const Activities = () => {
       <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center">
-            <FileCheck className="mr-3 text-orange-600" size={32} />
+            <FileCheck className="mr-3 text-blue-600" size={32} />
             Activities
           </h1>
           <p className="text-gray-500 mt-2">Manage student activities and related fees</p>
@@ -159,7 +159,7 @@ const Activities = () => {
         </Link>
         <Link 
           to="/dashboard/fee-categories/activities" 
-          className="border-orange-500 text-orange-600 whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm"
+          className="border-blue-500 text-blue-600 whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm"
         >
           Activities
         </Link>
@@ -261,7 +261,7 @@ const Activities = () => {
             <select 
               value={status ? 'true' : 'false'}
               onChange={(e) => setStatus(e.target.value === 'true')}
-              className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+              className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
             >
               <option value="true">Active</option>
               <option value="false">Inactive</option>

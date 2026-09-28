@@ -120,7 +120,7 @@ const AcademicYearPage = () => {
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center">
             <Calendar
-              className="mr-3 text-orange-600 animate-pulse"
+              className="mr-3 text-blue-600 animate-pulse"
               size={32}
             />
             Academic Year Management
@@ -132,7 +132,7 @@ const AcademicYearPage = () => {
         </div>
         <Button
           onClick={() => setIsModalOpen(true)}
-          className="bg-orange-600 hover:bg-orange-700 text-white shadow-md transition-all duration-200 active:scale-95 w-full sm:w-auto"
+          className="bg-blue-600 hover:bg-blue-700 text-white shadow-md transition-all duration-200 active:scale-95 w-full sm:w-auto"
         >
           <Plus className="mr-2 h-4 w-4" /> Add Academic Year
         </Button>
@@ -142,12 +142,12 @@ const AcademicYearPage = () => {
         {/* Left Column - Current Status Card */}
 
         <div className="md:col-span-1">
-          <Card className="bg-gradient-to-br from-orange-500 to-amber-600 text-white shadow-lg overflow-hidden relative">
+          <Card className="bg-gradient-to-br from-blue-500 to-amber-600 text-white shadow-lg overflow-hidden relative">
             <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none">
               <Calendar size={200} />
             </div>
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-medium text-orange-100 flex items-center">
+              <CardTitle className="text-lg font-medium text-blue-100 flex items-center">
                 Current Academic Year
               </CardTitle>
             </CardHeader>
@@ -158,17 +158,17 @@ const AcademicYearPage = () => {
                     {currentActiveYear.year}
                   </div>
                   <div className="flex items-center gap-2 mt-4">
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-white text-orange-700 shadow-sm uppercase tracking-wider">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-white text-blue-700 shadow-sm uppercase tracking-wider">
                       {currentActiveYear.status}
                     </span>
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="text-3xl font-extrabold text-orange-100">
+                  <div className="text-3xl font-extrabold text-blue-100">
                     No Active Year
                   </div>
-                  <p className="text-sm text-orange-100 mt-2">
+                  <p className="text-sm text-blue-100 mt-2">
                     Please activate an academic year below to configure the ERP
                     session.
                   </p>
@@ -322,7 +322,7 @@ const AcademicYearPage = () => {
             <select
               id="status"
               name="status"
-              className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600 focus:border-transparent transition-all"
+              className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
               value={formData.status}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, status: e.target.value }))
@@ -344,7 +344,7 @@ const AcademicYearPage = () => {
             </Button>
             <Button
               type="submit"
-              className="bg-orange-600 hover:bg-orange-700 text-white shadow-md transition-all active:scale-95"
+              className="bg-blue-600 hover:bg-blue-700 text-white shadow-md transition-all active:scale-95"
               loading={saveLoading}
               loadingText="Saving..."
             >

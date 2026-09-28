@@ -656,7 +656,7 @@ const Admissions = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center">
-            <UserPlus className="mr-3 text-orange-600" size={32} />
+            <UserPlus className="mr-3 text-blue-600" size={32} />
             Admissions
           </h1>
           <p className="text-gray-500 mt-2">Manage student admissions and enrollments</p>
@@ -664,7 +664,7 @@ const Admissions = () => {
         <div className="space-y-1 min-w-44 w-full sm:w-auto">
           <Label>Student Group</Label>
           <select
-            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
             value={studentGroupFilter}
             onChange={(e) => setStudentGroupFilter(e.target.value)}
           >
@@ -675,14 +675,14 @@ const Admissions = () => {
         </div>
       </div>
 
-      <Card className="bg-orange-50 border-orange-100">
+      <Card className="bg-blue-50 border-blue-100">
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-4 items-end">
             <div className="flex w-full md:flex-1 gap-4">
               <div className="flex-1 space-y-1">
                 <Label>Class</Label>
                 <select
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600 focus:border-transparent"
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
                   value={selectedClass}
                   onChange={(e) => {
                     setSelectedClass(e.target.value);
@@ -698,7 +698,7 @@ const Admissions = () => {
               <div className="flex-1 space-y-1">
                 <Label className="whitespace-nowrap">Section</Label>
                 <select
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600 focus:border-transparent"
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
                   value={selectedSection}
                   onChange={(e) => setSelectedSection(e.target.value)}
                   disabled={!selectedClass || sections.length === 0}
@@ -714,7 +714,7 @@ const Admissions = () => {
               <Button onClick={() => {
                 if (!selectedClass) { toastWarning("Please select a class first"); return; }
                 setIsImportModalOpen(true);
-              }} className="flex items-center bg-orange-100 text-orange-700 hover:bg-orange-200" type="button">
+              }} className="flex items-center bg-blue-100 text-blue-700 hover:bg-blue-200" type="button">
                 <Upload className="h-4 w-4 mr-2" /> Bulk Import
               </Button>
               <Button onClick={handleOpenManualModal} className="flex items-center">
@@ -769,7 +769,7 @@ const Admissions = () => {
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         <Button variant="ghost" size="sm" onClick={() => openViewModal(student)}>
-                          <Eye className="h-4 w-4 text-orange-600" />
+                          <Eye className="h-4 w-4 text-blue-600" />
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => openEditModal(student)}>
                           <Pencil className="h-4 w-4 text-blue-600" />
@@ -811,7 +811,7 @@ const Admissions = () => {
                     setPreviewStudent(selectedStudent);
                     setIsPreviewModalOpen(true);
                   }}
-                  className="text-orange-600 border-orange-200 hover:bg-orange-50 self-start sm:self-center"
+                  className="text-blue-600 border-blue-200 hover:bg-blue-50 self-start sm:self-center"
                 >
                   <Contact className="h-4 w-4 mr-1.5" /> View ID Card
                 </Button>
@@ -982,7 +982,7 @@ const Admissions = () => {
                     )}
                     {photoUploading && (
                       <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
-                        <RefreshCw className="h-5 w-5 animate-spin text-orange-600" />
+                        <RefreshCw className="h-5 w-5 animate-spin text-blue-600" />
                       </div>
                     )}
                   </div>
@@ -990,7 +990,7 @@ const Admissions = () => {
                     <input type="file" ref={editFileInputRef} onChange={(e) => handlePhotoUpload(e, 'edit')} accept="image/jpeg,image/jpg,image/png" className="hidden" />
                     <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                       <Button type="button" variant="outline" size="sm" onClick={() => editFileInputRef.current?.click()} disabled={photoUploading}>
-                        <Upload className="h-3.5 w-3.5 mr-1 text-orange-600" />
+                        <Upload className="h-3.5 w-3.5 mr-1 text-blue-600" />
                         {editForm.photoUrl || editForm.passport_photo ? 'Change Photo' : 'Upload Photo'}
                       </Button>
                       {(editForm.photoUrl || editForm.passport_photo) && (
@@ -998,7 +998,7 @@ const Admissions = () => {
                           <Trash2 className="h-3.5 w-3.5 mr-1" /> Remove
                         </Button>
                       )}
-                      <Button type="button" variant="outline" size="sm" onClick={() => { setPreviewStudent(editForm); setIsPreviewModalOpen(true); }} className="text-orange-600 border-orange-200">
+                      <Button type="button" variant="outline" size="sm" onClick={() => { setPreviewStudent(editForm); setIsPreviewModalOpen(true); }} className="text-blue-600 border-blue-200">
                         <Contact className="h-3.5 w-3.5 mr-1" /> Preview ID Card
                       </Button>
                     </div>
@@ -1029,7 +1029,7 @@ const Admissions = () => {
                 </div>
                 <div className="space-y-2">
                   <Label>Gender</Label>
-                  <select name="gender" value={editForm.gender} onChange={handleEditChange} className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600">
+                  <select name="gender" value={editForm.gender} onChange={handleEditChange} className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
                     <option value="">Select</option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
@@ -1062,7 +1062,7 @@ const Admissions = () => {
                 </div>
                 <div className="space-y-2">
                   <Label>Class *</Label>
-                  <select name="currentClass" value={editForm.currentClass} onChange={handleEditChange} className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600" required>
+                  <select name="currentClass" value={editForm.currentClass} onChange={handleEditChange} className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600" required>
                     <option value="">Select Class</option>
                     {classes.map(c => (
                       <option key={c._id || c.id} value={c.name}>{c.name}</option>
@@ -1162,7 +1162,7 @@ const Admissions = () => {
         )}
       </Modal>
 
-      <Modal isOpen={isManualModalOpen} onClose={() => setIsManualModalOpen(false)} title="KASTHURI NURSERY & PRIMARY SCHOOL APPLICATION FORM" className="max-w-4xl">
+      <Modal isOpen={isManualModalOpen} onClose={() => setIsManualModalOpen(false)} title="LOTUS NURSERY & PRIMARY SCHOOL APPLICATION FORM" className="max-w-4xl">
         <form onSubmit={handleManualSubmit} className="space-y-6 max-h-[75vh] overflow-y-auto pr-2">
           {manualForm.applicationId ? (
             <div className="bg-blue-50 p-3 rounded-md border border-blue-100 flex flex-col sm:flex-row sm:items-center justify-between sticky top-0 z-10 shadow-sm gap-2">
@@ -1216,19 +1216,19 @@ const Admissions = () => {
               </div>
             </div>
           ) : (
-            <div className="bg-orange-50 p-3 rounded-md border border-orange-100 flex flex-col sm:flex-row sm:items-center justify-between sticky top-0 z-10 shadow-sm gap-2">
+            <div className="bg-blue-50 p-3 rounded-md border border-blue-100 flex flex-col sm:flex-row sm:items-center justify-between sticky top-0 z-10 shadow-sm gap-2">
               <div className="flex items-center">
-                <Users className="text-orange-600 mr-2 h-5 w-5 shrink-0" />
-                <span className="text-sm font-medium text-orange-900">
+                <Users className="text-blue-600 mr-2 h-5 w-5 shrink-0" />
+                <span className="text-sm font-medium text-blue-900">
                   Adding to Class: {manualForm.currentClass || selectedClass}
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-2">
-                  <Label className="whitespace-nowrap text-sm text-orange-900 font-semibold">Class <span className="text-red-500">*</span></Label>
+                  <Label className="whitespace-nowrap text-sm text-blue-900 font-semibold">Class <span className="text-red-500">*</span></Label>
                   <select
                     required
-                    className="flex h-8 rounded-md border border-gray-300 bg-white px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600 focus:border-transparent"
+                    className="flex h-8 rounded-md border border-gray-300 bg-white px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
                     value={manualForm.currentClass || selectedClass || ''}
                     onChange={(e) => {
                       const newClass = e.target.value;
@@ -1251,9 +1251,9 @@ const Admissions = () => {
                   </select>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Label className="whitespace-nowrap text-sm text-orange-900 font-semibold">Section</Label>
+                  <Label className="whitespace-nowrap text-sm text-blue-900 font-semibold">Section</Label>
                   <select
-                    className="flex h-8 w-32 rounded-md border border-gray-300 bg-white px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600 focus:border-transparent"
+                    className="flex h-8 w-32 rounded-md border border-gray-300 bg-white px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
                     value={manualForm.section || ''}
                     onChange={(e) => setManualForm({...manualForm, section: e.target.value})}
                   >
@@ -1287,7 +1287,7 @@ const Admissions = () => {
                   )}
                   {photoUploading && (
                     <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
-                      <RefreshCw className="h-5 w-5 animate-spin text-orange-600" />
+                      <RefreshCw className="h-5 w-5 animate-spin text-blue-600" />
                     </div>
                   )}
                 </div>
@@ -1295,7 +1295,7 @@ const Admissions = () => {
                   <input type="file" ref={manualFileInputRef} onChange={(e) => handlePhotoUpload(e, 'manual')} accept="image/jpeg,image/jpg,image/png" className="hidden" />
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                     <Button type="button" variant="outline" size="sm" onClick={() => manualFileInputRef.current?.click()} disabled={photoUploading}>
-                      <Upload className="h-3.5 w-3.5 mr-1 text-orange-600" />
+                      <Upload className="h-3.5 w-3.5 mr-1 text-blue-600" />
                       {manualForm.photoUrl || manualForm.passport_photo ? 'Change Photo' : 'Upload Photo'}
                     </Button>
                     {(manualForm.photoUrl || manualForm.passport_photo) && (
@@ -1303,7 +1303,7 @@ const Admissions = () => {
                         <Trash2 className="h-3.5 w-3.5 mr-1" /> Remove
                       </Button>
                     )}
-                    <Button type="button" variant="outline" size="sm" onClick={() => { setPreviewStudent(manualForm); setIsPreviewModalOpen(true); }} className="text-orange-600 border-orange-200">
+                    <Button type="button" variant="outline" size="sm" onClick={() => { setPreviewStudent(manualForm); setIsPreviewModalOpen(true); }} className="text-blue-600 border-blue-200">
                       <Contact className="h-3.5 w-3.5 mr-1" /> Preview ID Card
                     </Button>
                   </div>
@@ -1334,7 +1334,7 @@ const Admissions = () => {
               </div>
               <div className="space-y-2">
                 <Label>Gender</Label>
-                <select className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600" value={manualForm.gender} onChange={(e) => setManualForm({...manualForm, gender: e.target.value})}>
+                <select className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600" value={manualForm.gender} onChange={(e) => setManualForm({...manualForm, gender: e.target.value})}>
                   <option value="">Select</option>
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
@@ -1457,9 +1457,9 @@ const Admissions = () => {
 
       <Modal isOpen={isImportModalOpen} onClose={importing ? () => {} : () => setIsImportModalOpen(false)} title="Bulk Import Students">
         <form onSubmit={handleImportSubmit} className="space-y-4">
-          <div className="bg-orange-50 p-3 rounded-md mb-4 border border-orange-100 flex items-center">
-            <Users className="text-orange-600 mr-2 h-5 w-5" />
-            <span className="text-sm font-medium text-orange-900">
+          <div className="bg-blue-50 p-3 rounded-md mb-4 border border-blue-100 flex items-center">
+            <Users className="text-blue-600 mr-2 h-5 w-5" />
+            <span className="text-sm font-medium text-blue-900">
               Importing to Class: {selectedClass} {selectedSection && `(Section ${selectedSection})`}
             </span>
           </div>

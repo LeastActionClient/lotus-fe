@@ -743,7 +743,7 @@ const FeeCategories = () => {
       <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center">
-            <FileCheck className="mr-3 text-orange-600" size={32} />
+            <FileCheck className="mr-3 text-blue-600" size={32} />
             Fee Categories
           </h1>
           <p className="text-gray-500 mt-2">Manage fee types and assignments</p>
@@ -831,7 +831,7 @@ const FeeCategories = () => {
                     <TableCell className="font-medium text-gray-900 ">{cat.name}</TableCell>
                     <TableCell>
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        cat.mandatory ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'
+                        cat.mandatory ? 'bg-blue-100 text-blue-800' : 'bg-blue-100 text-blue-800'
                       }`}>
                         {cat.mandatory ? 'Mandatory' : 'Optional'}
                       </span>
@@ -1157,7 +1157,7 @@ const FeeCategories = () => {
               id="catMandatory" 
               checked={catMandatory} 
               onChange={(e) => setCatMandatory(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
             />
             <Label htmlFor="catMandatory" className="cursor-pointer font-medium text-gray-700">Mandatory</Label>
           </div>
@@ -1167,7 +1167,7 @@ const FeeCategories = () => {
               id="catIsStockItem" 
               checked={catIsStockItem} 
               onChange={(e) => setCatIsStockItem(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
             />
             <Label htmlFor="catIsStockItem" className="cursor-pointer font-medium text-gray-700">Stock Item</Label>
           </div>
@@ -1250,7 +1250,7 @@ const FeeCategories = () => {
               id="editCatMandatory" 
               checked={editCatMandatory} 
               onChange={(e) => setEditCatMandatory(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
             />
             <Label htmlFor="editCatMandatory" className="cursor-pointer font-medium text-gray-700">Mandatory</Label>
           </div>
@@ -1260,7 +1260,7 @@ const FeeCategories = () => {
               id="editCatIsStockItem" 
               checked={editCatIsStockItem} 
               onChange={(e) => setEditCatIsStockItem(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
             />
             <Label htmlFor="editCatIsStockItem" className="cursor-pointer font-medium text-gray-700">Stock Item</Label>
           </div>
@@ -1332,7 +1332,7 @@ const FeeCategories = () => {
             <div className="space-y-2">
               <Label>Select Class</Label>
               <select 
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600 disabled:opacity-50   "
+                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 disabled:opacity-50   "
                 value={bulkAssignData.className}
                 onChange={(e) => {
                   const clsName = e.target.value;
@@ -1350,7 +1350,7 @@ const FeeCategories = () => {
             <div className="space-y-2">
               <Label>Select Section (Optional)</Label>
               <select 
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600 disabled:opacity-50   "
+                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 disabled:opacity-50   "
                 value={bulkAssignData.sectionName}
                 onChange={(e) => {
                   const secName = e.target.value;
@@ -1401,11 +1401,11 @@ const FeeCategories = () => {
                                   });
                                 }}
                                 disabled={!isEditingBulkFees}
-                                className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500 disabled:opacity-50 cursor-pointer"
+                                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50 cursor-pointer"
                               />
                             </TableCell>
                             <TableCell className="font-medium">
-                              {cat.name} {cat.mandatory && <span className="text-xs text-orange-600 font-normal">(Mandatory)</span>}
+                              {cat.name} {cat.mandatory && <span className="text-xs text-blue-600 font-normal">(Mandatory)</span>}
                             </TableCell>
                             <TableCell>
                               {!isUniform ? (
@@ -1430,7 +1430,7 @@ const FeeCategories = () => {
                           </TableRow>
                           
                           {isUniform && selectedBulkCats[cat._id] && (
-                            <TableRow className="bg-orange-50/30">
+                            <TableRow className="bg-blue-50/30">
                               <TableCell></TableCell>
                               <TableCell colSpan={2} className="py-3 px-4">
                                 <div className="grid grid-cols-2 gap-4">
@@ -1522,7 +1522,7 @@ const FeeCategories = () => {
               </div>
               <div className="flex items-center gap-2">
                 <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                  assignCategory.mandatory ? 'bg-orange-100 text-orange-800 border border-orange-300' : 'bg-blue-100 text-blue-800 border border-blue-300'
+                  assignCategory.mandatory ? 'bg-blue-100 text-blue-800 border border-blue-300' : 'bg-blue-100 text-blue-800 border border-blue-300'
                 }`}>
                   {assignCategory.mandatory ? 'Mandatory Fee' : 'Optional Fee'}
                 </span>
@@ -2012,7 +2012,7 @@ const FeeCategories = () => {
                           </TableCell>
                           <TableCell>
                             <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
-                              cat.mandatory ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'
+                              cat.mandatory ? 'bg-blue-100 text-blue-800' : 'bg-blue-100 text-blue-800'
                             }`}>
                               {cat.mandatory ? 'Mandatory' : 'Optional'}
                             </span>

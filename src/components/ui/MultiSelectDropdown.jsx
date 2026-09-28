@@ -56,7 +56,7 @@ export const MultiSelectDropdown = ({
       {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
       
       <div 
-        className="min-h-[40px] w-full border border-gray-300 rounded-md bg-white px-3 py-1.5 flex items-center justify-between cursor-pointer focus-within:ring-2 focus-within:ring-orange-600 focus-within:border-transparent"
+        className="min-h-[40px] w-full border border-gray-300 rounded-md bg-white px-3 py-1.5 flex items-center justify-between cursor-pointer focus-within:ring-2 focus-within:ring-blue-600 focus-within:border-transparent"
         onClick={() => setIsOpen(!isOpen)}
       >
         <div className="flex flex-wrap gap-1 flex-1">
@@ -68,12 +68,12 @@ export const MultiSelectDropdown = ({
               return option ? (
                 <span 
                   key={value} 
-                  className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-md flex items-center gap-1"
+                  className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-md flex items-center gap-1"
                 >
                   {option.label}
                   <button 
                     onClick={(e) => removeOption(e, value)}
-                    className="hover:bg-orange-200 rounded-full p-0.5 transition-colors"
+                    className="hover:bg-blue-200 rounded-full p-0.5 transition-colors"
                   >
                     <X size={12} />
                   </button>
@@ -100,7 +100,7 @@ export const MultiSelectDropdown = ({
           <div className="p-2 border-b border-gray-100">
             <input 
               type="text" 
-              className="w-full text-sm outline-none px-2 py-1 border-b border-transparent focus:border-orange-200"
+              className="w-full text-sm outline-none px-2 py-1 border-b border-transparent focus:border-blue-200"
               placeholder="Search..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -112,7 +112,7 @@ export const MultiSelectDropdown = ({
             <button 
               type="button" 
               onClick={toggleSelectAll}
-              className="text-orange-600 hover:text-orange-700 font-medium"
+              className="text-blue-600 hover:text-blue-700 font-medium"
             >
               {selected.length === options.length ? 'Clear All' : 'Select All'}
             </button>
@@ -133,11 +133,11 @@ export const MultiSelectDropdown = ({
                     className={`flex items-center px-2 py-2 text-sm rounded-sm transition-colors ${
                       isDisabled 
                         ? 'opacity-50 cursor-not-allowed bg-gray-50 text-gray-400' 
-                        : `cursor-pointer hover:bg-orange-50 ${isSelected ? 'bg-orange-50/50' : ''}`
+                        : `cursor-pointer hover:bg-blue-50 ${isSelected ? 'bg-blue-50/50' : ''}`
                     }`}
                   >
                     <div className={`w-4 h-4 rounded border mr-2 flex items-center justify-center ${
-                      isSelected ? 'bg-orange-600 border-orange-600 text-white' : (isDisabled ? 'border-gray-200 bg-gray-100' : 'border-gray-300')
+                      isSelected ? 'bg-blue-600 border-blue-600 text-white' : (isDisabled ? 'border-gray-200 bg-gray-100' : 'border-gray-300')
                     }`}>
                       {isSelected && <Check size={12} strokeWidth={3} />}
                     </div>

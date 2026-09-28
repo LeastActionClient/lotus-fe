@@ -3,7 +3,7 @@ import { cn } from './Card';
 import { Loader } from 'lucide-react';
 
 export const Spinner = ({ className, size = 24 }) => (
-  <Loader className={cn('animate-spin text-orange-600', className)} size={size} />
+  <Loader className={cn('animate-spin text-blue-600', className)} size={size} />
 );
 
 export const PageLoader = ({ text = 'Loading...' }) => (

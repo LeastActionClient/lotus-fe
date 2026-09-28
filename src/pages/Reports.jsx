@@ -228,7 +228,7 @@ const Reports = () => {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-gray-900  flex items-center">
-          <PieChart className="mr-3 text-orange-600" size={32} />
+          <PieChart className="mr-3 text-blue-600" size={32} />
           Reports & Analytics
         </h1>
         <p className="text-gray-500  mt-2">Insights on collections and pending dues</p>
@@ -239,11 +239,11 @@ const Reports = () => {
           <Card>
           <CardHeader className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 pb-2">
             <CardTitle className="flex items-center text-gray-700 ">
-              <Calendar className="h-5 w-5 mr-2 text-orange-600" /> Collections
+              <Calendar className="h-5 w-5 mr-2 text-blue-600" /> Collections
             </CardTitle>
             <div className="flex flex-wrap gap-2 items-center">
               <select
-                className="border border-gray-300 rounded-md text-sm p-1.5 focus:outline-none focus:ring-1 focus:ring-orange-500 max-w-[200px] truncate"
+                className="border border-gray-300 rounded-md text-sm p-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 max-w-[200px] truncate"
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
               >
@@ -255,7 +255,7 @@ const Reports = () => {
               </select>
 
               <select 
-                className="border border-gray-300 rounded-md text-sm p-1.5 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                className="border border-gray-300 rounded-md text-sm p-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 value={timeframe}
                 onChange={(e) => setTimeframe(e.target.value)}
               >
@@ -309,7 +309,7 @@ const Reports = () => {
               {selectedCategory !== 'ALL' && (
                 <div className="flex justify-between items-center">
                   <span className="font-semibold text-gray-700">Filtered Category Total:</span>
-                  <span className="text-lg font-bold text-orange-600">₹{totalFilteredCollections.toFixed(2)}</span>
+                  <span className="text-lg font-bold text-blue-600">₹{totalFilteredCollections.toFixed(2)}</span>
                 </div>
               )}
             </div>
@@ -356,8 +356,8 @@ const Reports = () => {
           {currentUser.role === 'SUPER_ADMIN' && (
             <Card className="h-fit bg-gradient-to-br from-purple-50 to-white shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-orange-600 ">Total Collections</CardTitle>
-                <IndianRupee className="h-4 w-4 text-orange-600 " />
+                <CardTitle className="text-sm font-medium text-blue-600 ">Total Collections</CardTitle>
+                <IndianRupee className="h-4 w-4 text-blue-600 " />
               </CardHeader>
               <CardContent>
                 <div className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 break-words">₹{(overview?.stats?.collections || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>

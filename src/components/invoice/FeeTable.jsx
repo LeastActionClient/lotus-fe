@@ -34,21 +34,21 @@ const FeeTable = memo(({ groupedRows, showLessAmount: forceShowLessAmount }) => 
             : 'minmax(0,1fr) max-content max-content max-content'
         }}
       >
-        <div className="bg-[#F58220] px-[2.6mm] py-[1.8mm] text-left text-[10px] font-bold text-white">
+        <div className="bg-[#013e8b] px-[2.6mm] py-[1.8mm] text-left text-[10px] font-bold text-white">
           Fee Description
         </div>
-        <div className="border-l border-[#FFFFFF33] bg-[#F58220] px-[2.6mm] py-[1.8mm] text-right text-[10px] font-bold text-white">
+        <div className="border-l border-[#FFFFFF33] bg-[#013e8b] px-[2.6mm] py-[1.8mm] text-right text-[10px] font-bold text-white">
           Total
         </div>
         {showLessAmount && (
-          <div className="border-l border-[#FFFFFF33] bg-[#F58220] px-[2.6mm] py-[1.8mm] text-right text-[10px] font-bold text-white">
+          <div className="border-l border-[#FFFFFF33] bg-[#013e8b] px-[2.6mm] py-[1.8mm] text-right text-[10px] font-bold text-white">
             Less
           </div>
         )}
-        <div className="border-l border-[#FFFFFF33] bg-[#F58220] px-[2.6mm] py-[1.8mm] text-right text-[10px] font-bold text-white">
+        <div className="border-l border-[#FFFFFF33] bg-[#013e8b] px-[2.6mm] py-[1.8mm] text-right text-[10px] font-bold text-white">
           Paid
         </div>
-        <div className="border-l border-[#FFFFFF33] bg-[#F58220] px-[2.6mm] py-[1.8mm] text-right text-[10px] font-bold text-white">
+        <div className="border-l border-[#FFFFFF33] bg-[#013e8b] px-[2.6mm] py-[1.8mm] text-right text-[10px] font-bold text-white">
           Balance
         </div>
 
