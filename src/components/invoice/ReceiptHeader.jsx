@@ -6,21 +6,26 @@ const ReceiptHeader = memo(({ headerTitle }) => {
 
   return (
     <header className="border-b border-[#ECECEC] pb-[1.4mm]">
-      <div className="flex items-start justify-between gap-3">
-        <img
-          src="/KSlogo.jpg"
-          alt="Kasthuri Nursery and Primary School logo"
-          className="h-[14.5mm] w-[39mm] object-contain object-left"
-        />
-
-        <div className="shrink-0 rounded-[14px] bg-[#FDE9D9] px-[14px] py-[4px] text-center shadow-sm">
-          <div className="text-[11.3px] font-bold uppercase tracking-[0.08em] text-[#111111]">{line1}</div>
-          <div className="mt-0.5 text-[11.3px] font-bold uppercase tracking-[0.08em] text-[#111111]">{line2}</div>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <img
+            src="/KSlogo.jpg"
+            alt="Lotus Nursery and Primary School logo"
+            className="h-[14.5mm] w-auto object-contain object-left"
+          />
+          <div className="flex flex-col justify-center min-w-0 pr-2">
+            <h1 className="text-[15px] font-black text-[#013e8b] leading-[1.1]" style={{ fontFamily: 'Arial Black, Impact, sans-serif' }}>LOTUS</h1>
+            <h2 className="text-[11px] font-bold text-[#b89531] leading-[1.1]">Nursery & Primary School</h2>
+            <div className="h-[0.5px] w-full bg-[#00a2e8] my-[1px]"></div>
+            <p className="text-[8px] text-[#00a2e8] font-medium leading-[1.2] whitespace-nowrap">#20/16, Mariyamman Koil St,</p>
+            <p className="text-[8px] text-[#00a2e8] font-medium leading-[1.2] whitespace-nowrap">Kagithapattarai, Vellore.</p>
+          </div>
         </div>
-      </div>
 
-      <div className="mt-1 text-center text-[9.8px] font-bold leading-tight text-[#8A8A8A]">
-        Approved by Govt. of Tamilnadu - 2349
+        <div className="shrink-0 rounded-[14px] bg-[#E0F2FE] px-[14px] py-[4px] text-center shadow-sm border border-[#BAE6FD] ml-auto">
+          <div className="text-[11.3px] font-bold uppercase tracking-[0.08em] text-[#013e8b]">{line1}</div>
+          <div className="mt-0.5 text-[11.3px] font-bold uppercase tracking-[0.08em] text-[#013e8b]">{line2}</div>
+        </div>
       </div>
     </header>
   );

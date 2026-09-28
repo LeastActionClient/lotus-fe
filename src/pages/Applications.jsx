@@ -221,7 +221,7 @@ const Applications = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900  flex items-center">
-            <FileText className="mr-3 text-orange-600" size={32} />
+            <FileText className="mr-3 text-blue-600" size={32} />
             Applications
           </h1>
           <p className="text-gray-500  mt-2">Manage student enrollment applications</p>
@@ -230,7 +230,7 @@ const Applications = () => {
           <select
             value={feeStatusFilter}
             onChange={(e) => setFeeStatusFilter(e.target.value)}
-            className="h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+            className="h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
           >
             <option value="ALL">All Fees</option>
             <option value="PAID">Paid</option>
@@ -360,7 +360,7 @@ const Applications = () => {
         </CardContent>
       </Card>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="KASTHURI NURSERY & PRIMARY SCHOOL APPLICATION FORM" className="max-w-4xl">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="LOTUS NURSERY & PRIMARY SCHOOL APPLICATION FORM" className="max-w-4xl">
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           {/* Main Details */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -371,7 +371,7 @@ const Applications = () => {
             
             <div className="space-y-2">
               <Label htmlFor="applyingClass">Admission for <span className="text-red-500">*</span></Label>
-              <select id="applyingClass" name="applyingClass" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600" value={formData.applyingClass} onChange={handleInputChange} required>
+              <select id="applyingClass" name="applyingClass" className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600" value={formData.applyingClass} onChange={handleInputChange} required>
                 <option value="">Select Class...</option>
                 {sortedClasses.map((cls) => (
                   <option key={cls._id || cls.id} value={cls.name}>
@@ -390,7 +390,7 @@ const Applications = () => {
           {/* Parent & Guardian Details */}
           <div className="p-4 border border-gray-200 rounded-lg bg-gray-50/50 space-y-4">
             <h3 className="text-sm font-bold text-gray-900 border-b border-gray-200 pb-2 flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-orange-600"></span>
+              <span className="h-2 w-2 rounded-full bg-blue-600"></span>
               Parent Details
             </h3>
 
@@ -434,7 +434,7 @@ const Applications = () => {
               name="feePaid" 
               checked={formData.feePaid} 
               onChange={(e) => setFormData({...formData, feePaid: e.target.checked})} 
-              className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-600 cursor-pointer"
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600 cursor-pointer"
             />
             <Label htmlFor="feePaid" className="text-sm font-medium text-gray-700 cursor-pointer select-none">Application Fee Paid</Label>
           </div>

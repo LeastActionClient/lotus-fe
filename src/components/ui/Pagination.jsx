@@ -51,7 +51,7 @@ const Pagination = ({ page, totalPages, onPageChange, className = '' }) => {
               size="sm"
               variant={item === page ? 'default' : 'outline'}
               onClick={() => onPageChange(item)}
-              className={item === page ? 'bg-orange-600 hover:bg-orange-700 text-white border-0' : ''}
+              className={item === page ? 'bg-blue-600 hover:bg-blue-700 text-white border-0' : ''}
             >
               {item}
             </Button>

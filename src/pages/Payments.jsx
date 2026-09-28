@@ -704,7 +704,7 @@ const Payments = () => {
             variant={filterCategory === 'All' ? 'default' : 'outline'} 
             size="sm" 
             onClick={() => setFilterCategory('All')}
-            className={`rounded-full px-4 ${filterCategory === 'All' ? 'bg-orange-600 hover:bg-orange-700 text-white border-0' : 'bg-white'}`}
+            className={`rounded-full px-4 ${filterCategory === 'All' ? 'bg-blue-600 hover:bg-blue-700 text-white border-0' : 'bg-white'}`}
           >
             All
           </Button>
@@ -714,7 +714,7 @@ const Payments = () => {
               variant={filterCategory === cat ? 'default' : 'outline'} 
               size="sm" 
               onClick={() => setFilterCategory(cat)}
-              className={`rounded-full px-4 whitespace-nowrap ${filterCategory === cat ? 'bg-orange-600 hover:bg-orange-700 text-white border-0' : 'bg-white'}`}
+              className={`rounded-full px-4 whitespace-nowrap ${filterCategory === cat ? 'bg-blue-600 hover:bg-blue-700 text-white border-0' : 'bg-white'}`}
             >
               {cat}
             </Button>
@@ -891,7 +891,7 @@ const Payments = () => {
               <Label htmlFor="classFilter">Filter by Class</Label>
               <select 
                 id="classFilter" 
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
                 value={selectedClass}
                 onChange={(e) => {
                   setSelectedClass(e.target.value);
@@ -909,7 +909,7 @@ const Payments = () => {
               <Label htmlFor="sectionFilter">Filter by Section</Label>
               <select 
                 id="sectionFilter" 
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
                 value={selectedSection}
                 onChange={(e) => {
                   setSelectedSection(e.target.value);
@@ -979,7 +979,7 @@ const Payments = () => {
                     : isLocked 
                       ? 'bg-gray-100/80 border-gray-200 opacity-60' 
                       : isChecked 
-                        ? 'border-orange-200 bg-orange-50/10 shadow-xs' 
+                        ? 'border-blue-200 bg-blue-50/10 shadow-xs' 
                         : 'border-gray-200 hover:border-gray-300'
                 }`}>
                   {/* Untouched Sheet Gesture Overlay */}
@@ -1000,7 +1000,7 @@ const Payments = () => {
                       id={`fee-${feeId}`}
                       checked={isChecked}
                       disabled={isDisabled}
-                      className="h-4 w-4 mt-0.5 rounded border-gray-300 text-orange-600 focus:ring-orange-600 cursor-pointer disabled:cursor-not-allowed"
+                      className="h-4 w-4 mt-0.5 rounded border-gray-300 text-blue-600 focus:ring-blue-600 cursor-pointer disabled:cursor-not-allowed"
                       onChange={(e) => {
                         let candidateIds;
                         if (e.target.checked) {
@@ -1025,7 +1025,7 @@ const Payments = () => {
                     />
                     <div className="flex-1 space-y-1">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <Label htmlFor={`fee-${feeId}`} className={`text-sm font-bold select-none ${isDisabled ? 'cursor-not-allowed text-gray-500' : 'cursor-pointer'} ${isChecked ? 'text-orange-950' : 'text-gray-800'}`}>
+                        <Label htmlFor={`fee-${feeId}`} className={`text-sm font-bold select-none ${isDisabled ? 'cursor-not-allowed text-gray-500' : 'cursor-pointer'} ${isChecked ? 'text-blue-950' : 'text-gray-800'}`}>
                           {classLabel} {f.feeCategory?.name || 'Fee'}
                         </Label>
                         {isLocked && (
@@ -1043,13 +1043,13 @@ const Payments = () => {
                           </>
                         )}
                         <div>Already Paid: <span className="font-bold text-blue-600">₹{f.paidAmount || 0}</span></div>
-                        <div>Remaining: <span className="font-bold text-orange-600">₹{dynamicRemaining}</span></div>
+                        <div>Remaining: <span className="font-bold text-blue-600">₹{dynamicRemaining}</span></div>
                       </div>
                     </div>
                   </div>
 
                   {isChecked && !isLocked && (
-                    <div className="pl-6 pt-1 grid grid-cols-1 sm:grid-cols-2 gap-4 items-center bg-white p-3 rounded-lg border border-orange-100 shadow-sm animate-in fade-in slide-in-from-top-1 duration-150">
+                    <div className="pl-6 pt-1 grid grid-cols-1 sm:grid-cols-2 gap-4 items-center bg-white p-3 rounded-lg border border-blue-100 shadow-sm animate-in fade-in slide-in-from-top-1 duration-150">
                       <div className="space-y-1.5">
                         <Label htmlFor={`paying-${feeId}`} className="text-xs font-bold text-gray-700">Amount Paying Now (Rs.)</Label>
                         <Input
@@ -1089,7 +1089,7 @@ const Payments = () => {
                       </div>
                       <div className="flex flex-col justify-end text-right pr-2">
                         <div className="text-xs text-gray-500 font-medium">Remaining After Payment:</div>
-                        <div className={`text-base font-black ${remainingAfter === 0 ? 'text-emerald-600' : 'text-orange-600'}`}>
+                        <div className={`text-base font-black ${remainingAfter === 0 ? 'text-emerald-600' : 'text-blue-600'}`}>
                           ₹{remainingAfter}
                         </div>
                       </div>
@@ -1124,7 +1124,7 @@ const Payments = () => {
                     
                     return (
                       <div key={charge._id} className={`relative p-3.5 border rounded-xl space-y-3 transition-all duration-300 ${
-                        isChecked ? 'border-orange-200 bg-orange-50/10 shadow-xs' : 'border-gray-200 hover:border-gray-300'
+                        isChecked ? 'border-blue-200 bg-blue-50/10 shadow-xs' : 'border-gray-200 hover:border-gray-300'
                       }`}>
                         <div className="flex items-center gap-3">
                           <input
@@ -1151,7 +1151,7 @@ const Payments = () => {
                               setOtherFeesAmounts(newAmounts);
                             }}
                             disabled={charge.stockQuantity <= 0}
-                            className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-600 cursor-pointer disabled:cursor-not-allowed"
+                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600 cursor-pointer disabled:cursor-not-allowed"
                           />
                           <Label htmlFor={`otherfee-${charge._id}`} className={`text-sm font-bold select-none ${charge.stockQuantity <= 0 ? 'text-gray-400 cursor-not-allowed' : 'cursor-pointer text-gray-800'}`}>
                             {charge.name} {charge.stockQuantity <= 0 && <span className="text-red-500 text-xs ml-2">(Out of Stock)</span>}
@@ -1161,7 +1161,7 @@ const Payments = () => {
                           Price: <span className="font-bold text-gray-700">₹{charge.amount}</span> | Stock: {charge.stockQuantity}
                         </div>
                         {isChecked && (
-                          <div className="pl-6 pt-1 grid grid-cols-1 gap-4 items-center bg-white p-3 rounded-lg border border-orange-100 shadow-sm animate-in fade-in slide-in-from-top-1 duration-150">
+                          <div className="pl-6 pt-1 grid grid-cols-1 gap-4 items-center bg-white p-3 rounded-lg border border-blue-100 shadow-sm animate-in fade-in slide-in-from-top-1 duration-150">
                             <div className="space-y-1.5">
                               <Label htmlFor={`paying-other-${charge._id}`} className="text-xs font-bold text-gray-700">Amount Paying Now (Rs.)</Label>
                               <Input
@@ -1213,7 +1213,7 @@ const Payments = () => {
               <Label htmlFor="paymentMethod">Payment Method</Label>
               <select 
                 id="paymentMethod" 
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600 disabled:opacity-50"
+                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 disabled:opacity-50"
                 value={paymentData.paymentMethod}
                 onChange={(e) => setPaymentData({...paymentData, paymentMethod: e.target.value})}
               >

@@ -43,7 +43,7 @@ const CategoryMultiSelect = ({ categories, selectedIds, onChange }) => {
           <button
             type="button"
             onClick={handleSelectAll}
-            className="text-orange-600 hover:text-orange-800 font-bold hover:underline"
+            className="text-blue-600 hover:text-blue-800 font-bold hover:underline"
           >
             Select All ({categories.length})
           </button>
@@ -683,7 +683,7 @@ const PendingFees = () => {
               <div>
                 <Label>Class</Label>
                 <select
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
                   value={classFilter}
                   onChange={(e) => {
                     setClassFilter(e.target.value);
@@ -700,7 +700,7 @@ const PendingFees = () => {
               <div>
                 <Label>Section</Label>
                 <select
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
                   value={sectionFilter}
                   onChange={(e) => setSectionFilter(e.target.value)}
                   disabled={classFilter === 'All'}
@@ -715,7 +715,7 @@ const PendingFees = () => {
               <div>
                 <Label>Student Status</Label>
                 <select
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
@@ -728,7 +728,7 @@ const PendingFees = () => {
               <div>
                 <Label>Fee Status</Label>
                 <select
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
                   value={feeStatusFilter}
                   onChange={(e) => setFeeStatusFilter(e.target.value)}
                 >
@@ -741,7 +741,7 @@ const PendingFees = () => {
               <div>
                 <Label>RTE Course Group</Label>
                 <select
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600 font-medium"
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 font-medium"
                   value={RTEFilter}
                   onChange={(e) => setRTEFilter(e.target.value)}
                 >
@@ -754,7 +754,7 @@ const PendingFees = () => {
               <div>
                 <Label>Academic Year</Label>
                 <select
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600 font-medium"
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 font-medium"
                   value={academicYearFilter}
                   onChange={(e) => setAcademicYearFilter(e.target.value)}
                 >
@@ -828,7 +828,7 @@ const PendingFees = () => {
                       <TableRow key={student._id} className="hover:bg-gray-50/60">
                         <TableCell className="px-2.5 py-2.5 text-xs font-semibold text-gray-900 whitespace-nowrap">{student.admissionNumber}</TableCell>
                         <TableCell className="px-2.5 py-2.5 text-xs whitespace-nowrap">
-                          <Link to={`/dashboard/students/edit/${student._id}`} className="text-orange-600 hover:underline font-medium">
+                          <Link to={`/dashboard/students/edit/${student._id}`} className="text-blue-600 hover:underline font-medium">
                             {student.studentName}
                           </Link>
                         </TableCell>
@@ -893,7 +893,7 @@ const PendingFees = () => {
                           <div className="relative group inline-block">
                             <span className={`font-medium cursor-pointer border-b border-dashed ${
                               currentPending > 0
-                                ? 'text-orange-600 border-orange-400 hover:text-orange-700'
+                                ? 'text-blue-600 border-blue-400 hover:text-blue-700'
                                 : 'text-gray-400 border-gray-300 hover:text-gray-500'
                             }`}>
                               {formatRs(currentPending)}
@@ -925,7 +925,7 @@ const PendingFees = () => {
                                   {renderFeeBreakdown(previousPendingFees, 'None')}
                                 </div>
                                 <div>
-                                  <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-orange-700">Current Year</div>
+                                  <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-blue-700">Current Year</div>
                                   {renderFeeBreakdown(currentPendingFees, 'None')}
                                 </div>
                               </div>
@@ -937,7 +937,7 @@ const PendingFees = () => {
                             <Button
                               size="sm"
                               onClick={() => navigate('/dashboard/payments', { state: { studentId: student._id } })}
-                              className="bg-orange-600 hover:bg-orange-700 text-white font-medium text-xs px-3 py-1 h-7 whitespace-nowrap shadow-sm"
+                              className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs px-3 py-1 h-7 whitespace-nowrap shadow-sm"
                             >
                               Pay Pending
                             </Button>

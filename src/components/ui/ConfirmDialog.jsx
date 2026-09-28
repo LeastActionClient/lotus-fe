@@ -28,8 +28,8 @@ const toneStyles = {
     description: 'text-gray-600'
   },
   primary: {
-    iconWrap: 'bg-orange-100 text-orange-700',
-    header: 'border-orange-100',
+    iconWrap: 'bg-blue-100 text-blue-700',
+    header: 'border-blue-100',
     title: 'text-gray-900',
     description: 'text-gray-600'
   }

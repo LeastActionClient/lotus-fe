@@ -158,7 +158,7 @@ const PrintExport = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 print:hidden">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 flex items-center">
-            <Printer className="mr-2 sm:mr-3 text-orange-600" size={28} />
+            <Printer className="mr-2 sm:mr-3 text-blue-600" size={28} />
             Print & Export
           </h1>
           <p className="text-gray-500 mt-1 sm:mt-2 text-sm sm:text-base">Filter and select specific fields to export your student data.</p>
@@ -190,7 +190,7 @@ const PrintExport = () => {
                       id={`field-${field.id}`}
                       checked={selectedFields[field.id]}
                       onChange={() => toggleField(field.id)}
-                      className="rounded border-gray-300 text-orange-600 focus:ring-orange-600 h-4 w-4"
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-600 h-4 w-4"
                     />
                     <Label htmlFor={`field-${field.id}`} className="text-sm font-normal cursor-pointer flex-1">
                       {field.label}
@@ -203,14 +203,14 @@ const PrintExport = () => {
         </div>
 
         <div className="md:col-span-3 space-y-6">
-          <Card className="bg-orange-50 border-orange-100">
+          <Card className="bg-blue-50 border-blue-100">
             <CardContent className="pt-6">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="classFilter">Select Scope</Label>
                   <select 
                     id="classFilter" 
-                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
                     value={selectedClass}
                     onChange={(e) => {
                       setSelectedClass(e.target.value);
@@ -228,7 +228,7 @@ const PrintExport = () => {
                   <Label htmlFor="sectionFilter">Section</Label>
                   <select 
                     id="sectionFilter" 
-                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600 disabled:opacity-50"
+                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 disabled:opacity-50"
                     value={selectedSection}
                     onChange={(e) => setSelectedSection(e.target.value)}
                     disabled={selectedClass === 'FULL_SCHOOL'}
@@ -267,15 +267,15 @@ const PrintExport = () => {
                       id="RTEFilter"
                       checked={RTEOnly}
                       onChange={(e) => setRTEOnly(e.target.checked)}
-                      className="rounded border-gray-300 text-orange-600 focus:ring-orange-600 h-4 w-4"
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-600 h-4 w-4"
                     />
                     <Label htmlFor="RTEFilter" className="cursor-pointer font-medium text-gray-700">RTE Students Only</Label>
                   </div>
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3 sm:justify-end mt-6 border-t border-orange-200 pt-4">
-                <Button onClick={downloadCSV} className="bg-orange-600 hover:bg-orange-700 text-white w-full sm:w-auto">
+              <div className="flex flex-col sm:flex-row gap-3 sm:justify-end mt-6 border-t border-blue-200 pt-4">
+                <Button onClick={downloadCSV} className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto">
                   <Download className="mr-2 h-4 w-4" /> Export CSV ({Object.values(selectedFields).filter(Boolean).length} columns)
                 </Button>
               </div>

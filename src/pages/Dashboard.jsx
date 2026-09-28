@@ -200,16 +200,16 @@ const Dashboard = () => {
           <h1 className="text-3xl font-bold tracking-tight text-gray-900">Dashboard Overview</h1>
           <p className="mt-2 text-gray-500">Welcome to the School Management System</p>
         </div>
-        <Button onClick={handleOpenPromote} className="bg-orange-600 text-white shadow-md hover:bg-orange-700">
+        <Button onClick={handleOpenPromote} className="bg-blue-600 text-white shadow-md hover:bg-blue-700">
           <ArrowUpCircle className="mr-2 h-5 w-5" /> Bulk Promote Students
         </Button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         <Card className="bg-gradient-to-br from-blue-50 to-white">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-orange-600">Total Applications</CardTitle>
-            <FileText className="h-4 w-4 text-orange-600" />
+            <CardTitle className="text-sm font-medium text-blue-600">Total Applications</CardTitle>
+            <FileText className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl sm:text-3xl font-bold text-gray-900 break-words">{stats.applications}</div>
@@ -356,7 +356,7 @@ const Dashboard = () => {
                 <div key={c._id} className="flex items-center justify-between">
                   <span className="font-medium text-gray-800">{c.name}</span>
                   <select
-                    className="flex h-9 w-48 rounded-md border border-gray-300 bg-white px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+                    className="flex h-9 w-48 rounded-md border border-gray-300 bg-white px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
                     value={classMapping[c.name] || ''}
                     onChange={(e) => setClassMapping((prev) => ({ ...prev, [c.name]: e.target.value }))}
                   >
@@ -374,7 +374,7 @@ const Dashboard = () => {
 
           <div className="flex justify-end gap-3 border-t pt-4">
             <Button type="button" variant="outline" onClick={() => setIsPromoteModalOpen(false)}>Cancel</Button>
-            <Button type="submit" className="bg-orange-600 text-white hover:bg-orange-700" loading={isPromoting} loadingText="Promoting...">
+            <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700" loading={isPromoting} loadingText="Promoting...">
               Confirm Promotion
             </Button>
           </div>

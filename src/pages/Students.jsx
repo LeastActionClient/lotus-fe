@@ -423,13 +423,13 @@ const Students = () => {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900  flex items-center">
-            <Users className="mr-3 text-orange-600" size={32} />
+            <Users className="mr-3 text-blue-600" size={32} />
             Students Directory
           </h1>
           <p className="text-gray-500  mt-2">Manage all enrolled students</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button onClick={() => setIsExportModalOpen(true)} className="bg-orange-600 hover:bg-orange-700 text-white">
+          <Button onClick={() => setIsExportModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
             <FolderOpen className="h-4 w-4 mr-2" /> Export Center
           </Button>
           <div className="relative">
@@ -459,7 +459,7 @@ const Students = () => {
               sortedClasses.map((cls) => (
                 <Card 
                   key={cls._id} 
-                  className="cursor-pointer hover:border-orange-600 hover:shadow-md transition-all group relative"
+                  className="cursor-pointer hover:border-blue-600 hover:shadow-md transition-all group relative"
                 >
                   <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                     <button
@@ -486,8 +486,8 @@ const Students = () => {
                     className="p-6 flex flex-col items-center justify-center text-center space-y-3"
                     onClick={() => { setSelectedClass(cls); setViewMode('SECTIONS'); }}
                   >
-                    <div className="p-3 bg-orange-50 rounded-full group-hover:bg-orange-600 transition-colors">
-                      <Folder className="h-8 w-8 text-orange-600 group-hover:text-white transition-colors" />
+                    <div className="p-3 bg-blue-50 rounded-full group-hover:bg-blue-600 transition-colors">
+                      <Folder className="h-8 w-8 text-blue-600 group-hover:text-white transition-colors" />
                     </div>
                     <div>
                       <h3 className="font-bold text-lg text-gray-900 ">{cls.name}</h3>
@@ -521,7 +521,7 @@ const Students = () => {
               selectedClass.sections?.map((sec) => (
                 <Card 
                   key={sec._id} 
-                  className="cursor-pointer hover:border-orange-600 hover:shadow-md transition-all group relative"
+                  className="cursor-pointer hover:border-blue-600 hover:shadow-md transition-all group relative"
                 >
                   <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                     <button
@@ -548,8 +548,8 @@ const Students = () => {
                     className="p-6 flex flex-col items-center justify-center text-center space-y-3"
                     onClick={() => { setSelectedSection(sec); setViewMode('STUDENTS'); }}
                   >
-                    <div className="p-3 bg-orange-50 rounded-full group-hover:bg-orange-600 transition-colors">
-                      <FolderOpen className="h-8 w-8 text-orange-600 group-hover:text-white transition-colors" />
+                    <div className="p-3 bg-blue-50 rounded-full group-hover:bg-blue-600 transition-colors">
+                      <FolderOpen className="h-8 w-8 text-blue-600 group-hover:text-white transition-colors" />
                     </div>
                     <div>
                       <h3 className="font-bold text-lg text-gray-900 ">Section {sec.name}</h3>
@@ -575,7 +575,7 @@ const Students = () => {
             </h2>
             <div className="flex flex-wrap gap-2">
               <select 
-                className="flex h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+                className="flex h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
                 value={feeFilter}
                 onChange={(e) => setFeeFilter(e.target.value)}
               >
@@ -584,7 +584,7 @@ const Students = () => {
                 <option value="PENDING">Pending Dues</option>
               </select>
               <select
-                className="flex h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+                className="flex h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
                 value={studentGroupFilter}
                 onChange={(e) => setStudentGroupFilter(e.target.value)}
               >
@@ -593,7 +593,7 @@ const Students = () => {
                 <option value="General">General</option>
               </select>
               <select
-                className="flex h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
+                className="flex h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
                 value={studentProgramFilter}
                 onChange={(e) => setStudentProgramFilter(e.target.value)}
               >
@@ -614,7 +614,7 @@ const Students = () => {
                     <TableHead className="w-10">
                       <input
                         type="checkbox"
-                        className="rounded border-gray-300 text-orange-600 focus:ring-orange-600 h-4 w-4 cursor-pointer"
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-600 h-4 w-4 cursor-pointer"
                         checked={paginatedStudents.length > 0 && selectedStudentIds.length === paginatedStudents.length}
                         onChange={handleSelectAll}
                       />
@@ -643,13 +643,13 @@ const Students = () => {
                         <TableCell>
                           <input
                             type="checkbox"
-                            className="rounded border-gray-300 text-orange-600 focus:ring-orange-600 h-4 w-4 cursor-pointer"
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-600 h-4 w-4 cursor-pointer"
                             checked={selectedStudentIds.includes(student._id)}
                             onChange={() => handleSelectStudent(student._id)}
                           />
                         </TableCell>
                         <TableCell className="font-mono text-sm">{student.admissionNumber}</TableCell>
-                        <TableCell className="font-medium text-orange-600">
+                        <TableCell className="font-medium text-blue-600">
                           {student.studentName}
                           <span className={`ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
                             getStudentCategoryLabel(student) === 'RTE'
@@ -951,13 +951,13 @@ const Students = () => {
               ) : academicHistory.length === 0 ? (
                 <p className="text-xs text-gray-500">No promotion history found.</p>
               ) : (
-                <div className="relative border-l-2 border-orange-200 ml-2 pl-4 space-y-4 py-1">
+                <div className="relative border-l-2 border-blue-200 ml-2 pl-4 space-y-4 py-1">
                   {academicHistory.map((h, idx) => (
                     <div key={h._id || idx} className="relative">
-                      <div className="absolute -left-[23px] top-1.5 w-3 h-3 rounded-full bg-orange-500 border-2 border-white shadow-sm" />
+                      <div className="absolute -left-[23px] top-1.5 w-3 h-3 rounded-full bg-blue-500 border-2 border-white shadow-sm" />
                       <p className="text-xs font-bold text-gray-800 tracking-wider uppercase">{h.academicYear}</p>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        Class {h.className} {h.sectionName && `(Section ${h.sectionName})`} &bull; Status: <span className="font-semibold text-orange-600">{h.status}</span>
+                        Class {h.className} {h.sectionName && `(Section ${h.sectionName})`} &bull; Status: <span className="font-semibold text-blue-600">{h.status}</span>
                       </p>
                     </div>
                   ))}

@@ -191,32 +191,32 @@ const ExportModal = ({
         <div className="space-y-3">
           <Label className="text-base font-semibold">Choose Export Scope</Label>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <label className={`flex items-center space-x-2 border p-3 rounded-md transition-colors ${effectiveStudentIds.length <= 1 ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'cursor-pointer hover:bg-orange-50'}`}>
-              <input type="radio" name="scope" value="SELECTED" checked={exportScope === 'SELECTED'} onChange={(e) => handleScopeChange(e.target.value)} disabled={effectiveStudentIds.length <= 1} className="text-orange-600 focus:ring-orange-600" />
+            <label className={`flex items-center space-x-2 border p-3 rounded-md transition-colors ${effectiveStudentIds.length <= 1 ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'cursor-pointer hover:bg-blue-50'}`}>
+              <input type="radio" name="scope" value="SELECTED" checked={exportScope === 'SELECTED'} onChange={(e) => handleScopeChange(e.target.value)} disabled={effectiveStudentIds.length <= 1} className="text-blue-600 focus:ring-blue-600" />
               <span className="text-sm">Selected Students ({effectiveStudentIds.length})</span>
             </label>
-            <label className={`flex items-center space-x-2 border p-3 rounded-md transition-colors ${effectiveStudentIds.length !== 1 ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'cursor-pointer hover:bg-orange-50'}`}>
-              <input type="radio" name="scope" value="SINGLE" checked={exportScope === 'SINGLE'} onChange={(e) => handleScopeChange(e.target.value)} disabled={effectiveStudentIds.length !== 1} className="text-orange-600 focus:ring-orange-600" />
+            <label className={`flex items-center space-x-2 border p-3 rounded-md transition-colors ${effectiveStudentIds.length !== 1 ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'cursor-pointer hover:bg-blue-50'}`}>
+              <input type="radio" name="scope" value="SINGLE" checked={exportScope === 'SINGLE'} onChange={(e) => handleScopeChange(e.target.value)} disabled={effectiveStudentIds.length !== 1} className="text-blue-600 focus:ring-blue-600" />
               <span className="text-sm">Single Student</span>
             </label>
              {!isOldStudentsPage && (
               <>
-                <label className="flex items-center space-x-2 border p-3 rounded-md cursor-pointer hover:bg-orange-50 transition-colors">
-                  <input type="radio" name="scope" value="CLASS" checked={exportScope === 'CLASS'} onChange={(e) => handleScopeChange(e.target.value)} className="text-orange-600 focus:ring-orange-600" />
+                <label className="flex items-center space-x-2 border p-3 rounded-md cursor-pointer hover:bg-blue-50 transition-colors">
+                  <input type="radio" name="scope" value="CLASS" checked={exportScope === 'CLASS'} onChange={(e) => handleScopeChange(e.target.value)} className="text-blue-600 focus:ring-blue-600" />
                   <span className="text-sm">Entire Class</span>
                 </label>
-                <label className="flex items-center space-x-2 border p-3 rounded-md cursor-pointer hover:bg-orange-50 transition-colors">
-                  <input type="radio" name="scope" value="ACADEMIC_YEAR" checked={exportScope === 'ACADEMIC_YEAR'} onChange={(e) => handleScopeChange(e.target.value)} className="text-orange-600 focus:ring-orange-600" />
+                <label className="flex items-center space-x-2 border p-3 rounded-md cursor-pointer hover:bg-blue-50 transition-colors">
+                  <input type="radio" name="scope" value="ACADEMIC_YEAR" checked={exportScope === 'ACADEMIC_YEAR'} onChange={(e) => handleScopeChange(e.target.value)} className="text-blue-600 focus:ring-blue-600" />
                   <span className="text-sm">Entire Academic Year</span>
                 </label>
               </>
             )}
-            <label className={`flex items-center space-x-2 border p-3 rounded-md transition-colors ${effectiveStudentIds.length === 0 ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'cursor-pointer hover:bg-orange-50'}`}>
-              <input type="radio" name="scope" value="FILTERED" checked={exportScope === 'FILTERED'} onChange={(e) => handleScopeChange(e.target.value)} disabled={effectiveStudentIds.length === 0} className="text-orange-600 focus:ring-orange-600" />
+            <label className={`flex items-center space-x-2 border p-3 rounded-md transition-colors ${effectiveStudentIds.length === 0 ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'cursor-pointer hover:bg-blue-50'}`}>
+              <input type="radio" name="scope" value="FILTERED" checked={exportScope === 'FILTERED'} onChange={(e) => handleScopeChange(e.target.value)} disabled={effectiveStudentIds.length === 0} className="text-blue-600 focus:ring-blue-600" />
               <span className="text-sm">Current Visible Results ({effectiveStudentIds.length})</span>
             </label>
-            <label className="flex items-center space-x-2 border p-3 rounded-md cursor-pointer hover:bg-orange-50 transition-colors">
-              <input type="radio" name="scope" value="OLD_STUDENTS" checked={exportScope === 'OLD_STUDENTS'} onChange={(e) => handleScopeChange(e.target.value)} className="text-orange-600 focus:ring-orange-600" />
+            <label className="flex items-center space-x-2 border p-3 rounded-md cursor-pointer hover:bg-blue-50 transition-colors">
+              <input type="radio" name="scope" value="OLD_STUDENTS" checked={exportScope === 'OLD_STUDENTS'} onChange={(e) => handleScopeChange(e.target.value)} className="text-blue-600 focus:ring-blue-600" />
               <span className="text-sm">Entire Old Students</span>
             </label>
           </div>
@@ -231,7 +231,7 @@ const ExportModal = ({
               {(exportScope === 'ACADEMIC_YEAR' || exportScope === 'OLD_STUDENTS') && (
                 <div className="space-y-1">
                   <Label>Academic Year</Label>
-                  <select className="flex h-10 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600" value={academicYear} onChange={(e) => setAcademicYear(e.target.value)}>
+                  <select className="flex h-10 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600" value={academicYear} onChange={(e) => setAcademicYear(e.target.value)}>
                     <option value="All">All Years</option>
                     {academicYears.map(y => <option key={y} value={y}>{y}</option>)}
                   </select>
@@ -241,7 +241,7 @@ const ExportModal = ({
               {(exportScope === 'CLASS' || exportScope === 'SECTION' || exportScope === 'OLD_STUDENTS') && (
                 <div className="space-y-1">
                   <Label>Class</Label>
-                  <select className="flex h-10 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600" value={classFilter} onChange={(e) => {
+                  <select className="flex h-10 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600" value={classFilter} onChange={(e) => {
                     const newClass = e.target.value;
                     setClassFilter(newClass);
                     const clsObj = classes.find(c => c.name === newClass);
@@ -260,7 +260,7 @@ const ExportModal = ({
               {((exportScope === 'SECTION' || exportScope === 'CLASS') || (exportScope === 'OLD_STUDENTS' && classFilter !== 'All')) && selectedClassObj?.sections?.length > 0 && (
                 <div className="space-y-1">
                   <Label>Section</Label>
-                  <select className="flex h-10 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600" value={sectionFilter} onChange={(e) => setSectionFilter(e.target.value)}>
+                  <select className="flex h-10 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600" value={sectionFilter} onChange={(e) => setSectionFilter(e.target.value)}>
                     {exportScope === 'OLD_STUDENTS' && <option value="All">All Sections</option>}
                     {selectedClassObj?.sections?.map(s => <option key={s._id} value={s.name}>{s.name}</option>)}
                   </select>
@@ -270,7 +270,7 @@ const ExportModal = ({
               {exportScope === 'OLD_STUDENTS' && (
                 <div className="space-y-1">
                   <Label>Exit Type</Label>
-                  <select className="flex h-10 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600" value={exitType} onChange={(e) => setExitType(e.target.value)}>
+                  <select className="flex h-10 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600" value={exitType} onChange={(e) => setExitType(e.target.value)}>
                     <option value="All">All Exit Types</option>
                     <option value="Graduated">Graduated</option>
                     <option value="Transferred">Transferred</option>
@@ -283,7 +283,7 @@ const ExportModal = ({
 
               <div className="space-y-1">
                 <Label>Fee Status</Label>
-                <select className="flex h-10 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600" value={feeStatus} onChange={(e) => setFeeStatus(e.target.value)}>
+                <select className="flex h-10 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600" value={feeStatus} onChange={(e) => setFeeStatus(e.target.value)}>
                   <option value="All">All Students</option>
                   <option value="Pending">Pending Fee Students</option>
                   <option value="Paid">Fully Paid Students</option>
@@ -308,7 +308,7 @@ const ExportModal = ({
         {/* Actions / Progress */}
         <div className="pt-6 flex justify-end gap-3 border-t border-gray-200">
           {loading ? (
-            <div className="flex items-center text-orange-600 font-medium">
+            <div className="flex items-center text-blue-600 font-medium">
               <Loader2 className="mr-2 h-5 w-5 animate-spin" />
               {progressText}
             </div>

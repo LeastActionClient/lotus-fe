@@ -399,7 +399,7 @@ const Concessions = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-250/60 shadow-sm">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Percent className="text-orange-600 animate-pulse bg-orange-50 p-1.5 rounded-lg border border-orange-100" size={32} />
+            <Percent className="text-blue-600 animate-pulse bg-blue-50 p-1.5 rounded-lg border border-blue-100" size={32} />
             Student Fee Concession Management
           </h1>
           <p className="text-sm text-gray-500 mt-1">
@@ -410,7 +410,7 @@ const Concessions = () => {
           {isSuperAdmin && (
             <Button
               onClick={handleOpenAssignModal}
-              className="bg-orange-600 hover:bg-orange-700 text-white font-semibold shadow-sm transition-all rounded-xl px-5 py-2.5"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm transition-all rounded-xl px-5 py-2.5"
               loading={assignLoading}
               loadingText="Opening..."
             >
@@ -432,7 +432,7 @@ const Concessions = () => {
       <Card className="shadow-sm border border-gray-200 rounded-2xl overflow-hidden bg-white">
         <div className="px-6 py-4 border-b border-gray-100 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-bold text-gray-800">Assigned Concessions List</h2>
-          <span className="bg-orange-50 text-orange-700 text-xs font-bold px-3 py-1 rounded-full border border-orange-200">
+          <span className="bg-blue-50 text-blue-700 text-xs font-bold px-3 py-1 rounded-full border border-blue-200">
             Total Records: {totalHistoryItems}
           </span>
         </div>
@@ -484,7 +484,7 @@ const Concessions = () => {
                     const assignedBy = item.assignedBy || item.createdBy?.username || 'N/A';
 
                     return (
-                      <TableRow key={item._id || item.concessionId} className="border-b border-gray-100 hover:bg-orange-50/10 transition-colors">
+                      <TableRow key={item._id || item.concessionId} className="border-b border-gray-100 hover:bg-blue-50/10 transition-colors">
                         <TableCell className="font-bold text-gray-800 py-3.5">{admissionNo}</TableCell>
                         <TableCell className="font-semibold text-gray-900">{name}</TableCell>
                         <TableCell className="text-sm text-gray-600">{academicYear}</TableCell>
@@ -492,7 +492,7 @@ const Concessions = () => {
                         <TableCell>{section}</TableCell>
                         <TableCell className="font-medium text-gray-600">{feeCategoryName}</TableCell>
                         <TableCell className="font-semibold text-gray-855">₹{original.toFixed(2)}</TableCell>
-                        <TableCell className="font-bold text-orange-600">-₹{less.toFixed(2)}</TableCell>
+                        <TableCell className="font-bold text-blue-600">-₹{less.toFixed(2)}</TableCell>
                         <TableCell className="font-bold text-green-600">₹{net.toFixed(2)}</TableCell>
                         <TableCell className="text-sm text-gray-650 font-medium">{reason}</TableCell>
                         <TableCell className="text-sm text-gray-500">
@@ -605,7 +605,7 @@ const Concessions = () => {
             {/* Section 1: Student Filters & Selectors */}
             <div className="bg-white rounded-2xl border border-gray-200/80 p-5 shadow-sm space-y-5">
               <div className="flex items-center gap-2 pb-1 border-b border-gray-50">
-                <Layers className="text-orange-500" size={18} />
+                <Layers className="text-blue-500" size={18} />
                 <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">Step 1: Student Selection</h3>
               </div>
 
@@ -615,7 +615,7 @@ const Concessions = () => {
                   <Label htmlFor="modalClass" className="text-gray-700 font-semibold">Select Class *</Label>
                   <select
                     id="modalClass"
-                    className="flex h-11 w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 font-semibold transition-shadow"
+                    className="flex h-11 w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold transition-shadow"
                     value={modalClass}
                     onChange={(e) => {
                       setModalClass(e.target.value);
@@ -637,7 +637,7 @@ const Concessions = () => {
                   <Label htmlFor="modalSection" className="text-gray-700 font-semibold">Select Section *</Label>
                   <select
                     id="modalSection"
-                    className="flex h-11 w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 font-semibold transition-shadow"
+                    className="flex h-11 w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold transition-shadow"
                     value={modalSection}
                     onChange={(e) => {
                       setModalSection(e.target.value);
@@ -674,7 +674,7 @@ const Concessions = () => {
                   <Label htmlFor="modalStudentSelect" className="text-gray-700 font-semibold">Admission Number *</Label>
                   <select
                     id="modalStudentSelect"
-                    className="flex h-11 w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 font-semibold transition-shadow"
+                    className="flex h-11 w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold transition-shadow"
                     value={selectedStudentId}
                     onChange={(e) => {
                       setSelectedStudentId(e.target.value);
@@ -698,7 +698,7 @@ const Concessions = () => {
             {selectedStudent && (
               <div className="bg-white rounded-2xl border border-gray-200/80 overflow-hidden shadow-sm animate-in fade-in slide-in-from-top-1 duration-200">
                 <div className="px-5 py-4 border-b border-gray-150 bg-gray-50/50 flex items-center gap-2">
-                  <UserCheck className="text-orange-500" size={18} />
+                  <UserCheck className="text-blue-500" size={18} />
                   <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">Selected Student Information</h3>
                 </div>
                 <div className="p-5 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
@@ -726,7 +726,7 @@ const Concessions = () => {
             {selectedStudent && (
               <div className="bg-white rounded-2xl border border-gray-200/80 p-5 shadow-sm space-y-5 animate-in fade-in slide-in-from-top-1 duration-200">
                 <div className="flex items-center gap-2 pb-1 border-b border-gray-50">
-                  <Sparkles className="text-orange-500" size={18} />
+                  <Sparkles className="text-blue-500" size={18} />
                   <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">Step 2: Concession details</h3>
                 </div>
 
@@ -740,7 +740,7 @@ const Concessions = () => {
                         type="button"
                         onClick={() => !studentFeesLoading && setIsFeeCatDropdownOpen(!isFeeCatDropdownOpen)}
                         disabled={studentFeesLoading}
-                        className="flex h-11 w-full items-center justify-between rounded-xl border border-gray-300 bg-white px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 font-semibold transition-shadow cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex h-11 w-full items-center justify-between rounded-xl border border-gray-300 bg-white px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold transition-shadow cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <span className={modalFeeCategory ? 'text-gray-900' : 'text-gray-500'}>
                           {studentFeesLoading
@@ -781,8 +781,8 @@ const Concessions = () => {
                               }}
                               className={`w-full px-4 py-2.5 text-left text-sm font-semibold transition-colors flex flex-col items-start ${
                                 modalFeeCategory === fc.id
-                                  ? 'bg-orange-50 text-orange-955'
-                                  : 'text-gray-700 hover:bg-orange-50/50 hover:text-orange-955'
+                                  ? 'bg-blue-50 text-blue-955'
+                                  : 'text-gray-700 hover:bg-blue-50/50 hover:text-blue-955'
                               }`}
                             >
                               <div className="flex justify-between w-full">
@@ -846,16 +846,16 @@ const Concessions = () => {
 
                 {/* Live Summary Calculation Panel */}
                 {modalFeeCategory && (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-3 border-t border-orange-200/50 text-center font-mono">
-                    <div className="bg-white p-3.5 rounded-xl border border-orange-100 shadow-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-3 border-t border-blue-200/50 text-center font-mono">
+                    <div className="bg-white p-3.5 rounded-xl border border-blue-100 shadow-sm">
                       <div className="text-[11px] font-bold text-gray-500 uppercase">Original Fee</div>
                       <div className="text-lg font-bold text-gray-900 mt-1">₹{originalAmount.toFixed(2)}</div>
                     </div>
-                    <div className="bg-white p-3.5 rounded-xl border border-orange-100 shadow-sm animate-pulse">
+                    <div className="bg-white p-3.5 rounded-xl border border-blue-100 shadow-sm animate-pulse">
                       <div className="text-[11px] font-bold text-gray-500 uppercase">Less Amount</div>
-                      <div className="text-lg font-bold text-orange-600 mt-1">-₹{lessAmt.toFixed(2)}</div>
+                      <div className="text-lg font-bold text-blue-600 mt-1">-₹{lessAmt.toFixed(2)}</div>
                     </div>
-                    <div className="bg-white p-3.5 rounded-xl border border-orange-100 shadow-sm">
+                    <div className="bg-white p-3.5 rounded-xl border border-blue-100 shadow-sm">
                       <div className="text-[11px] font-bold text-gray-500 uppercase">Net Payable</div>
                       <div className="text-lg font-black text-green-600 mt-1">₹{netPayable.toFixed(2)}</div>
                     </div>
@@ -867,7 +867,7 @@ const Concessions = () => {
             {/* If no Class/Section selected yet */}
             {(!modalClass || !modalSection) && (
               <div className="flex flex-col items-center justify-center py-12 px-4 text-center text-gray-500 bg-gray-50/50 border border-dashed border-gray-250 rounded-2xl">
-                <div className="bg-orange-50 p-4 rounded-full text-orange-500 mb-3 border border-orange-100">
+                <div className="bg-blue-50 p-4 rounded-full text-blue-500 mb-3 border border-blue-100">
                   <Percent size={28} />
                 </div>
                 <p className="font-bold text-gray-800 text-sm">Select Class and Section to load students.</p>
@@ -907,7 +907,7 @@ const Concessions = () => {
                           <TableCell className="font-semibold text-gray-800">{c.studentName}</TableCell>
                           <TableCell>{c.feeCategory}</TableCell>
                           <TableCell>₹{c.originalAmount.toFixed(2)}</TableCell>
-                          <TableCell className="font-bold text-orange-600">-₹{c.lessAmount.toFixed(2)}</TableCell>
+                          <TableCell className="font-bold text-blue-600">-₹{c.lessAmount.toFixed(2)}</TableCell>
                           <TableCell className="font-bold text-green-600">₹{c.netPayable.toFixed(2)}</TableCell>
                           <TableCell className="font-medium text-gray-600">{c.reason}</TableCell>
                           <TableCell>{c.assignedBy}</TableCell>
@@ -950,7 +950,7 @@ const Concessions = () => {
             <Button
               type="button"
               onClick={handleAssignConcession}
-              className="bg-orange-600 hover:bg-orange-700 text-white font-semibold shadow-sm rounded-xl px-6 py-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm rounded-xl px-6 py-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               disabled={!selectedStudentId || !modalFeeCategory || !modalLessAmount || parseFloat(modalLessAmount) <= 0 || parseFloat(modalLessAmount) > originalAmount || !modalReason.trim()}
               loading={assignLoading}
               loadingText="Saving..."
