@@ -810,7 +810,7 @@ const PendingFees = () => {
                 {filteredStudents.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={13} className="text-center h-32 text-gray-500 text-xs">
-                      No students match your filters.
+                      {searchQuery ? 'No results found.' : 'No students match your filters.'}
                     </TableCell>
                   </TableRow>
                 ) : (

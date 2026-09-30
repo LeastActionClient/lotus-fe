@@ -187,7 +187,7 @@ const Admissions = () => {
     } else if (validationType === 'bloodGroup') {
       val = val.replace(/[^a-zA-Z\s\-\+]/g, '');
     } else if (validationType === 'occupation') {
-      val = val.replace(/[^a-zA-Z0-9\s\-./()&,]/g, '');
+      val = val.replace(/[^a-zA-Z\s\-./()&,]/g, '');
     } else if (validationType === 'caste') {
       val = val.replace(/[^a-zA-Z\s\-./]/g, '');
     }
@@ -195,7 +195,7 @@ const Admissions = () => {
     if (limit && val.length > limit) {
       val = val.slice(0, limit);
     }
-    setState({ ...stateObj, [field]: val });
+    setState(prev => ({ ...prev, [field]: val }));
   };
 
   const handleApplicationAdmission = async (appId, classList) => {
@@ -514,7 +514,9 @@ const Admissions = () => {
         city: data.city || '',
         state: data.state || '',
         pincode: data.pincode || '',
-        academicYear: data.academicYear || ''
+        academicYear: data.academicYear || '',
+        photoUrl: data.photoUrl || '',
+        passport_photo: data.passport_photo || data.photoUrl || ''
       });
       setSelectedStudent(student);
       setIsEditing(true);
@@ -539,7 +541,7 @@ const Admissions = () => {
     } else if (name === 'whatsappNumber') {
       val = val.replace(/[^0-9*Xx]/g, '').slice(0, 10);
     } else if (name === 'fatherOccupation' || name === 'motherOccupation') {
-      val = val.replace(/[^a-zA-Z0-9\s\-./()&,]/g, '').slice(0, 100);
+      val = val.replace(/[^a-zA-Z\s\-./()&,]/g, '').slice(0, 100);
     } else if (name === 'caste') {
       val = val.replace(/[^a-zA-Z\s\-./]/g, '').slice(0, 50);
     } else if (name === 'emisNumber' || name === 'emisNo') {
@@ -548,6 +550,8 @@ const Admissions = () => {
       val = val.replace(/[^0-9*Xx]/g, '').slice(0, 12);
     } else if (name === 'bloodGroup') {
       val = val.replace(/[^a-zA-Z\s\-\+]/g, '');
+    } else if (name === 'city' || name === 'state' || name === 'religion' || name === 'community' || name === 'nationality' || name === 'studentName') {
+      val = val.replace(/[^a-zA-Z\s]/g, '');
     }
     setEditForm(prev => ({ ...prev, [name]: val }));
   };

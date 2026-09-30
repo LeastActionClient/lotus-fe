@@ -778,7 +778,7 @@ const Payments = () => {
               {filteredPayments.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center h-32 text-gray-500">
-                    No payment history found.
+                    {searchQuery ? 'No results found.' : 'No payment history found.'}
                   </TableCell>
                 </TableRow>
               ) : (

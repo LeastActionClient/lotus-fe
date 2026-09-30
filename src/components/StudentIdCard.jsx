@@ -24,29 +24,6 @@ export const StudentIdCard = React.forwardRef(({ student }, ref) => {
   const formattedClass = getRomanClass(rawClass);
   const classDisplay = `${formattedClass} STD`;
 
-  const formatAddressLines = (addr) => {
-    if (!addr) return ['380 ARCOT ROAD,', 'KAGITHAPATTARAI,', 'VELLORE-12'];
-    let cleanStr = addr.replace(/\n/g, ', ').replace(/,+/g, ',').replace(/ +/g, ' ').trim();
-    let parts = cleanStr.split(',').map(p => p.trim()).filter(p => p !== '');
-    
-    let lines = parts;
-    if (parts.length === 4) {
-       lines = [`${parts[0]}, ${parts[1]}`, parts[2], parts[3]];
-    } else if (parts.length === 5) {
-       lines = [`${parts[0]}, ${parts[1]}`, `${parts[2]}, ${parts[3]}`, parts[4]];
-    } else if (parts.length > 5) {
-       let third = Math.ceil(parts.length / 3);
-       lines = [
-         parts.slice(0, third).join(', '),
-         parts.slice(third, third * 2).join(', '),
-         parts.slice(third * 2).join(', ')
-       ];
-    }
-    
-    // Prevent dangling numbers or hyphens by replacing spaces with non-breaking spaces
-    return lines.map(line => line.replace(/ (\d+)/g, '\u00A0$1').replace(/ - /g, '\u00A0-\u00A0'));
-  };
-
   const getPhoneNumbers = () => {
     let nums = [];
     if (student.fatherPhone) nums.push(student.fatherPhone);
@@ -59,7 +36,6 @@ export const StudentIdCard = React.forwardRef(({ student }, ref) => {
     return `PH: ${nums.join(', ')}`;
   };
 
-  const addressLines = formatAddressLines(student.address);
   const studentPhone = getPhoneNumbers();
 
   const renderTwoToneName = (name) => {
@@ -177,15 +153,26 @@ export const StudentIdCard = React.forwardRef(({ student }, ref) => {
       </div>
 
       <div
-        className="absolute z-10 w-full flex flex-col items-center text-center px-4"
+        className="absolute z-10 w-full flex flex-col items-center text-center px-6"
         style={{ top: '780px' }}
       >
-        {addressLines.map((line, idx) => (
-          <p key={idx} className="whitespace-nowrap" style={{ color: '#013e8b', fontSize: '26px', lineHeight: '1.3', fontFamily: "Arial, sans-serif", fontWeight: 700 }}>
-            {line.toUpperCase()}
-          </p>
-        ))}
-        <p className="tracking-wide mt-2 whitespace-nowrap" style={{ color: '#013e8b', fontSize: '26px', fontFamily: "Arial, sans-serif", fontWeight: 900 }}>
+        <p 
+          className="w-full break-words" 
+          style={{ 
+            color: '#013e8b', 
+            fontSize: '26px', 
+            lineHeight: '1.25', 
+            fontFamily: "Arial, sans-serif", 
+            fontWeight: 700,
+            display: '-webkit-box',
+            WebkitLineClamp: 3,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden'
+          }}
+        >
+          {(student.address || '380 ARCOT ROAD, KAGITHAPATTARAI, VELLORE-12').toUpperCase()}
+        </p>
+        <p className="tracking-wide mt-1 whitespace-nowrap" style={{ color: '#013e8b', fontSize: '26px', fontFamily: "Arial, sans-serif", fontWeight: 900 }}>
           {studentPhone}
         </p>
       </div>

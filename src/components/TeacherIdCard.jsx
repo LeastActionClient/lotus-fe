@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { User } from 'lucide-react';
 import { getImageUrl } from '../utils/imageUrl';
-import templateImg from '../assets/id_card_template.png';
+import templateImg from '../assets/final_template.png';
 import principalSignatureImg from '../assets/principal_signature.png';
 
 export const TeacherIdCard = React.forwardRef(({ teacher }, ref) => {
