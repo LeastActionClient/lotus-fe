@@ -7,7 +7,7 @@ import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import Pagination from '../components/ui/Pagination';
-import { FileText, Plus, CheckCircle, Trash2, Settings } from 'lucide-react';
+import { FileText, Plus, CheckCircle, Trash2, Settings, Search } from 'lucide-react';
 import { PageLoader } from '../components/ui/Spinner';
 import { toastError, toastSuccess } from '../services/toastService';
 import { useConfirm } from '../components/ui/ConfirmDialog';
@@ -29,6 +29,7 @@ const Applications = () => {
   const itemsPerPage = 10;
   const [customIds, setCustomIds] = useState({ nextApplicationNo: '', applicationFeeAmount: '' });
   const [feeStatusFilter, setFeeStatusFilter] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState({
     applicationNo: '',
     studentName: '',
@@ -205,6 +206,19 @@ const Applications = () => {
   };
 
   const filteredApplications = applications.filter(app => {
+    let match = true;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      match = 
+        (app.applicationId || '').toLowerCase().includes(q) ||
+        (app.studentName || '').toLowerCase().includes(q) ||
+        (app.fatherName || '').toLowerCase().includes(q) ||
+        (app.motherName || '').toLowerCase().includes(q) ||
+        (app.fatherPhone || '').includes(q) ||
+        (app.motherPhone || '').includes(q);
+    }
+    if (!match) return false;
+
     if (feeStatusFilter === 'ALL') return true;
     if (feeStatusFilter === 'PAID') return app.feePaid;
     if (feeStatusFilter === 'UNPAID') return !app.feePaid;
@@ -227,6 +241,15 @@ const Applications = () => {
           <p className="text-gray-500  mt-2">Manage student enrollment applications</p>
         </div>
         <div className="flex flex-wrap gap-2 items-center">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input 
+              placeholder="Search applications..." 
+              className="pl-9 w-full sm:w-64"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
           <select
             value={feeStatusFilter}
             onChange={(e) => setFeeStatusFilter(e.target.value)}
@@ -264,10 +287,16 @@ const Applications = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {applications.length === 0 ? (
+              {applications.length === 0 && !searchQuery ? (
                 <TableRow>
                   <TableCell colSpan={11} className="text-center h-32 text-gray-500">
                     No applications found.
+                  </TableCell>
+                </TableRow>
+              ) : filteredApplications.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={11} className="text-center h-32 text-gray-500">
+                    No results found.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -458,7 +487,13 @@ const Applications = () => {
           </div>
           <div className="space-y-2">
             <Label htmlFor="applicationFeeAmount">Application Fee Amount (₹)</Label>
-            <Input id="applicationFeeAmount" type="number" value={customIds.applicationFeeAmount} onChange={(e) => setCustomIds({...customIds, applicationFeeAmount: e.target.value})} placeholder="e.g. 500" />
+            <Input 
+              id="applicationFeeAmount" 
+              type="text" 
+              value={customIds.applicationFeeAmount} 
+              onChange={(e) => setCustomIds({...customIds, applicationFeeAmount: e.target.value.replace(/\D/g, '')})} 
+              placeholder="e.g. 500" 
+            />
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">

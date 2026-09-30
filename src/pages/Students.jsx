@@ -633,8 +633,8 @@ const Students = () => {
                 <TableBody>
                   {filteredStudents.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center h-32 text-gray-500">
-                        {viewMode === 'SEARCH_RESULTS' ? 'No matching students found.' : 'No students found in this section.'}
+                      <TableCell colSpan={9} className="text-center h-32 text-gray-500">
+                        {viewMode === 'SEARCH_RESULTS' ? 'No results found.' : 'No students found in this section.'}
                       </TableCell>
                     </TableRow>
                   ) : (

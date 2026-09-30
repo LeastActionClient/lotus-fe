@@ -183,7 +183,7 @@ const Activities = () => {
               {filteredActivities.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center h-32 text-gray-500">
-                    No activities found.
+                    {searchQuery ? 'No results found.' : 'No activities found.'}
                   </TableCell>
                 </TableRow>
               ) : (

@@ -155,7 +155,7 @@ const StudentEdit = () => {
     } else if (validationType === 'bloodGroup') {
       val = val.replace(/[^a-zA-Z\s\-\+]/g, '');
     } else if (validationType === 'occupation') {
-      val = val.replace(/[^a-zA-Z0-9\s\-./()&,]/g, '');
+      val = val.replace(/[^a-zA-Z\s\-./()&,]/g, '');
     } else if (validationType === 'caste') {
       val = val.replace(/[^a-zA-Z\s\-./]/g, '');
     }
@@ -164,7 +164,7 @@ const StudentEdit = () => {
       val = val.slice(0, limit);
     }
     if (typeof setState === 'function') {
-      setState({ ...stateObj, [field]: val });
+      setState(prev => ({ ...prev, [field]: val }));
     }
   };
 
@@ -232,7 +232,7 @@ const StudentEdit = () => {
       setFormData({
         admissionNumber: student.admissionNumber || '',
         studentName: student.studentName || '',
-        photoUrl: student.photoUrl || '',
+        photoUrl: student.photoUrl || student.passport_photo || '',
         dateOfBirth: student.dateOfBirth ? student.dateOfBirth.split('T')[0] : '',
         gender: student.gender || '',
         bloodGroup: student.bloodGroup || '',
@@ -880,7 +880,7 @@ const StudentEdit = () => {
               </div>
               <div className="space-y-2">
                 <Label>EMIS No</Label>
-                <Input name="emisNo" value={formData.emisNo || formData.emisNumber} maxLength={10} onChange={(e) => handleValidatedChange('emisNo', e, 'numbers', formData, (obj) => setFormData({...obj, emisNumber: obj.emisNo}), 10)} placeholder="10 digits" />
+                <Input name="emisNo" value={formData.emisNo || formData.emisNumber} maxLength={10} onChange={(e) => handleValidatedChange('emisNo', e, 'numbers', formData, setFormData, 10)} placeholder="10 digits" />
               </div>
               <div className="space-y-2">
                 <Label>Admission Date</Label>
@@ -953,7 +953,7 @@ const StudentEdit = () => {
               </div>
               <div className="space-y-2">
                 <Label>Guardian Name</Label>
-                <Input name="guardianName" value={formData.guardianName || formData.guardian} maxLength={100} onChange={(e) => handleValidatedChange('guardianName', e, 'parentName', formData, (obj) => setFormData({...obj, guardian: obj.guardianName}), 100)} placeholder="Guardian name" />
+                <Input name="guardianName" value={formData.guardianName || formData.guardian} maxLength={100} onChange={(e) => handleValidatedChange('guardianName', e, 'parentName', formData, setFormData, 100)} placeholder="Guardian name" />
               </div>
               <div className="space-y-2">
                 <Label>WhatsApp Number</Label>

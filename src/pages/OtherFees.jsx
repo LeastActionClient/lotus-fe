@@ -234,7 +234,7 @@ const OtherFees = () => {
               {filteredCharges.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center h-32 text-gray-500">
-                    No Other Fees found.
+                    {searchQuery ? 'No results found.' : 'No Other Fees found.'}
                   </TableCell>
                 </TableRow>
               ) : (

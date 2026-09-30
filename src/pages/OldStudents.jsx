@@ -459,7 +459,7 @@ const OldStudents = () => {
                 {filteredStudents.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={11} className="text-center h-32 text-gray-500">
-                      No old students match the filters.
+                      {searchQuery ? 'No results found.' : 'No old students match the filters.'}
                     </TableCell>
                   </TableRow>
                 ) : (
