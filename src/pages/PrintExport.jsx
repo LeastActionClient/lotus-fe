@@ -315,7 +315,7 @@ const PrintExport = () => {
                       {filteredStudents.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={colSpan} className="text-center h-32 text-gray-500">
-                            {searchQuery ? 'No results found.' : 'No students found matching your criteria.'}
+                            {phoneSearch ? 'No results found.' : 'No students found matching your criteria.'}
                           </TableCell>
                         </TableRow>
                       ) : activeFields.length === 0 ? (
