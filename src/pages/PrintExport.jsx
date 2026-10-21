@@ -7,8 +7,8 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import Pagination from '../components/ui/Pagination';
-import { PageLoader } from '../components/ui/Spinner';
 import { toastWarning } from '../services/toastService';
+import { compareClassNames } from '../utils/classOrder';
 
 const AVAILABLE_FIELDS = [
   { id: 'studentName', label: 'Student Name' },
@@ -67,7 +67,7 @@ const PrintExport = () => {
     fetchStudents();
   }, []);
 
-  const uniqueClasses = [...new Set(students.map(s => s.currentClass).filter(Boolean))].sort();
+  const uniqueClasses = [...new Set(students.map(s => s.currentClass).filter(Boolean))].sort(compareClassNames);
   const uniqueSections = [...new Set(students.filter(s => selectedClass === 'FULL_SCHOOL' || s.currentClass === selectedClass).map(s => s.section).filter(Boolean))].sort();
 
   useEffect(() => {

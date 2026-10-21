@@ -12,6 +12,7 @@ import { getStudentCategoryLabel, isRTEStudent } from '../utils/studentCategory'
 import { PageLoader } from '../components/ui/Spinner';
 import * as XLSX from 'xlsx';
 import Select from 'react-select';
+import { classSortFn } from '../utils/classOrder';
 
 const CategoryMultiSelect = ({ categories, selectedIds, onChange }) => {
   const categoryOptions = useMemo(() => {
@@ -507,19 +508,6 @@ const PendingFees = () => {
       }
       return a.localeCompare(b);
     });
-
-    const classSortFn = (aCls, bCls) => {
-      const normalize = (name) => String(name || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-      const order = { prekg: 1, lkg: 2, ukg: 3 };
-      const aNorm = normalize(aCls);
-      const bNorm = normalize(bCls);
-      const aNum = parseInt(aNorm);
-      const bNum = parseInt(bNorm);
-
-      const aVal = !isNaN(aNum) ? aNum + 10 : (order[aNorm] || 999);
-      const bVal = !isNaN(bNum) ? bNum + 10 : (order[bNorm] || 999);
-      return aVal - bVal;
-    };
 
     const sortedStudents = [...filteredStudents].sort((a, b) => {
       const classDiff = classSortFn(a.currentClass, b.currentClass);

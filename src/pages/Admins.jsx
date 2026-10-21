@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { Card, CardContent } from '../components/ui/Card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
@@ -9,7 +10,7 @@ import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import Pagination from '../components/ui/Pagination';
 import { PageLoader } from '../components/ui/Spinner';
-import { toastError } from '../services/toastService';
+import { toastError, toastSuccess } from '../services/toastService';
 import { useConfirm } from '../components/ui/ConfirmDialog';
 
 const Admins = () => {
@@ -33,7 +34,14 @@ const Admins = () => {
   });
 
   const currentUser = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || '{}');
+  const navigate = useNavigate();
   const confirm = useConfirm();
+
+  useEffect(() => {
+    if (currentUser.role && currentUser.role !== 'SUPER_ADMIN') {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [currentUser.role, navigate]);
 
   const fetchAdmins = async () => {
     try {
@@ -84,15 +92,23 @@ const Admins = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const trimmedUsername = formData.username.trim();
+    if (!trimmedUsername || !formData.password) {
+      toastError("Username and password are required");
+      return;
+    }
     setLoading(true);
     try {
-      await api.post('/users', formData);
+      await api.post('/users', {
+        ...formData,
+        username: trimmedUsername
+      });
       setIsModalOpen(false);
       setFormData({ username: '', password: '', role: 'ADMIN' });
+      toastSuccess('Admin created successfully');
       fetchAdmins();
     } catch (error) {
       console.error("Error creating admin", error);
-      toastError(error.response?.data?.error || "Error creating admin");
     } finally {
       setLoading(false);
     }
@@ -102,6 +118,7 @@ const Admins = () => {
     setStatusLoadingId(id);
     try {
       await api.put(`/users/${id}`, { isActive: !currentStatus });
+      toastSuccess(`Admin ${!currentStatus ? 'enabled' : 'disabled'} successfully`);
       fetchAdmins();
     } catch (error) {
       console.error("Error toggling status", error);
@@ -125,10 +142,10 @@ const Admins = () => {
     setDeleteLoadingId(id);
     try {
       await api.delete(`/users/${id}`);
+      toastSuccess('Admin deleted successfully');
       fetchAdmins();
     } catch (error) {
       console.error("Error deleting admin", error);
-      toastError(error.response?.data?.error || "Error deleting admin");
     } finally {
       setDeleteLoadingId(null);
     }

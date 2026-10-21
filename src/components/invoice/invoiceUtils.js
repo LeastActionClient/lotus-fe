@@ -36,7 +36,9 @@ const splitFeeName = (value) => {
 
 const buildFeeEntry = (source, fallbackAmount = 0) => {
   const fee = source?.studentFeeId || source?.studentFee || source || {};
-  const feeName = fee.feeCategoryId?.name || fee.includedChargeId?.name || fee.name || 'Fee';
+  const feeCategory = fee.feeCategoryId;
+  const includedCharge = fee.includedChargeId;
+  const feeName = feeCategory?.name || includedCharge?.name || fee.name || 'Fee';
   const totalAmount = toNumber(fee.totalAmount);
   const paidAmount = toNumber(source?.amount ?? fallbackAmount);
   const balanceAmount = toNumber(fee.remainingAmount);
@@ -55,7 +57,10 @@ const buildFeeEntry = (source, fallbackAmount = 0) => {
     totalAmount,
     paidAmount,
     balanceAmount: Number.isFinite(balanceAmount) && balanceAmount >= 0 ? balanceAmount : 0,
-    discountAmount
+    discountAmount,
+    isMandatory: Boolean(feeCategory?.mandatory ?? fee?.mandatory ?? source?.mandatory),
+    isFeeCategory: Boolean(feeCategory),
+    isIncludedCharge: Boolean(includedCharge)
   };
 };
 
@@ -100,7 +105,10 @@ export const groupReceiptEntriesList = (entries = []) => {
         discountAmount: 0,
         paidAmount: 0,
         balanceAmount: 0,
-        sortIndex: index
+        sortIndex: index,
+        isMandatory: entry.isMandatory,
+        isFeeCategory: entry.isFeeCategory,
+        isIncludedCharge: entry.isIncludedCharge
       };
       groupedMap.set(groupKey, group);
       grouped.push(group);
@@ -134,7 +142,10 @@ export const groupReceiptEntriesList = (entries = []) => {
       paidAmount: group.paidAmount,
       balanceAmount: group.balanceAmount,
       rows: group.rows,
-      sortIndex: group.sortIndex
+      sortIndex: group.sortIndex,
+      isMandatory: group.isMandatory,
+      isFeeCategory: group.isFeeCategory,
+      isIncludedCharge: group.isIncludedCharge
     };
   });
 };
@@ -162,6 +173,10 @@ export const calculateReceiptTotals = (groupedRows) =>
   );
 
 export const ACADEMIC_FEE_CATEGORIES = [
+  'annual fee',
+  'annual',
+  'annual charge',
+  'annual charges',
   'book fee',
   'term 1',
   'term 2',
@@ -174,22 +189,57 @@ export const ACADEMIC_FEE_CATEGORIES = [
   'abacus term 3',
   'term',
   'tuition term',
-  'abacus term'
+  'abacus term',
+  'tuition',
+  'tuition fee',
+  'admission',
+  'admission fee',
+  'application fee',
+  'exam fee',
+  'examination fee',
+  'school fee',
+  'development fee'
 ];
 
-export const isAcademicCategory = (feeName) => {
-  if (!feeName) return false;
-  const normalized = normalizeSpaces(feeName).toLowerCase();
+export const isAcademicCategory = (entryOrName) => {
+  if (!entryOrName) return false;
+
+  // 1. If entry object is provided, check explicit flags
+  if (typeof entryOrName === 'object') {
+    // Explicitly mandatory categories are ALWAYS Academic Fee Receipt
+    if (entryOrName.isMandatory === true) {
+      return true;
+    }
+    // Standard feeCategory items (not IncludedCharge) are Academic Fee Categories
+    if (entryOrName.isFeeCategory === true && !entryOrName.isIncludedCharge) {
+      return true;
+    }
+  }
+
+  // 2. Name-based checks
+  const rawName = typeof entryOrName === 'object'
+    ? (entryOrName.rawName || entryOrName.displayName || entryOrName.name || '')
+    : String(entryOrName);
+
+  if (!rawName) return false;
+  const normalized = normalizeSpaces(rawName).toLowerCase();
 
   if (ACADEMIC_FEE_CATEGORIES.includes(normalized)) {
     return true;
   }
 
   return (
-    /^book fee/i.test(normalized) ||
+    /annual/i.test(normalized) ||
+    /tuition/i.test(normalized) ||
+    /admission/i.test(normalized) ||
+    /abacus/i.test(normalized) ||
+    /exam/i.test(normalized) ||
+    /school/i.test(normalized) ||
+    /^book\s*fee/i.test(normalized) ||
     /^term\s*\d*$/i.test(normalized) ||
     /^tuition\s*term\s*\d*$/i.test(normalized) ||
-    /^abacus\s*term\s*\d*$/i.test(normalized)
+    /^abacus\s*term\s*\d*$/i.test(normalized) ||
+    /fee$/i.test(normalized)
   );
 };
 
@@ -200,7 +250,7 @@ export const getSplitBillsForPayment = (payment) => {
   const additionalEntries = [];
 
   allEntries.forEach((entry) => {
-    if (isAcademicCategory(entry.rawName)) {
+    if (isAcademicCategory(entry)) {
       academicEntries.push(entry);
     } else {
       additionalEntries.push(entry);

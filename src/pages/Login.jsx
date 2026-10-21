@@ -57,7 +57,7 @@ const Login = () => {
       <div className="hidden md:flex md:w-1/2 bg-gray-200">
         <img 
           src="/image-login.jpeg" 
-          alt="Kasthuri Schools Campus" 
+          alt="Lotus School Campus" 
           className="w-full h-full object-cover object-center" 
         />
       </div>
@@ -66,7 +66,7 @@ const Login = () => {
         <div className="w-full max-w-md">
         <div className="flex flex-col items-center justify-center mb-8">
           <div className="flex items-center justify-center mb-2">
-            <img src={logo} alt="Kasthuri School Logo" className="h-24 w-auto object-contain mr-3" />
+            <img src={logo} alt="Lotus School Logo" className="h-24 w-auto object-contain mr-3" />
           </div>
         </div>
         

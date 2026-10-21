@@ -10,8 +10,8 @@ import Pagination from '../components/ui/Pagination';
 import { FileText, Plus, CheckCircle, Trash2, Settings, Search } from 'lucide-react';
 import { PageLoader } from '../components/ui/Spinner';
 import { toastError, toastSuccess } from '../services/toastService';
-import { useConfirm } from '../components/ui/ConfirmDialog';
 import { useApplicationsQuery, useClassesQuery, useQueryInvalidator } from '../hooks/useSchoolQueries';
+import { compareClassNames } from '../utils/classOrder';
 
 const Applications = () => {
   const currentUser = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || '{}');
@@ -50,24 +50,7 @@ const Applications = () => {
   const isLoading = applicationsLoading || classesLoading;
 
   const sortedClasses = React.useMemo(() => {
-    return [...classesData].sort((a, b) => {
-      const preSchoolOrder = { 'prekg': 1, 'lkg': 2, 'ukg': 3 };
-      const aNorm = String(a.name).trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-      const bNorm = String(b.name).trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-      const isPreA = preSchoolOrder[aNorm];
-      const isPreB = preSchoolOrder[bNorm];
-      if (isPreA && isPreB) return isPreA - isPreB;
-      if (isPreA) return -1;
-      if (isPreB) return 1;
-      const numA = parseInt(aNorm, 10);
-      const numB = parseInt(bNorm, 10);
-      const isNumA = !isNaN(numA);
-      const isNumB = !isNaN(numB);
-      if (isNumA && isNumB) return numA - numB;
-      if (isNumA) return 1;
-      if (isNumB) return -1;
-      return aNorm.localeCompare(bNorm);
-    });
+    return [...classesData].sort(compareClassNames);
   }, [classesData]);
 
   const handleNewApplication = async () => {
