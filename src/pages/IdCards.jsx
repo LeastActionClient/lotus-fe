@@ -584,11 +584,15 @@ const IdCards = () => {
                   const photo = item.passport_photo || item.photoUrl || item.photo || '';
                   return (
                     <TableRow key={item._id} className={isSelected ? 'bg-blue-50/40' : ''}>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center" onClick={(e) => {
+                        if (e.target.tagName !== 'INPUT') {
+                          handleToggleSelectStudent(item._id);
+                        }
+                      }}>
                         <input
                           type="checkbox"
                           checked={isSelected}
-                          onChange={() => handleToggleSelectStudent(student._id)}
+                          onChange={() => handleToggleSelectStudent(item._id)}
                           className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600 cursor-pointer"
                         />
                       </TableCell>

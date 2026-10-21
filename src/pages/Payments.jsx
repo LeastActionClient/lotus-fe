@@ -16,6 +16,7 @@ import { toastError, toastSuccess, toastWarning } from '../services/toastService
 import { useConfirm } from '../components/ui/ConfirmDialog';
 import { useFeeCategoriesQuery, usePaymentsQuery, useQueryInvalidator, useStudentQuery, useStudentsQuery, useClassesQuery, useIncludedChargesQuery } from '../hooks/useSchoolQueries';
 import { getStoredUser } from '../utils/auth';
+import { classSortFn } from '../utils/classOrder';
 
 const Payments = () => {
   const currentUser = getStoredUser();
@@ -50,10 +51,19 @@ const Payments = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  const getTodayDateString = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const [paymentData, setPaymentData] = useState({
     studentFeeIds: [],
     amount: '0',
     paymentMethod: 'CASH',
+    paymentDate: getTodayDateString(),
     referenceNumber: '',
     remarks: '',
     otherFees: [] // Array of { includedChargeId, amount }
@@ -390,6 +400,7 @@ const Payments = () => {
         otherFees: paymentData.otherFees,
         feeAllocations,
         paymentMethod: paymentData.paymentMethod,
+        paymentDate: paymentData.paymentDate || getTodayDateString(),
         referenceNumber: paymentData.referenceNumber,
         remarks: paymentData.remarks
       });
@@ -400,6 +411,7 @@ const Payments = () => {
         studentFeeIds: [],
         amount: '0',
         paymentMethod: 'CASH',
+        paymentDate: getTodayDateString(),
         referenceNumber: '',
         remarks: '',
         otherFees: []
@@ -446,26 +458,6 @@ const Payments = () => {
     navigate(`/dashboard/payments/invoice/${paymentId}`, {
       state: { payment }
     });
-  };
-
-  const normalizeClassName = (value) => String(value ?? '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-  const classSortFn = (a, b) => {
-    const preSchoolOrder = { 'prekg': 1, 'lkg': 2, 'ukg': 3 };
-    const aNorm = normalizeClassName(a);
-    const bNorm = normalizeClassName(b);
-    const isPreA = preSchoolOrder[aNorm];
-    const isPreB = preSchoolOrder[bNorm];
-    if (isPreA && isPreB) return isPreA - isPreB;
-    if (isPreA) return -1;
-    if (isPreB) return 1;
-    const numA = /^(\d+)$/.test(aNorm) ? parseInt(aNorm, 10) : NaN;
-    const numB = /^(\d+)$/.test(bNorm) ? parseInt(bNorm, 10) : NaN;
-    const isNumA = !isNaN(numA);
-    const isNumB = !isNaN(numB);
-    if (isNumA && isNumB) return numA - numB;
-    if (isNumA) return 1;
-    if (isNumB) return -1;
-    return aNorm.localeCompare(bNorm);
   };
 
   const uniqueClasses = classes.map(c => c.name).sort(classSortFn);
@@ -1200,13 +1192,13 @@ const Payments = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="amount">Total Amount (Rs.)</Label>
+              <Label htmlFor="paymentDate">Payment Date</Label>
               <Input 
-                id="amount" 
-                type="text" 
-                value={paymentData.amount}
-                readOnly
-                className="bg-gray-100 font-bold text-gray-900 cursor-not-allowed"
+                id="paymentDate" 
+                type="date" 
+                value={paymentData.paymentDate || getTodayDateString()}
+                onChange={(e) => setPaymentData({...paymentData, paymentDate: e.target.value})}
+                required
               />
             </div>
             <div className="space-y-2">
@@ -1225,14 +1217,26 @@ const Payments = () => {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="referenceNumber">Reference Number (Optional)</Label>
-            <Input 
-              id="referenceNumber" 
-              value={paymentData.referenceNumber}
-              onChange={(e) => setPaymentData({...paymentData, referenceNumber: e.target.value})}
-              placeholder="e.g., Transaction ID"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="amount">Total Amount (Rs.)</Label>
+              <Input 
+                id="amount" 
+                type="text" 
+                value={paymentData.amount}
+                readOnly
+                className="bg-gray-100 font-bold text-gray-900 cursor-not-allowed"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="referenceNumber">Reference Number (Optional)</Label>
+              <Input 
+                id="referenceNumber" 
+                value={paymentData.referenceNumber}
+                onChange={(e) => setPaymentData({...paymentData, referenceNumber: e.target.value})}
+                placeholder="e.g., Transaction ID"
+              />
+            </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">

@@ -15,6 +15,7 @@ import { PageLoader } from '../components/ui/Spinner';
 import { toastError, toastSuccess, toastWarning } from '../services/toastService';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas-pro';
+import { compareClassNames } from '../utils/classOrder';
 
 const Admissions = () => {
   const [students, setStudents] = useState([]);
@@ -123,24 +124,7 @@ const Admissions = () => {
   };
 
   const sortedClasses = React.useMemo(() => {
-    return [...classes].sort((a, b) => {
-      const preSchoolOrder = { 'prekg': 1, 'lkg': 2, 'ukg': 3 };
-      const aNorm = String(a.name).trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-      const bNorm = String(b.name).trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-      const isPreA = preSchoolOrder[aNorm];
-      const isPreB = preSchoolOrder[bNorm];
-      if (isPreA && isPreB) return isPreA - isPreB;
-      if (isPreA) return -1;
-      if (isPreB) return 1;
-      const numA = parseInt(aNorm, 10);
-      const numB = parseInt(bNorm, 10);
-      const isNumA = !isNaN(numA);
-      const isNumB = !isNaN(numB);
-      if (isNumA && isNumB) return numA - numB;
-      if (isNumA) return 1;
-      if (isNumB) return -1;
-      return aNorm.localeCompare(bNorm);
-    });
+    return [...classes].sort(compareClassNames);
   }, [classes]);
 
   useEffect(() => {

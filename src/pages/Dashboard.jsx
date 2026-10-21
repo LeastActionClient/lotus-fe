@@ -9,8 +9,8 @@ import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import { PageLoader } from '../components/ui/Spinner';
-import { toastError, toastSuccess, toastWarning } from '../services/toastService';
 import { useConfirm } from '../components/ui/ConfirmDialog';
+import { classSortFn } from '../utils/classOrder';
 
 const Dashboard = () => {
   const { data: overview = {}, isLoading, refetch } = useDashboardOverviewQuery();
@@ -36,25 +36,6 @@ const Dashboard = () => {
     abacusStudents: 0,
     classesCount: 0,
     feeCategories: 0,
-  };
-  const normalizeClassName = (value) => String(value ?? '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-  const classSortFn = (a, b) => {
-    const preSchoolOrder = { 'prekg': 1, 'lkg': 2, 'ukg': 3 };
-    const aNorm = normalizeClassName(a);
-    const bNorm = normalizeClassName(b);
-    const isPreA = preSchoolOrder[aNorm];
-    const isPreB = preSchoolOrder[bNorm];
-    if (isPreA && isPreB) return isPreA - isPreB;
-    if (isPreA) return -1;
-    if (isPreB) return 1;
-    const numA = /^(\d+)$/.test(aNorm) ? parseInt(aNorm, 10) : NaN;
-    const numB = /^(\d+)$/.test(bNorm) ? parseInt(bNorm, 10) : NaN;
-    const isNumA = !isNaN(numA);
-    const isNumB = !isNaN(numB);
-    if (isNumA && isNumB) return numA - numB;
-    if (isNumA) return 1;
-    if (isNumB) return -1;
-    return aNorm.localeCompare(bNorm);
   };
 
   const rawClasses = overview.classes || [];
