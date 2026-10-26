@@ -15,12 +15,14 @@ import { PageLoader } from '../components/ui/Spinner';
 import { toastError, toastSuccess, toastWarning } from '../services/toastService';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas-pro';
+import { useQueryClient } from '@tanstack/react-query';
 
 const StudentEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const currentUser = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || '{}');
+  const queryClient = useQueryClient();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -652,9 +654,35 @@ const StudentEdit = () => {
       };
 
       await api.put(`/students/${id}`, payload);
-      toastSuccess("Student updated successfully!");
-      if (location.state) {
-        navigate('/dashboard/students', { state: location.state });
+
+      // Invalidate and immediately refetch all student caches across the application
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['students'] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+        queryClient.invalidateQueries({ queryKey: ['reports'] }),
+        queryClient.invalidateQueries({ queryKey: ['concessions'] }),
+        queryClient.invalidateQueries({ queryKey: ['payments'] }),
+        queryClient.invalidateQueries({ queryKey: ['classes'] }),
+      ]);
+      await queryClient.refetchQueries({ queryKey: ['students'] });
+
+      let targetState = location.state;
+      if (targetState) {
+        // If class or section changed, ensure student directory lands in the updated class/section
+        const newClsObj = classes.find(c => c.name === formData.currentClass);
+        if (newClsObj) {
+          const newSecObj = newClsObj.sections?.find(s => s.name === formData.section);
+          targetState = {
+            ...targetState,
+            fromClassId: newClsObj._id,
+            fromSectionId: newSecObj?._id || targetState.fromSectionId
+          };
+        }
+      }
+
+      toastSuccess('Student updated successfully!');
+      if (targetState) {
+        navigate('/dashboard/students', { state: targetState });
       } else {
         navigate('/dashboard/students');
       }
