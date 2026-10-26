@@ -9,6 +9,7 @@ import { Label } from '../components/ui/Label';
 import Pagination from '../components/ui/Pagination';
 import { toastWarning } from '../services/toastService';
 import { compareClassNames } from '../utils/classOrder';
+import { PageLoader } from '../components/ui/Spinner';
 
 const AVAILABLE_FIELDS = [
   { id: 'studentName', label: 'Student Name' },

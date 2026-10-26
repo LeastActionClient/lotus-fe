@@ -15,6 +15,7 @@ import ExportModal from '../components/ExportModal';
 import { toastError, toastSuccess } from '../services/toastService';
 import { useClassesQuery, useQueryInvalidator, useStudentsQuery } from '../hooks/useSchoolQueries';
 import { compareClassNames } from '../utils/classOrder';
+import { useConfirm } from '../components/ui/ConfirmDialog';
 
 const normalizeText = (value) => String(value ?? '').trim().toLowerCase();
 
