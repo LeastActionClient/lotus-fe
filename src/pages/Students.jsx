@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import api from '../services/api';
 import { Card, CardContent } from '../components/ui/Card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table';
-import { Users, Upload, UserPlus, Eye, Folder, FolderOpen, ArrowLeft, Search, Plus, Trash2, Edit } from 'lucide-react';
+import { Users, Upload, UserPlus, Eye, Folder, FolderOpen, ArrowLeft, Search, Plus, Trash2, Edit, User } from 'lucide-react';
+import { getImageUrl } from '../utils/imageUrl';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
@@ -94,16 +95,28 @@ const Students = () => {
     if (classesData) setClasses(classesData);
   }, [classesData]);
 
+  useEffect(() => {
+    refetchStudents();
+    refetchClasses();
+  }, [location.key]);
+
   const openViewModal = async (student) => {
     setSelectedStudent(student);
     setIsViewModalOpen(true);
     setViewLoadingId(student._id);
     setHistoryLoading(true);
     try {
-      const res = await api.get(`/academic-years/students/${student._id}/history`);
-      setAcademicHistory(res.data || []);
+      const [historyRes, studentRes] = await Promise.all([
+        api.get(`/academic-years/students/${student._id}/history`),
+        api.get(`/students/${student._id}`)
+      ]);
+      setAcademicHistory(historyRes.data || []);
+      if (studentRes?.data) {
+        setSelectedStudent(studentRes.data);
+        setStudents(prev => prev.map(s => s._id === student._id ? { ...s, ...studentRes.data } : s));
+      }
     } catch (e) {
-      console.error("Error fetching student history:", e);
+      console.error('Error fetching student history or details:', e);
       setAcademicHistory([]);
     } finally {
       setHistoryLoading(false);
@@ -774,6 +787,57 @@ const Students = () => {
       <Modal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} title="Student Details" className="max-w-4xl">
         {selectedStudent && (
           <div className="space-y-5">
+            {/* Student Header Card with Photo and Core Info */}
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
+              <div className="relative w-24 h-28 rounded-lg overflow-hidden border-2 border-blue-200 bg-white shadow-xs shrink-0 flex items-center justify-center">
+                {selectedStudent.photoUrl || selectedStudent.passport_photo ? (
+                  <img
+                    src={getImageUrl(selectedStudent.photoUrl || selectedStudent.passport_photo)}
+                    alt={selectedStudent.studentName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-gray-400 p-2">
+                    <User className="h-10 w-10 text-gray-300" />
+                    <span className="text-[10px] text-gray-400 mt-1">No Photo</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 text-center sm:text-left space-y-1">
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                  <h2 className="text-xl font-bold text-gray-900">{selectedStudent.studentName}</h2>
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                    getStudentCategoryLabel(selectedStudent) === 'RTE'
+                      ? 'bg-purple-100 text-purple-800'
+                      : 'bg-blue-100 text-blue-800'
+                  }`}>
+                    {getStudentCategoryLabel(selectedStudent)}
+                  </span>
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                    selectedStudent.studentStatus === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  }`}>
+                    {selectedStudent.studentStatus || 'Active'}
+                  </span>
+                </div>
+                <p className="text-sm font-mono text-gray-600 font-medium">
+                  Admission No: <span className="text-gray-900 font-semibold">{selectedStudent.admissionNumber || '-'}</span>
+                </p>
+                <p className="text-sm text-gray-600">
+                  Class: <span className="font-semibold text-gray-900">{selectedStudent.currentClass}</span> &bull; Section: <span className="font-semibold text-gray-900">{selectedStudent.section || '-'}</span>
+                  {selectedStudent.rollNumber ? <> &bull; Roll: <span className="font-semibold text-gray-900">{selectedStudent.rollNumber}</span></> : null}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Link
+                  to={`/dashboard/students/edit/${selectedStudent._id}`}
+                  state={{ fromClassId: selectedClass?._id, fromSectionId: selectedSection?._id, feeFilter, studentGroupFilter, studentProgramFilter, searchQuery }}
+                >
+                  <Button size="sm" variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-100 text-xs font-semibold">
+                    <Edit className="h-3.5 w-3.5 mr-1" /> Edit Student
+                  </Button>
+                </Link>
+              </div>
+            </div>
             {/* Personal Details */}
             <div>
               <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-1 mb-3">Personal Details</h3>
@@ -924,6 +988,71 @@ const Students = () => {
                   <p className="text-sm text-gray-900">{selectedStudent.pincode || '-'}</p>
                 </div>
               </div>
+            </div>
+
+                        {/* Fee & Financial Summary */}
+            <div className="border-t border-gray-200 pt-4">
+              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-1 mb-3">Fee & Financial Summary</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-gray-50/80 p-3 rounded-lg border border-gray-200">
+                <div>
+                  <p className="text-xs text-gray-500">Prev Year Paid</p>
+                  <p className="text-sm font-semibold text-green-600">
+                    Rs. {selectedStudent.previousPaid !== undefined ? selectedStudent.previousPaid : 0}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Prev Year Pending</p>
+                  <p className={`text-sm font-semibold ${(selectedStudent.previousPending || 0) > 0 ? 'text-red-500' : 'text-green-600'}`}>
+                    Rs. {selectedStudent.previousPending !== undefined ? selectedStudent.previousPending : 0}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Curr Year Paid</p>
+                  <p className="text-sm font-semibold text-green-600">
+                    Rs. {selectedStudent.currentPaid !== undefined ? selectedStudent.currentPaid : 0}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Curr Year Pending</p>
+                  <p className={`text-sm font-semibold ${(selectedStudent.currentPending || 0) > 0 ? 'text-red-500' : 'text-green-600'}`}>
+                    Rs. {selectedStudent.currentPending !== undefined ? selectedStudent.currentPending : 0}
+                  </p>
+                </div>
+              </div>
+
+              {selectedStudent.studentFees && selectedStudent.studentFees.length > 0 && (
+                <div className="mt-3 overflow-x-auto rounded-md border border-gray-200">
+                  <table className="min-w-full divide-y divide-gray-200 text-xs">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-semibold text-gray-700">Fee Category / Charge</th>
+                        <th className="px-3 py-2 text-right font-semibold text-gray-700">Total</th>
+                        <th className="px-3 py-2 text-right font-semibold text-gray-700">Paid</th>
+                        <th className="px-3 py-2 text-right font-semibold text-gray-700">Remaining</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 bg-white">
+                      {selectedStudent.studentFees.map((f, i) => (
+                        <tr key={f._id || i}>
+                          <td className="px-3 py-1.5 text-gray-800 font-medium">
+                            {f.feeCategory?.name || f.feeCategoryId?.name || f.includedChargeId?.name || 'Fee'}
+                            {f.uniformDetails && (f.uniformDetails.topLength > 0 || f.uniformDetails.bottomLength > 0) && (
+                              <span className="text-[11px] text-gray-500 block">
+                                Top: {f.uniformDetails.topLength || 0}m, Bottom: {f.uniformDetails.bottomLength || 0}m
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-3 py-1.5 text-right font-mono">Rs. {f.totalAmount || 0}</td>
+                          <td className="px-3 py-1.5 text-right font-mono text-green-600">Rs. {f.paidAmount || 0}</td>
+                          <td className={`px-3 py-1.5 text-right font-mono font-medium ${(f.remainingAmount || 0) > 0 ? 'text-red-500' : 'text-green-600'}`}>
+                            Rs. {f.remainingAmount || 0}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
 
             {/* Academic Journey History */}
