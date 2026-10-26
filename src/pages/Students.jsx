@@ -42,8 +42,8 @@ const Students = () => {
   const location = useLocation();
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
-  const { data: studentsData = [], isLoading: studentsLoading } = useStudentsQuery();
-  const { data: classesData = [], isLoading: classesLoading } = useClassesQuery();
+  const { data: studentsData = [], isLoading: studentsLoading, refetch: refetchStudents } = useStudentsQuery();
+  const { data: classesData = [], isLoading: classesLoading, refetch: refetchClasses } = useClassesQuery();
   const { invalidateStudents, invalidateClasses, invalidateDashboard } = useQueryInvalidator();
   
   const sortedClasses = React.useMemo(() => {
