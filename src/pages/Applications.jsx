@@ -12,6 +12,7 @@ import { PageLoader } from '../components/ui/Spinner';
 import { toastError, toastSuccess } from '../services/toastService';
 import { useApplicationsQuery, useClassesQuery, useQueryInvalidator } from '../hooks/useSchoolQueries';
 import { compareClassNames } from '../utils/classOrder';
+import { useConfirm } from '../components/ui/ConfirmDialog';
 
 const Applications = () => {
   const currentUser = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || '{}');
