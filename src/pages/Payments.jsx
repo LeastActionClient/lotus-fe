@@ -791,15 +791,18 @@ const Payments = () => {
                         <>
                           {payment.student?.studentName || '-'}
                           <span className="block text-xs text-gray-500">{payment.student?.admissionNumber || '-'}</span>
-                          <span className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                            getStudentCategoryLabel(payment.student) === 'RTE'
-                              ? 'bg-purple-100 text-purple-800'
-                              : 'bg-gray-100 text-gray-700'
-                          }`}>
-                            {getStudentCategoryLabel(payment.student) || '-'}
-                          </span>
+                          {payment.student && getStudentCategoryLabel(payment.student) && (
+                            <span className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                              getStudentCategoryLabel(payment.student) === 'RTE'
+                                ? 'bg-purple-100 text-purple-800'
+                                : 'bg-gray-100 text-gray-700'
+                            }`}>
+                              {getStudentCategoryLabel(payment.student)}
+                            </span>
+                          )}
                         </>
                       )}
+
                     </TableCell>
                     <TableCell className="align-top py-3">
                       <div className="flex flex-col gap-1.5 w-full min-w-[200px]">

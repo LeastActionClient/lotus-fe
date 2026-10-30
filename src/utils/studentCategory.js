@@ -5,5 +5,8 @@ export const isRTEStudent = (student) => {
   return ['rte', 'yes', 'true', '1'].includes(value);
 };
 
-export const getStudentCategoryLabel = (student) => (isRTEStudent(student) ? 'RTE' : 'General');
+export const getStudentCategoryLabel = (student) => {
+  if (!student) return '';
+  return isRTEStudent(student) ? 'RTE' : 'General';
+};
 
