@@ -112,6 +112,18 @@ const Accounts = () => {
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const totalPages = Math.ceil(expenses.length / itemsPerPage) || 1;
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+
+  const paginatedExpenses = useMemo(() => {
+    const startIdx = (currentPage - 1) * itemsPerPage;
+    return expenses.slice(startIdx, startIdx + itemsPerPage);
+  }, [expenses, currentPage, itemsPerPage]);
 
   // Track deleting expense ID
   const [deletingId, setDeletingId] = useState(null);
@@ -301,12 +313,6 @@ const Accounts = () => {
   };
 
   const isFilterActive = Boolean(activeFilters.startDate || activeFilters.endDate);
-
-  // Pagination Slicing
-  const paginatedExpenses = useMemo(() => {
-    const startIdx = (currentPage - 1) * itemsPerPage;
-    return expenses.slice(startIdx, startIdx + itemsPerPage);
-  }, [expenses, currentPage, itemsPerPage]);
 
   const isInitialLoading = isAccountsLoading && isOverviewLoading;
 
@@ -564,7 +570,7 @@ const Accounts = () => {
           <div>
             <CardTitle className="text-lg font-bold text-gray-900">Expenses List</CardTitle>
             <p className="text-xs text-gray-500 mt-0.5">
-              Showing {expenses.length} record{expenses.length === 1 ? '' : 's'} (newest first)
+              Showing {expenses.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, expenses.length)} of {expenses.length} record{expenses.length === 1 ? '' : 's'} (newest first)
             </p>
           </div>
           {isFilterActive && (
@@ -657,16 +663,10 @@ const Accounts = () => {
                   ))}
                 </TableBody>
               </Table>
-            </div>
-          )}
-
-          {expenses.length > itemsPerPage && (
-            <div className="p-4 border-t border-gray-100 flex items-center justify-between">
               <Pagination
-                currentPage={currentPage}
-                totalItems={expenses.length}
-                itemsPerPage={itemsPerPage}
-                onPageChange={(page) => setCurrentPage(page)}
+                page={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
               />
             </div>
           )}
